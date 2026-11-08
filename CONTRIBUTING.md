@@ -144,12 +144,11 @@ capability.
 
 ## Validation
 
-Engine changes live in the Rust workspace (`crates/`); `cargo build
---release` produces `target/release/gsa`, which the `gsa-pm` recipe installs
-as `/usr/bin/gsa`. Before submitting a change, run:
+Engine changes do not belong in this repository — they live in the Rust
+workspace of `ZhangDM-520/gentoo-style-arch`, whose `gsa-pm` recipe installs
+`/usr/bin/gsa`. Before submitting a recipe change, run:
 
 ```sh
-cargo test --workspace
 bash -n packages/<category>/<pkg>/PKGBUILD
 makepkg --printsrcinfo --dir packages/<category>/<pkg> > packages/<category>/<pkg>/.SRCINFO
 gsa -Ma                       # audit lints are report-only; read the report
