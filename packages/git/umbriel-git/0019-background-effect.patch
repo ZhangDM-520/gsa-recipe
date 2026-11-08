@@ -1,6 +1,6 @@
-From 478866bd6eba6576b2cf58019c080f44cdf67651 Mon Sep 17 00:00:00 2001
+From f8222bdeb176a5b9f70d57e230bfa91152f323c1 Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Fri, 6 Nov 2026 21:50:25 +0800
+Date: Mon, 9 Nov 2026 01:30:07 +0800
 Subject: [PATCH] feat(blur): honor backdrop blur regions requested by clients
 
 Applications such as GTK4 terminals ask the compositor to blur the part of
@@ -40,7 +40,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
  src/view/view.cpp                             |   2 +
  src/view/view.h                               |   8 +
  src/view/view_animation.cpp                   |   2 +-
- src/view/view_chrome.cpp                      |  61 +++-
+ src/view/view_chrome.cpp                      |  50 ++-
  src/view/view_lifecycle.cpp                   |   1 +
  tests/harness/check.sh                        |   1 +
  .../checks/protocol/background_blur.sh        | 336 ++++++++++++++++++
@@ -50,7 +50,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
  tests/harness/clients/popup_client.cpp        | 118 +++++-
  tests/meson.build                             |  15 +
  tests/unit/blur_region.cpp                    | 256 +++++++++++++
- 34 files changed, 1782 insertions(+), 63 deletions(-)
+ 34 files changed, 1772 insertions(+), 62 deletions(-)
  create mode 100644 docs/design/background-effect.md
  create mode 100644 src/server/background_effect.cpp
  create mode 100644 src/server/background_effect.h
@@ -60,7 +60,7 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
  create mode 100644 tests/unit/blur_region.cpp
 
 diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
-index 1903721..ca48d34 100644
+index 1903721e..ca48d341 100644
 --- a/CONTRIBUTING.md
 +++ b/CONTRIBUTING.md
 @@ -86,7 +86,7 @@ Each check runs against its own contained headless instance that starts pristine
@@ -73,7 +73,7 @@ index 1903721..ca48d34 100644
  - **Declare non-default instances in the header:** `# harness: outputs=N`, `xwayland=true`, `config-watch=true`, `keyboard=none`, `xcursor-theme=true`, and the others `check.sh` documents. Without the watcher, apply config with `umbriel msg config-reload`.
  
 diff --git a/docs/design/README.md b/docs/design/README.md
-index 678d0ae4..e558042c 100644
+index 647e6c38..2d6368f3 100644
 --- a/docs/design/README.md
 +++ b/docs/design/README.md
 @@ -6,6 +6,7 @@ Start with the user guide when a detail affects configuration or normal use. Use
@@ -116,10 +116,10 @@ index 00000000..9a87b4d1
 +
 +`org_kde_kwin_blur` is not part of wayland-protocols and its XML is LGPL-2.1-or-later; it is not advertised. A client that only speaks that protocol still needs a window or layer rule for blur.
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 5766eec4..9068ee17 100644
+index 39de77e2..8d527e98 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
-@@ -247,6 +247,7 @@ The bar is hidden while its window is fullscreen or maximized to the edges. Titl
+@@ -252,6 +252,7 @@ The bar is hidden while its window is fullscreen or maximized to the edges. Titl
  ```toml
  [appearance.blur]
  enabled = true
@@ -127,7 +127,7 @@ index 5766eec4..9068ee17 100644
  optimized = true
  passes = 2
  radius = 5
-@@ -258,10 +259,13 @@ saturation = 1.1
+@@ -263,10 +264,13 @@ saturation = 1.1
  
  `enabled` is the master switch. Individual surfaces still opt in through [window rules](window-rules.md) or [layer rules](layer-rules.md). Blur appears only where a surface is transparent.
  
@@ -146,10 +146,10 @@ index 5766eec4..9068ee17 100644
  | `radius`     | `5`     | Blur radius from 0 to 100.                                     |
  | `noise`      | `0.02`  | Noise overlay from 0.0 to 1.0.                                 |
 diff --git a/examples/config.toml b/examples/config.toml
-index 80359aba..835cf965 100644
+index 798d002e..a2b28d77 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
-@@ -91,6 +91,10 @@ files = []
+@@ -92,6 +92,10 @@ files = []
  [appearance.blur]
  radius = 3
  
@@ -161,7 +161,7 @@ index 80359aba..835cf965 100644
  # [appearance.title_bar]
  # mode = "on" # Follow client decoration preferences.
 diff --git a/meson.build b/meson.build
-index 84b969aa..947dfecc 100644
+index 8ca23c6d..9ddf6494 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -445,6 +445,32 @@ color_management_server_c = custom_target(
@@ -205,7 +205,7 @@ index 84b969aa..947dfecc 100644
    'src/server/backend_manager.cpp',
    'src/server/drm_lease.cpp',
    'src/server/allocator.cpp',
-@@ -919,6 +946,8 @@ umbriel_core = static_library(
+@@ -920,6 +947,8 @@ umbriel_core = static_library(
      xdg_shell_client_c,
      color_management_server_h,
      color_management_server_c,
@@ -215,10 +215,10 @@ index 84b969aa..947dfecc 100644
      xdg_output_server_c,
    ],
 diff --git a/src/config/config.h b/src/config/config.h
-index ca395335..3e7e04c1 100644
+index df68bade..1faa2931 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -776,6 +776,10 @@ namespace umbriel {
+@@ -795,6 +795,10 @@ namespace umbriel {
        bool opaqueFullscreen = true;
        struct Blur {
          bool enabled = true;
@@ -230,10 +230,10 @@ index ca395335..3e7e04c1 100644
          int passes = 2;
          int radius = 5;
 diff --git a/src/config/fields_general.cpp b/src/config/fields_general.cpp
-index d2e37653..7a584b36 100644
+index 782f6f00..7b98f019 100644
 --- a/src/config/fields_general.cpp
 +++ b/src/config/fields_general.cpp
-@@ -123,10 +123,15 @@ namespace umbriel {
+@@ -126,10 +126,15 @@ namespace umbriel {
            ),
        };
        static const registry::Fields<A::Blur> blur{
@@ -254,7 +254,7 @@ index d2e37653..7a584b36 100644
        static const registry::Fields<A::Shadow> shadow{
            boolean("enabled", &A::Shadow::enabled),
 diff --git a/src/layer/layer_surface.cpp b/src/layer/layer_surface.cpp
-index c972f1ab..733e8beb 100644
+index cd22c933..dd681052 100644
 --- a/src/layer/layer_surface.cpp
 +++ b/src/layer/layer_surface.cpp
 @@ -11,6 +11,7 @@ extern "C" {
@@ -265,7 +265,7 @@ index c972f1ab..733e8beb 100644
  #include "server/server.h"
  #include "view/popup.h"
  #include "wlr.h"
-@@ -395,7 +396,15 @@ namespace umbriel {
+@@ -407,7 +408,15 @@ namespace umbriel {
  
    void LayerSurface::updateBlur() {
      const wlr_box box{0, 0, m_layerSurface->surface->current.width, m_layerSurface->surface->current.height};
@@ -282,7 +282,7 @@ index c972f1ab..733e8beb 100644
    }
  
    void LayerSurface::applyConfig() {
-@@ -583,7 +592,7 @@ namespace umbriel {
+@@ -596,7 +605,7 @@ namespace umbriel {
      auto* popup = static_cast<wlr_xdg_popup*>(data);
      // The popup tree shares the surface origin and stacks above its shell layer's regular surfaces.
      wlr_scene_node_raise_to_top(&m_popupTree->node);
@@ -292,7 +292,7 @@ index c972f1ab..733e8beb 100644
  
  } // namespace umbriel
 diff --git a/src/overview/overview.cpp b/src/overview/overview.cpp
-index 14718696..67d0dbb4 100644
+index 3adcee65..46388575 100644
 --- a/src/overview/overview.cpp
 +++ b/src/overview/overview.cpp
 @@ -26,6 +26,7 @@ extern "C" {
@@ -320,7 +320,7 @@ index 14718696..67d0dbb4 100644
        blurUpdated = true;
      }
 diff --git a/src/scene/surface_blur.cpp b/src/scene/surface_blur.cpp
-index fbbc9833..4ec309c9 100644
+index 1c4d9f17..0b12cb88 100644
 --- a/src/scene/surface_blur.cpp
 +++ b/src/scene/surface_blur.cpp
 @@ -2,6 +2,7 @@
@@ -399,8 +399,8 @@ index fbbc9833..4ec309c9 100644
      if (!want) {
        if (m_node != nullptr) {
          wlr_scene_node_set_enabled(&m_node->node, false);
-@@ -118,21 +159,34 @@ namespace umbriel {
-     wlr_scene_buffer* shapeSource = wlr_scene_blur_get_transparency_mask_source(m_node);
+@@ -130,21 +171,34 @@ namespace umbriel {
+     wlr_scene_blur_set_clipped_region(m_node, frame);
      const pixman_region32_t* shape =
          shapeSource != nullptr ? wlr_scene_node_get_clip_region(&shapeSource->node) : nullptr;
 -    if (shape != nullptr) {
@@ -821,7 +821,7 @@ index 00000000..d4e91d5a
 +
 +} // namespace umbriel
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index fa95b074..7025b33d 100644
+index f9ad57be..fe3fe898 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
 @@ -29,6 +29,7 @@
@@ -863,7 +863,7 @@ index fa95b074..7025b33d 100644
      const Config::Appearance::Blur& blur = config().appearance.blur;
      wlr_scene_set_blur_data(
          m_scene, blur.passes, blur.radius, static_cast<float>(blur.noise), static_cast<float>(blur.brightness),
-@@ -1110,6 +1119,7 @@ namespace umbriel {
+@@ -1111,6 +1120,7 @@ namespace umbriel {
      wl_display_destroy_clients(m_display);
      m_drmLeaseManager.reset();
      m_colorManager.reset();
@@ -872,7 +872,7 @@ index fa95b074..7025b33d 100644
      m_syncobjUnmapRelease.reset();
      m_syncobjSupersededRelease.reset();
 diff --git a/src/server/server.h b/src/server/server.h
-index 5fa6d9ed..4c0ea7ad 100644
+index 06ba4f60..ba302e6c 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
 @@ -142,6 +142,7 @@ namespace umbriel {
@@ -900,7 +900,7 @@ index 5fa6d9ed..4c0ea7ad 100644
      std::unique_ptr<SyncobjUnmapRelease> m_syncobjUnmapRelease;
      std::unique_ptr<SyncobjSupersededRelease> m_syncobjSupersededRelease;
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index fbc90500..329fcf21 100644
+index 57a28f25..e43f0141 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
 @@ -902,6 +902,8 @@ namespace umbriel {
@@ -912,7 +912,7 @@ index fbc90500..329fcf21 100644
        // Screen and cursor presets take their palette from [colors] too.
        m_effects.applyOutputEffects();
        markDirty(Dirty::Backdrop);
-@@ -1340,7 +1342,9 @@ namespace umbriel {
+@@ -1367,7 +1369,9 @@ namespace umbriel {
      }
    }
  
@@ -923,7 +923,7 @@ index fbc90500..329fcf21 100644
      auto* popup = static_cast<wlr_xdg_popup*>(data);
      // Layer-shell popups (and any popup without a parent yet) are handled
      // elsewhere; parent can be null when xdg_shell emits new_popup.
-@@ -1348,7 +1352,7 @@ namespace umbriel {
+@@ -1375,7 +1379,7 @@ namespace umbriel {
        return;
      }
      View* owner = View::fromSurface(popup->parent);
@@ -1112,7 +1112,7 @@ index 66641847..0fb909a1 100644
  
      wl_listener m_commit{};
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index e7de53b3..627fb2e9 100644
+index d8579871..d2025204 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -148,6 +148,7 @@ namespace umbriel {
@@ -1132,7 +1132,7 @@ index e7de53b3..627fb2e9 100644
      if (m_effectSelectionIdle != nullptr) {
        wl_event_source_remove(m_effectSelectionIdle);
 diff --git a/src/view/view.h b/src/view/view.h
-index f3031e43..62e615a4 100644
+index bdce069f..835d4673 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -17,6 +17,7 @@
@@ -1143,7 +1143,7 @@ index f3031e43..62e615a4 100644
  #include <string>
  #include <string_view>
  #include <sys/types.h>
-@@ -646,8 +647,13 @@ namespace umbriel {
+@@ -657,8 +658,13 @@ namespace umbriel {
      void refreshConfigChrome();
      void updateBlur();
      void updateBlur(int contentWidth, int contentHeight);
@@ -1157,7 +1157,7 @@ index f3031e43..62e615a4 100644
      SurfaceBlurOptions popupBlurOptions() const { return m_decoration.popupBlurOptions(); }
      void updateShadow();
      void updateShadow(int contentWidth, int contentHeight);
-@@ -1112,6 +1118,8 @@ namespace umbriel {
+@@ -1137,6 +1143,8 @@ namespace umbriel {
      AnimatedValue m_ruleOpacity{1.0};
      AnimatedValue m_ruleBlur{0.0};
      bool m_backgroundRender = false;
@@ -1167,7 +1167,7 @@ index f3031e43..62e615a4 100644
      std::optional<bool> m_appliedSupersampleRule;
      float m_dragOpacity = 1.0F;
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 4cd2cf44..af5613c2 100644
+index 477e7b32..5229c090 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
 @@ -91,7 +91,7 @@ namespace umbriel {
@@ -1180,37 +1180,18 @@ index 4cd2cf44..af5613c2 100644
        m_chromeAttachment->setAlpha(chromeAlpha());
      }
 diff --git a/src/view/view_chrome.cpp b/src/view/view_chrome.cpp
-index d6668d66..709f18ac 100644
+index bd01cb2a..65704dba 100644
 --- a/src/view/view_chrome.cpp
 +++ b/src/view/view_chrome.cpp
-@@ -8,6 +8,7 @@
+@@ -9,6 +9,7 @@
  #include "overview/overview.h"
  #include "scene/effect_registry.h"
  #include "scene/surface_blur.h"
 +#include "server/background_effect.h"
  #include "server/server.h"
  #include "view/view.h"
- extern "C" {
-@@ -297,8 +298,17 @@ namespace umbriel {
-   }
  
-   void View::updateBlur() {
-+    // Blur follows the presented frame, like the shadow: an unacked configure or a resize animation shows a size the
-+    // committed content box does not describe.
-     const wlr_box content = committedContentBox();
--    updateBlur(content.width, content.height);
-+    const bool usePresentedSize =
-+        (m_tiled || sizeAnimating() || sizeGrabActive() || m_floating.pendingSize().has_value())
-+        && m_presentation.width() > 0
-+        && m_presentation.height() > 0;
-+    updateBlur(
-+        usePresentedSize ? m_presentation.width() : content.width,
-+        usePresentedSize ? m_presentation.height() : content.height
-+    );
-   }
- 
-   SurfaceBlurOptions View::blurOptions() const {
-@@ -312,6 +322,33 @@ namespace umbriel {
+@@ -341,6 +342,33 @@ namespace umbriel {
      return m_fadeAlpha * m_overviewOpacity * static_cast<float>(std::clamp(m_ruleBlur.current(), 0.0, 1.0));
    }
  
@@ -1244,7 +1225,7 @@ index d6668d66..709f18ac 100644
    void View::updateBlur(int contentWidth, int contentHeight) {
      UMBRIEL_ZONE("View::updateBlur");
      if (m_ssdFrame != nullptr) {
-@@ -327,9 +364,27 @@ namespace umbriel {
+@@ -356,9 +384,27 @@ namespace umbriel {
      // Content and its backdrop share a square seam below the title bar.
      const fx_corner_radii corners =
          titleBarHeight() > 0 ? corner_radii_new(0, 0, radius, radius) : corner_radii_all(radius);
@@ -1275,7 +1256,7 @@ index d6668d66..709f18ac 100644
    }
  
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 413f6123..536b2ea3 100644
+index 545debcf..5fa72e36 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
 @@ -175,6 +175,7 @@ namespace umbriel {
@@ -2301,7 +2282,7 @@ index a20f470b..180618ab 100644
            createPopup(state, std::nullopt);
            std::println("popup-requested");
 diff --git a/tests/meson.build b/tests/meson.build
-index 591451f0..6a27b6f5 100644
+index ebdaa2d8..63e51cd2 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
 @@ -16,6 +16,7 @@ unit_tests = [
@@ -2312,7 +2293,7 @@ index 591451f0..6a27b6f5 100644
    ['value-parse', ['unit/value_parse.cpp'], []],
    ['keybind-parse', ['unit/keybind_parse.cpp'], []],
    ['lid-state', ['unit/lid_state.cpp'], []],
-@@ -388,6 +389,19 @@ color_feedback_client = executable(
+@@ -399,6 +400,19 @@ color_feedback_client = executable(
    dependencies: [wayland_client_dep],
  )
  
@@ -2332,7 +2313,7 @@ index 591451f0..6a27b6f5 100644
  # Harness helper that logs the seat input events a window receives, for input state checks.
  seat_log_client = executable(
    'seat-log-client',
-@@ -542,6 +556,7 @@ harness_client_targets = [
+@@ -553,6 +567,7 @@ harness_client_targets = [
    input_capture_compositor,
    input_capture_client,
    color_feedback_client,

@@ -8,8 +8,8 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1540.ad46c7d
-pkgrel=9
+pkgver=0.1.0.r1549.3898f80
+pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -64,16 +64,20 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0018-underfull-strip-align.patch'
         '0019-background-effect.patch'
         '0020-adaptive-title-bar.patch'
-        '0021-minimize-animation.patch')
+        '0021-minimize-animation.patch'
+        '0022-scratchpad-close-animation.patch'
+        '0023-scratchpad-show-no-recentre.patch')
 sha256sums=('SKIP'
-            '797d118d903858403e3ea4e8de25567968d85118d928ad208c27225c1199cc3c'
+            '256956c62e5e137a3dc428d40c185ceaa16957776e26275d446cc1df18f4e7fd'
             '36442c0a3d52d421b94134fb81123155169d2cc43bde14d070e7d98c36cd068b'
             '837460c6faf16c956be535dd3d51c8d47cb2f6a66f951f1d2b0f630a49cea1ae'
             '99ae6cbc53708c78e4dd7fc0fb19507ac6db4e1f2a873ff185a106225d6564e5'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
-            '2afaf966628550c1aa9d0b2ab9dbed4dade3c51479355e4e295cbe36497b7af2'
+            '1f2a8649293e02ae4eaa20fc0ef5bcf52de034bfb16137ca433880458d0b20fa'
             'cbcd201aadb419aa9116417752700f9c336ec3103371d38a7f1acdfb0a44bf4e'
-            '4bc48f1e2f3e9c0138e9a66d9ea942a002e93177f35b28433864ade0491778b2')
+            '4bc48f1e2f3e9c0138e9a66d9ea942a002e93177f35b28433864ade0491778b2'
+            '11212162a0360e25d6d3e4c2719ebcd68acacabda79f9eefb1302e5f47a65945'
+            'ec5f48e98c1e9d2955aeb53379b8bf7fe0b9f29e3e3cc8d1392ac43e62840eef')
 
 pkgver() {
   cd "${_pkgname}"
@@ -94,7 +98,7 @@ prepare() {
   # Drag-release re-home waits for the deform settle (and the drag tree
   # demotes only when its last drag-presented view leaves). Upstream PR
   # noctalia-dev/umbriel#570; 0011-drag-deform-settle-crop.patch (sha256
-  # 797d118d…, ONE squashed patch — `git diff upstream/main..HEAD` at the merge
+  # 256956c6…, ONE squashed patch — `git diff upstream/main..HEAD` at the merge
   # 15dc93b8 on main@ad46c7d1, 13 files +1150/-9 — because the branch style is
   # merge commits and the per-commit stream conflicts on intermediate hunks once
   # main moves (the cursor.cpp tab-group region did). The union in resetMode keeps
@@ -106,6 +110,10 @@ prepare() {
   # ride's visibility ownership through the settle and a pinned landing, run
   # attach's re-parent through setSceneParent, and land the wait before keyboard
   # activation and workspace transfers travel.
+  # Re-cut 2026-11-09 on main@3898f805: #708 (4c11989d) added an
+  # opening-presentation settle block at the same spot in view_animation.cpp
+  # that the wait's backstop occupies. Both are kept, the wait first so the
+  # tick that settles the spring still ends it.
   # (0002, PR #508's
   # windows_drag physics tuning, merged upstream e045d637 and retired; 0003,
   # PR #548's floating release settle, merged
@@ -207,11 +215,14 @@ prepare() {
   # P2 on #715): flattened downstream
   # stack adaptation on
   # main@aa3b6b3e over 0011+0012+0013+0014+0018 (delta 34 files, +1782/-63,
-  # sha256 2afaf966…; the only downstream conflict is server.h's
+  # sha256 1f2a8649…; the only downstream conflict is server.h's
   # ColorDescription declarations next to BackgroundEffectManager).
   # CONTRIBUTING hunk re-cut 2026-11-07 for upstream ad46c7d1's condensed
   # "Never wait on the wall clock" bullet: same frame-callback sentence,
   # inserted into the new one-line rule instead of the old bullet list.
+  # Re-cut 2026-11-09 on main@3898f805: #708 (4c11989d) replaced the
+  # presented-frame blur sizing with chromeContentSize(), so the patch's copy
+  # of that block is dropped and the tree's version kept.
   # (Retire on merge: 0019 -> PR #715.)
   git apply -3 ../0019-background-effect.patch
 
@@ -237,6 +248,29 @@ prepare() {
   # node disabled only when the fade lands. Six commits cut on main@ad46c7d1 and applied unchanged on top of
   # 0011+0012+0013+0014+0018+0019+0020; sha256 4bc48f1e…. (Retire on merge: 0021 -> the minimize animation PR.)
   git apply -3 ../0021-minimize-animation.patch
+
+  # [animation.windows_out] inside a scratchpad: a closing member's snapshot draws in the pad's own tree, above its
+  # dim rect and blur, and its opacity follows the pad's backdrop fade, so closing a member fades like any window and
+  # hiding the pad takes a mid-close snapshot with it. Five commits cut on main@ad46c7d1 and applied unchanged on top
+  # of 0011+0012+0013+0014+0018+0019+0020+0021; sha256 11212162…. The review rounds resolve the dialog's pad output
+  # before its attachment is released and reap each wrapper layer on the tick that frees its snapshot.
+  # (Retire on merge: 0022 -> the scratchpad close animation PR.)
+  git apply -3 ../0022-scratchpad-close-animation.patch
+
+  # [scratchpad] showing a pad: the show path carried its own framing rule — a
+  # presenting member whose centre fell outside the pad's usable area was
+  # snapped to that area's exact centre — which contradicted the floating
+  # margin 0003/PR #548 established, so a window legitimately hanging off an
+  # output edge teleported on every show and every reopen. The rule is gone: a
+  # show presents members where they are, a pad that changes output still
+  # remaps them proportionally, and a member returning to an output that went
+  # away is clamped to the grabbable margin like any other restore. Admission
+  # keeps an arriving window in the pad's own basis only for an interactive
+  # move into a pad already showing elsewhere. Three commits cut on
+  # main@3898f805 and applied on top of 0011..0022; sha256 ec5f48e9…; the pin
+  # is tests/harness/checks/scratchpad/reopen_keeps_position.sh.
+  # (Retire on merge: 0023 -> the scratchpad show PR.)
+  git apply -3 ../0023-scratchpad-show-no-recentre.patch
 }
 
 build() {

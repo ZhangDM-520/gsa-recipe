@@ -1,0 +1,992 @@
+From b74b1d149cb8bd360a6d101ccd7512217635c34f Mon Sep 17 00:00:00 2001
+From: ZhangDM-520 <jixianqiang1540@gmail.com>
+Date: Mon, 9 Nov 2026 00:17:32 +0800
+Subject: [PATCH 1/3] fix(scratchpad): never reframe a member when a pad is
+ shown
+
+Showing a scratchpad moved any member whose centre lay outside the pad's usable area to the exact centre of that area.
+That test contradicted the floating margin, which lets a window hang off an edge as long as part of it stays
+grabbable: a 400x240 member at x = -300 (100 px visible, inside the margin) was teleported to 440,240 on a 1280x720
+output, on every first show and therefore on every reopen.
+
+A show now presents members where they are. The framing policy stays where the floating settle put it, and a pad that
+changes output keeps remapping its members in moveScratchpad(), which also carries the area a pad was last sized
+against while every output is absent.
+
+tests/harness/checks/scratchpad/reopen_keeps_position.sh pins both: the hanging-off member keeps -300,100 across
+show, hide and reopen (440,240 before), and a pad shown on the second output lands the member at that output's edge
+(1280,100) instead of its centre (1720,240).
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+---
+ docs/user/scratchpad.md                       |   2 +
+ src/workspace/scratchpad.cpp                  |  24 +--
+ .../scratchpad/reopen_keeps_position.sh       | 142 ++++++++++++++++++
+ 3 files changed, 149 insertions(+), 19 deletions(-)
+ create mode 100755 tests/harness/checks/scratchpad/reopen_keeps_position.sh
+
+diff --git a/docs/user/scratchpad.md b/docs/user/scratchpad.md
+index 292a0ca6..a354f73b 100644
+--- a/docs/user/scratchpad.md
++++ b/docs/user/scratchpad.md
+@@ -159,6 +159,8 @@ A dialog parented to a visible scratchpad window joins that scratchpad unless a
+ 
+ Backdrop dim and blur affect only the output showing the scratchpad.
+ 
++Showing a scratchpad never moves its windows: a member stays where it was left, including a floating window hanging off an output edge as far as a floating window may. Only a scratchpad that moves to another output repositions its members, which keep their position relative to that output.
++
+ ## Restoring windows
+ 
+ Each member remembers its source output, workspace, and tiled or floating state. If that output or workspace no longer exists, Umbriel restores the window to the scratchpad's current output and active workspace.
+diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
+index 846bad42..4772ed43 100644
+--- a/src/workspace/scratchpad.cpp
++++ b/src/workspace/scratchpad.cpp
+@@ -428,7 +428,6 @@ namespace umbriel {
+       state->active = false;
+     }
+     Output* output = state->output;
+-    const wlr_box targetArea = usableArea(*m_server, output);
+     const auto& animation = config().animation;
+     const auto& scratchpad = animation.scratchpad;
+     const bool animate = animateTransition && output != nullptr && animation.enabled && scratchpad.enabled;
+@@ -445,22 +444,8 @@ namespace umbriel {
+         std::erase(m_hidingViews, view);
+         view->cancelPositionAnimation();
+         view->setNodeEnabled(true);
+-        const int width = view->presentation().width();
+-        const int height = view->presentation().height();
+-        if (width > 0 && height > 0 && targetArea.width > 0 && targetArea.height > 0) {
+-          const int centerX = view->layoutX() + width / 2;
+-          const int centerY = view->layoutY() + height / 2;
+-          const bool centerOnTarget = centerX >= targetArea.x
+-              && centerX < targetArea.x + targetArea.width
+-              && centerY >= targetArea.y
+-              && centerY < targetArea.y + targetArea.height;
+-          if (!centerOnTarget) {
+-            view->snapPosition(
+-                targetArea.x + std::max(0, (targetArea.width - width) / 2),
+-                targetArea.y + std::max(0, (targetArea.height - height) / 2)
+-            );
+-          }
+-        }
++        // A show never reframes a member: the floating margin keeps a window grabbable wherever it was left, and a pad
++        // that changes output remaps its members in moveScratchpad().
+         if (animate) {
+           view->animateFadeTo(1.0F, scratchpad.durationMs, scratchpad.curve);
+         } else {
+@@ -551,8 +536,9 @@ namespace umbriel {
+       if (clearDisplacement) {
+         entry.displacedPosition.reset();
+       }
+-      if ((previous != nullptr || proportionalSize)
+-          && output != nullptr
++      // A pad with no output keeps the last area it was sized against, so members land on the output that replaces it
++      // instead of keeping coordinates that belong to the dead one.
++      if (output != nullptr
+           && previousArea.width > 0
+           && previousArea.height > 0
+           && targetArea.width > 0
+diff --git a/tests/harness/checks/scratchpad/reopen_keeps_position.sh b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+new file mode 100755
+index 00000000..19ddf5c1
+--- /dev/null
++++ b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+@@ -0,0 +1,142 @@
++#!/usr/bin/env bash
++# harness: outputs=2
++# Showing a scratchpad leaves its members where they are. A window that hangs off an edge but keeps its grabbable
++# margin is untouched, however far its centre lies outside the pad's usable area, and a reopen after a hide is
++# identical to the first show. A pad whose output comes back at a new layout position lands its members on that output
++# with their output-relative position kept, not at its centre.
++set -euo pipefail
++
++readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
++readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
++readonly TITLE=reopen-member
++readonly SHOTS="$UMBRIEL_RUNTIME_DIR/reopen-keeps-position"
++# 400x240 at x = -300 leaves 100 px visible, inside the 75 px float margin, with its centre 100 px off the output.
++readonly EDGE_X=-300
++readonly EDGE_Y=100
++mkdir -p "$SHOTS"
++
++windows() { "$UMBRIEL" windows --json; }
++
++field_of() {
++  local title=$1 field=$2
++  windows | jq -r --arg title "$title" --arg field "$field" '.[] | select(.title == $title) | .[$field]'
++}
++
++wait_for_field() {
++  local title=$1 field=$2 expected=$3 actual=
++  for _ in $(seq 80); do
++    actual=$(field_of "$title" "$field")
++    [[ $actual == "$expected" ]] && return 0
++    sleep 0.05
++  done
++  echo "expected '$title' $field to be '$expected', got '$actual': $(windows)"
++  return 1
++}
++
++cat >> "$UMBRIEL_CONFIG" <<'EOF'
++
++[colors]
++backdrop = "#000000FF"
++
++[animation]
++enabled = false
++
++[animation.scratchpad]
++enabled = false
++dim = 0.0
++
++[appearance]
++border_width = 0
++outer_border_width = 0
++corner_radius = 0
++
++[appearance.shadow]
++enabled = false
++
++[output.HEADLESS-1]
++enabled = true
++mode = "1280x720"
++position = [0, 0]
++
++[output.HEADLESS-2]
++enabled = true
++mode = "1280x720"
++position = [1280, 0]
++
++[[window_rule]]
++match.title = "^reopen-"
++default_output = "HEADLESS-1"
++default_floating = true
++default_floating_size_px = { width = 400, height = 240 }
++default_position = { x = -300, y = 100, anchor = "top_left" }
++EOF
++"$UMBRIEL" msg config-reload > /dev/null
++# The pad actions resolve their output from the pointer, which starts outside the two-output layout.
++"$POINTER" 2560 720 move 640 360
++"$UMBRIEL" clock-freeze
++
++spawn() {
++  FILL_COLOR=0xFF5577AA "$CLIENT" "$TITLE" 400 240 > "$UMBRIEL_RUNTIME_DIR/$TITLE.log" 2>&1 &
++  for _ in $(seq 100); do
++    grep -q '^mapped$' "$UMBRIEL_RUNTIME_DIR/$TITLE.log" && return 0
++    sleep 0.025
++  done
++  echo "client never mapped: $(cat "$UMBRIEL_RUNTIME_DIR/$TITLE.log")"
++  exit 1
++}
++
++spawn
++wait_for_field "$TITLE" x "$EDGE_X"
++wait_for_field "$TITLE" y "$EDGE_Y"
++
++# Leg A: the report — a show must not reframe a member whose centre is outside the usable area.
++"$UMBRIEL" msg window-focus "$(field_of "$TITLE" id)" > /dev/null
++"$UMBRIEL" msg window-move-to-scratchpad > /dev/null
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++wait_for_field "$TITLE" scratchpad default
++if [[ $(field_of "$TITLE" x) != "$EDGE_X" || $(field_of "$TITLE" y) != "$EDGE_Y" ]]; then
++  echo "showing the scratchpad moved its member: $(windows)"
++  exit 1
++fi
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++if [[ $(field_of "$TITLE" x) != "$EDGE_X" || $(field_of "$TITLE" y) != "$EDGE_Y" ]]; then
++  echo "reopening the scratchpad moved its member: $(windows)"
++  exit 1
++fi
++
++# The member is still grabbable: its visible strip is on the output, so a check cannot pass by leaving it lost.
++grim "$SHOTS/shown.png"
++visible_pixels=$("$UMBRIEL_PIXEL_PROBE" "$SHOTS/shown.png" count 'r < 0.45 && g > 0.28 && b > 0.55')
++if ((visible_pixels < 5000)); then
++  echo "scratchpad member was not visible on the output after its reopen: pixels=$visible_pixels"
++  exit 1
++fi
++
++# Leg B: a pad shown on another output carries its member there with its output-relative position, and does not park it
++# at that output's centre either.
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++"$POINTER" 2560 720 move 1920 360
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++wait_for_field "$TITLE" output HEADLESS-2
++wait_for_field "$TITLE" scratchpad default
++moved_x=$(field_of "$TITLE" x)
++moved_y=$(field_of "$TITLE" y)
++if ((moved_x < 1280)); then
++  echo "the member did not land on the pad's new output: $moved_x,$moved_y"
++  exit 1
++fi
++centre_x=$((1280 + (1280 - 400) / 2))
++centre_y=$(((720 - 240) / 2))
++if ((moved_x == centre_x && moved_y == centre_y)); then
++  echo "the member was centred on the pad's new output instead of keeping its place: $moved_x,$moved_y"
++  exit 1
++fi
++grim -o HEADLESS-2 "$SHOTS/moved.png"
++moved_pixels=$("$UMBRIEL_PIXEL_PROBE" "$SHOTS/moved.png" count 'r < 0.45 && g > 0.28 && b > 0.55')
++if ((moved_pixels < 5000)); then
++  echo "the member was not visible on the pad's new output: pixels=$moved_pixels"
++  exit 1
++fi
++
++echo "scratchpad shows kept their member at $EDGE_X,$EDGE_Y and a pad moved to another output placed it at $moved_x,$moved_y"
+-- 
+2.56.0.341.gebdc087dc9
+
+From eda5ca858233d7ea07fdf42509b965758302e645 Mon Sep 17 00:00:00 2001
+From: ZhangDM-520 <jixianqiang1540@gmail.com>
+Date: Mon, 9 Nov 2026 00:49:19 +0800
+Subject: [PATCH 2/3] fix(scratchpad): carry an arriving window into the pad's
+ own output
+
+Review of the show-reframing fix found two places where a pad could still
+leak another output's coordinates onto the output it shows on.
+
+A window moved into a pad that already shows on a different output kept the
+coordinates of the output it arrived on. The pad presents it on its own
+output, so the window could sit off screen for as long as the pad stayed
+shown. Admission now remaps it from the arrival output's usable area into the
+pad's, the same proportional remap a member gets when the pad changes output.
+
+A member restored to an output that went away and came back used the plain
+product of its saved fraction and the new box. The fraction is proportional
+but the grabbable margin is a fixed band, so a wider replacement scaled a
+legal hanging position past the margin and left the window out of reach.
+The restore goes through the same clamp as every other floating restore.
+
+tests/harness/checks/scratchpad/reopen_keeps_position.sh pins both: a window
+focused on the first output joins a pad already showing on the second
+(100,100 before), and a member hanging at x = -300 off an 800x600 output
+comes back at -325 instead of -600 when a 1600x900 output replaces it.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+---
+ docs/user/scratchpad.md                       |   2 +-
+ src/workspace/scratchpad.cpp                  |  22 +-
+ .../scratchpad/reopen_keeps_position.sh       | 254 ++++++++++++++----
+ 3 files changed, 216 insertions(+), 62 deletions(-)
+
+diff --git a/docs/user/scratchpad.md b/docs/user/scratchpad.md
+index a354f73b..b7d2dba7 100644
+--- a/docs/user/scratchpad.md
++++ b/docs/user/scratchpad.md
+@@ -159,7 +159,7 @@ A dialog parented to a visible scratchpad window joins that scratchpad unless a
+ 
+ Backdrop dim and blur affect only the output showing the scratchpad.
+ 
+-Showing a scratchpad never moves its windows: a member stays where it was left, including a floating window hanging off an output edge as far as a floating window may. Only a scratchpad that moves to another output repositions its members, which keep their position relative to that output.
++Showing a scratchpad never moves a floating window it holds: the window stays where it was left, including hanging off an output edge as far as a floating window may. A window moves only with the output it belongs to. A pad that moves to another output carries its members proportionally and pulls an overhanging one back inside the destination, a window joining a pad that already shows on another output joins that output, an output whose usable area changes refits its members, and a maximized member is refitted to the output each time the pad is shown.
+ 
+ ## Restoring windows
+ 
+diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
+index 4772ed43..513bfd4a 100644
+--- a/src/workspace/scratchpad.cpp
++++ b/src/workspace/scratchpad.cpp
+@@ -268,6 +268,9 @@ namespace umbriel {
+     const bool sameScratchpad = existing != nullptr && existing->scratchpad == name;
+     const bool wasActivated = view->activated();
+     Output* sourceOutput = options.focusOrigin != nullptr ? options.focusOrigin : view->currentOutput();
++    // Read before the member joins the pad: a pad already showing elsewhere keeps the window in the basis it arrived
++    // in.
++    Output* arrivalOutput = view->currentOutput();
+     std::string previousScratchpad;
+     // Set when the window leaving another scratchpad was the one that scratchpad showed on its own.
+     bool leftPreviousSolo = false;
+@@ -373,6 +376,13 @@ namespace umbriel {
+     }
+     view->setSceneParent(m_root);
+     view->setInScratchpad(true);
++    // A pad already showing on another output carries the arriving window into its own basis, the same remap a member
++    // gets when the pad changes output, instead of keeping coordinates that belong to the output it arrived on.
++    if (arrivalOutput != nullptr && arrivalOutput != output) {
++      remapViewGeometry(
++          view, usableArea(*m_server, arrivalOutput), usableArea(*m_server, output), usesProportionalSize(name), true
++      );
++    }
+     scratchpad->pendingSpawn.reset();
+     const bool visible = scratchpad->visible;
+     // A pad showing one window shows a window the user moves in, in place of the others; a dialog brings the member it
+@@ -1450,10 +1460,14 @@ namespace umbriel {
+               || entry.view->m_floatingMaximized;
+           if (entry.displacedPosition && !managerOwnedGeometry && homeArea.width > 0 && homeArea.height > 0) {
+             entry.view->cancelPositionAnimation();
+-            entry.view->setPosition(
+-                homeArea.x + static_cast<int>(std::lround((*entry.displacedPosition)[0] * homeArea.width)),
+-                homeArea.y + static_cast<int>(std::lround((*entry.displacedPosition)[1] * homeArea.height))
+-            );
++            const FloatingPoint restored{
++                .x = homeArea.x + static_cast<int>(std::lround((*entry.displacedPosition)[0] * homeArea.width)),
++                .y = homeArea.y + static_cast<int>(std::lround((*entry.displacedPosition)[1] * homeArea.height)),
++            };
++            // A wider output scales the fraction past the grabbable margin, so the placement is clamped like any other
++            // restore.
++            const FloatingPoint origin = entry.view->grabbableOrigin(restored, home->usableArea());
++            entry.view->setPosition(origin.x, origin.y);
+             if (scratchpad->visible) {
+               restorePresentation(entry.view);
+             }
+diff --git a/tests/harness/checks/scratchpad/reopen_keeps_position.sh b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+index 19ddf5c1..ffe3b038 100755
+--- a/tests/harness/checks/scratchpad/reopen_keeps_position.sh
++++ b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+@@ -1,18 +1,26 @@
+ #!/usr/bin/env bash
+ # harness: outputs=2
+-# Showing a scratchpad leaves its members where they are. A window that hangs off an edge but keeps its grabbable
+-# margin is untouched, however far its centre lies outside the pad's usable area, and a reopen after a hide is
+-# identical to the first show. A pad whose output comes back at a new layout position lands its members on that output
+-# with their output-relative position kept, not at its centre.
++# A scratchpad never reframes a floating member it shows: a window hanging off an output edge but still grabbable keeps
++# its place across a hide and a reopen. Movement belongs to the pad's output changes instead, which carry members to the
++# new output: one admitted while the pad already shows elsewhere joins that output, one dropped with every output
++# remains inside the output that replaces them, one hanging off a replaced output stays grabbable, and none of them is
++# parked at an output's centre.
+ set -euo pipefail
+ 
+ readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
+ readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
+-readonly TITLE=reopen-member
++readonly EDGE_TITLE=edge-member
++readonly ARRIVING_TITLE=arriving-member
++readonly HANGING_TITLE=hanging-member
+ readonly SHOTS="$UMBRIEL_RUNTIME_DIR/reopen-keeps-position"
+-# 400x240 at x = -300 leaves 100 px visible, inside the 75 px float margin, with its centre 100 px off the output.
++# 400x240 at x = -300 leaves 100 px visible, inside the 75 px float margin, with its centre off the output.
+ readonly EDGE_X=-300
+ readonly EDGE_Y=100
++readonly HANGING_Y=200
++readonly WIDTH=400
++readonly HEIGHT=240
++# The float margin keeps this many pixels of the frame on the output.
++readonly MARGIN=75
+ mkdir -p "$SHOTS"
+ 
+ windows() { "$UMBRIEL" windows --json; }
+@@ -33,7 +41,49 @@ wait_for_field() {
+   return 1
+ }
+ 
+-cat >> "$UMBRIEL_CONFIG" <<'EOF'
++wait_for_scratchpad() {
++  local title=$1 expected=$2 actual=
++  for _ in $(seq 80); do
++    actual=$(field_of "$title" scratchpad)
++    [[ $actual == "$expected" ]] && return 0
++    sleep 0.05
++  done
++  echo "expected '$title' to belong to scratchpad '$expected', got '$actual': $(windows)"
++  return 1
++}
++
++ensure_output() {
++  local name=$1 mode=$2
++  if ! "$UMBRIEL" outputs --json | jq -e --arg name "$name" '.[] | select(.name == $name)' > /dev/null; then
++    "$UMBRIEL" output-create "$name" "$mode" > /dev/null
++    "$UMBRIEL" msg config-reload > /dev/null
++  fi
++}
++
++spawn() {
++  local title=$1
++  FILL_COLOR=0xFF5577AA "$CLIENT" "$title" "$WIDTH" "$HEIGHT" > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
++  for _ in $(seq 100); do
++    grep -q '^mapped$' "$UMBRIEL_RUNTIME_DIR/$title.log" && return 0
++    sleep 0.025
++  done
++  echo "client $title never mapped: $(cat "$UMBRIEL_RUNTIME_DIR/$title.log")"
++  exit 1
++}
++
++visible_pixels() {
++  local image=$1 output=$2
++  grim -o "$output" "$image"
++  "$UMBRIEL_PIXEL_PROBE" "$image" count 'r < 0.45 && g > 0.28 && b > 0.55'
++}
++
++readonly BASELINE=$(< "$UMBRIEL_CONFIG")
++
++# The common body plus the outputs of the current phase, so the last leg can rewrite them without duplicate tables.
++write_config() {
++  {
++    printf '%s\n' "$BASELINE"
++    cat <<'COMMON'
+ 
+ [colors]
+ backdrop = "#000000FF"
+@@ -53,6 +103,33 @@ corner_radius = 0
+ [appearance.shadow]
+ enabled = false
+ 
++[[window_rule]]
++match.title = "^edge-member$"
++default_output = "HEADLESS-1"
++default_floating = true
++default_floating_size_px = { width = 400, height = 240 }
++default_position = { x = -300, y = 100, anchor = "top_left" }
++
++[[window_rule]]
++match.title = "^hanging-member$"
++default_output = "HEADLESS-2"
++default_floating = true
++default_floating_size_px = { width = 400, height = 240 }
++default_position = { x = -300, y = 200, anchor = "top_left" }
++default_scratchpad = "default"
++
++[[window_rule]]
++match.title = "^arriving-member$"
++default_output = "HEADLESS-1"
++default_floating = true
++default_floating_size_px = { width = 400, height = 240 }
++default_position = { x = 100, y = 100, anchor = "top_left" }
++COMMON
++    printf '\n%s\n' "$1"
++  } > "$UMBRIEL_CONFIG"
++}
++
++readonly TWO_OUTPUTS='
+ [output.HEADLESS-1]
+ enabled = true
+ mode = "1280x720"
+@@ -61,82 +138,145 @@ position = [0, 0]
+ [output.HEADLESS-2]
+ enabled = true
+ mode = "1280x720"
+-position = [1280, 0]
++position = [1280, 0]'
++readonly ONE_OUTPUT='
+ 
+-[[window_rule]]
+-match.title = "^reopen-"
+-default_output = "HEADLESS-1"
+-default_floating = true
+-default_floating_size_px = { width = 400, height = 240 }
+-default_position = { x = -300, y = 100, anchor = "top_left" }
+-EOF
++[output.HEADLESS-2]
++enabled = true
++mode = "800x600"
++position = [0, 0]'
++readonly SMALL_PLUS='
++
++[output.HEADLESS-2]
++enabled = true
++mode = "800x600"
++position = [0, 0]
++
++[output.HEADLESS-1]
++enabled = true
++mode = "1280x720"
++position = [800, 0]'
++readonly WIDE_RETURN='
++
++[output.HEADLESS-2]
++enabled = true
++mode = "1600x900"
++position = [0, 0]
++
++[output.HEADLESS-1]
++enabled = true
++mode = "1280x720"
++position = [1600, 0]'
++
++write_config "$TWO_OUTPUTS"
+ "$UMBRIEL" msg config-reload > /dev/null
+ # The pad actions resolve their output from the pointer, which starts outside the two-output layout.
+ "$POINTER" 2560 720 move 640 360
+ "$UMBRIEL" clock-freeze
+ 
+-spawn() {
+-  FILL_COLOR=0xFF5577AA "$CLIENT" "$TITLE" 400 240 > "$UMBRIEL_RUNTIME_DIR/$TITLE.log" 2>&1 &
+-  for _ in $(seq 100); do
+-    grep -q '^mapped$' "$UMBRIEL_RUNTIME_DIR/$TITLE.log" && return 0
+-    sleep 0.025
+-  done
+-  echo "client never mapped: $(cat "$UMBRIEL_RUNTIME_DIR/$TITLE.log")"
+-  exit 1
+-}
+-
+-spawn
+-wait_for_field "$TITLE" x "$EDGE_X"
+-wait_for_field "$TITLE" y "$EDGE_Y"
+-
+-# Leg A: the report — a show must not reframe a member whose centre is outside the usable area.
+-"$UMBRIEL" msg window-focus "$(field_of "$TITLE" id)" > /dev/null
++# Leg A: a show must not reframe a member whose centre lies outside the pad's usable area.
++spawn "$EDGE_TITLE"
++wait_for_field "$EDGE_TITLE" x "$EDGE_X"
++"$UMBRIEL" msg window-focus "$(field_of "$EDGE_TITLE" id)" > /dev/null
+ "$UMBRIEL" msg window-move-to-scratchpad > /dev/null
+ "$UMBRIEL" msg scratchpad-toggle > /dev/null
+-wait_for_field "$TITLE" scratchpad default
+-if [[ $(field_of "$TITLE" x) != "$EDGE_X" || $(field_of "$TITLE" y) != "$EDGE_Y" ]]; then
++wait_for_scratchpad "$EDGE_TITLE" default
++if [[ $(field_of "$EDGE_TITLE" x) != "$EDGE_X" || $(field_of "$EDGE_TITLE" y) != "$EDGE_Y" ]]; then
+   echo "showing the scratchpad moved its member: $(windows)"
+   exit 1
+ fi
+ "$UMBRIEL" msg scratchpad-toggle > /dev/null
+ "$UMBRIEL" msg scratchpad-toggle > /dev/null
+-if [[ $(field_of "$TITLE" x) != "$EDGE_X" || $(field_of "$TITLE" y) != "$EDGE_Y" ]]; then
++if [[ $(field_of "$EDGE_TITLE" x) != "$EDGE_X" || $(field_of "$EDGE_TITLE" y) != "$EDGE_Y" ]]; then
+   echo "reopening the scratchpad moved its member: $(windows)"
+   exit 1
+ fi
+-
+-# The member is still grabbable: its visible strip is on the output, so a check cannot pass by leaving it lost.
+-grim "$SHOTS/shown.png"
+-visible_pixels=$("$UMBRIEL_PIXEL_PROBE" "$SHOTS/shown.png" count 'r < 0.45 && g > 0.28 && b > 0.55')
+-if ((visible_pixels < 5000)); then
+-  echo "scratchpad member was not visible on the output after its reopen: pixels=$visible_pixels"
++# The member is still grabbable, so the leg cannot pass by leaving a window lost off the output.
++if (( $(visible_pixels "$SHOTS/shown.png" HEADLESS-1) < 5000 )); then
++  echo "scratchpad member was not visible on its output after the reopen: $(windows)"
+   exit 1
+ fi
+ 
+-# Leg B: a pad shown on another output carries its member there with its output-relative position, and does not park it
+-# at that output's centre either.
++# Leg B: the pad moving to the other output carries its member there, at that output's edge and not its centre.
+ "$UMBRIEL" msg scratchpad-toggle > /dev/null
+ "$POINTER" 2560 720 move 1920 360
+ "$UMBRIEL" msg scratchpad-toggle > /dev/null
+-wait_for_field "$TITLE" output HEADLESS-2
+-wait_for_field "$TITLE" scratchpad default
+-moved_x=$(field_of "$TITLE" x)
+-moved_y=$(field_of "$TITLE" y)
+-if ((moved_x < 1280)); then
+-  echo "the member did not land on the pad's new output: $moved_x,$moved_y"
++wait_for_field "$EDGE_TITLE" output HEADLESS-2
++wait_for_scratchpad "$EDGE_TITLE" default
++moved_x=$(field_of "$EDGE_TITLE" x)
++moved_y=$(field_of "$EDGE_TITLE" y)
++if ((moved_x != 1280 || moved_y != EDGE_Y)); then
++  echo "the member did not land at the new output's edge: $moved_x,$moved_y"
+   exit 1
+ fi
+-centre_x=$((1280 + (1280 - 400) / 2))
+-centre_y=$(((720 - 240) / 2))
+-if ((moved_x == centre_x && moved_y == centre_y)); then
+-  echo "the member was centred on the pad's new output instead of keeping its place: $moved_x,$moved_y"
++if (( $(visible_pixels "$SHOTS/moved.png" HEADLESS-2) < 5000 )); then
++  echo "the member was not visible on the pad's new output: $(windows)"
+   exit 1
+ fi
+-grim -o HEADLESS-2 "$SHOTS/moved.png"
+-moved_pixels=$("$UMBRIEL_PIXEL_PROBE" "$SHOTS/moved.png" count 'r < 0.45 && g > 0.28 && b > 0.55')
+-if ((moved_pixels < 5000)); then
+-  echo "the member was not visible on the pad's new output: pixels=$moved_pixels"
++
++# Leg C: moving a window that sits on the first output into a pad already showing on the second joins the pad's output.
++# The action addresses the window focused on the pointer's output, so the pointer returns to the first output while the
++# pad stays visible on the second.
++spawn "$ARRIVING_TITLE"
++wait_for_field "$ARRIVING_TITLE" output HEADLESS-1
++"$UMBRIEL" msg window-focus "$(field_of "$ARRIVING_TITLE" id)" > /dev/null
++"$POINTER" 2560 720 move 640 360
++"$UMBRIEL" msg window-move-to-scratchpad > /dev/null
++wait_for_scratchpad "$ARRIVING_TITLE" default
++arriving_x=$(field_of "$ARRIVING_TITLE" x)
++if [[ $(field_of "$ARRIVING_TITLE" output) != HEADLESS-2 ]] || ((arriving_x < 1280)); then
++  echo "the arriving member kept the output it mapped on instead of joining the pad: $(windows)"
++  exit 1
++fi
++
++# Leg D: with every output gone, the members come back inside whichever output replaces them.
++"$UMBRIEL" output-destroy HEADLESS-1 > /dev/null
++"$UMBRIEL" output-destroy HEADLESS-2 > /dev/null
++write_config "$ONE_OUTPUT"
++"$UMBRIEL" msg config-reload > /dev/null
++if [[ $("$UMBRIEL" output-create HEADLESS-2 800x600) != HEADLESS-2 ]]; then
++  echo "the replacement output could not be created"
+   exit 1
+ fi
++for _ in $(seq 80); do
++  [[ $(field_of "$ARRIVING_TITLE" output) == HEADLESS-2 ]] && break
++  sleep 0.05
++done
++for title in "$ARRIVING_TITLE" "$EDGE_TITLE"; do
++  if [[ $(field_of "$title" output) != HEADLESS-2 ]]; then
++    echo "'$title' did not return to the replacement output: $(windows)"
++    exit 1
++  fi
++  x=$(field_of "$title" x)
++  y=$(field_of "$title" y)
++  if ((x < 0 || x + WIDTH > 800 || y < 0 || y + HEIGHT > 600)); then
++    echo "'$title' came back outside the replacement output at $x,$y: $(windows)"
++    exit 1
++  fi
++done
+ 
+-echo "scratchpad shows kept their member at $EDGE_X,$EDGE_Y and a pad moved to another output placed it at $moved_x,$moved_y"
++# Leg E: a member hanging off an output that goes away comes back reachable on the wider output that replaces it,
++# instead of proportionally off screen.
++write_config "$SMALL_PLUS"
++"$UMBRIEL" msg config-reload > /dev/null
++ensure_output HEADLESS-1 1280x720
++spawn "$HANGING_TITLE"
++wait_for_field "$HANGING_TITLE" x "$EDGE_X"
++wait_for_field "$HANGING_TITLE" y "$HANGING_Y"
++wait_for_scratchpad "$HANGING_TITLE" default
++"$UMBRIEL" output-destroy HEADLESS-2 > /dev/null
++wait_for_field "$HANGING_TITLE" output HEADLESS-1
++write_config "$WIDE_RETURN"
++"$UMBRIEL" msg config-reload > /dev/null
++ensure_output HEADLESS-2 1600x900
++for _ in $(seq 80); do
++  [[ $(field_of "$HANGING_TITLE" output) == HEADLESS-2 ]] && break
++  sleep 0.05
++done
++hanging_x=$(field_of "$HANGING_TITLE" x)
++hanging_y=$(field_of "$HANGING_TITLE" y)
++if ((hanging_x < -(WIDTH - MARGIN) || hanging_x + WIDTH <= 0 || hanging_y + HEIGHT <= 0)); then
++  echo "'$HANGING_TITLE' came back out of reach at $hanging_x,$hanging_y inside the wider output: $(windows)"
++  exit 1
++fi
++echo "scratchpad shows kept their member at $EDGE_X,$EDGE_Y, the pad moved it to $moved_x,$moved_y, an arrival joined at $arriving_x, all came back inside the replacement output, and a hanging member came back at $hanging_x,$hanging_y"
+-- 
+2.56.0.341.gebdc087dc9
+
+From aa40f58722c17756b7901a3b7e591892bb6dad71 Mon Sep 17 00:00:00 2001
+From: ZhangDM-520 <jixianqiang1540@gmail.com>
+Date: Mon, 9 Nov 2026 01:25:32 +0800
+Subject: [PATCH 3/3] fix(scratchpad): remap only a window the user moves into
+ a showing pad
+
+The admit-time remap ran for every admission that arrived from another
+output, which fought the two paths that place a window themselves.
+
+A window that is still opening is placed by View::handleMap() against the
+pad's output after admission, so an output that differs from the one the
+window arrived on is expected there: remapping it scaled a proportional
+window a second time, by the ratio of the two usable areas, and centred the
+placement on a size the window no longer had. A rule admission is followed
+by its own summon back to the rule's output, so remapping it into the pad's
+current output first and then back out clamped the overhang away.
+
+The remap now applies to an interactive admission of an already-placed
+window: the one shape where the pad presents a window the user moved into
+it somewhere else, and nothing else places it.
+
+tests/harness/checks/scratchpad/reopen_keeps_position.sh pins it: a
+proportional pad showing on another output opens a 600x400 window at
+600x400 (480x320 before). The check also stops recreating the connector a
+pad was displaced from, so the replacement-output leg now fails at
+1280,1380 instead of only passing through the displaced restore, and it
+asserts the exact margin and basis positions instead of one-sided bounds.
+
+Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+---
+ src/workspace/scratchpad.cpp                  |  12 +-
+ .../scratchpad/reopen_keeps_position.sh       | 143 +++++++++++-------
+ 2 files changed, 97 insertions(+), 58 deletions(-)
+
+diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
+index 513bfd4a..45b8cf74 100644
+--- a/src/workspace/scratchpad.cpp
++++ b/src/workspace/scratchpad.cpp
+@@ -376,9 +376,15 @@ namespace umbriel {
+     }
+     view->setSceneParent(m_root);
+     view->setInScratchpad(true);
+-    // A pad already showing on another output carries the arriving window into its own basis, the same remap a member
+-    // gets when the pad changes output, instead of keeping coordinates that belong to the output it arrived on.
+-    if (arrivalOutput != nullptr && arrivalOutput != output) {
++    // A pad already showing on another output carries a window the user moves into it into the pad's own basis, the
++    // same remap a member gets when the pad changes output, instead of keeping coordinates that belong to the output
++    // it arrived on. Only an interactive admission qualifies: a window that is still opening is placed afterwards by
++    // View::handleMap against the pad's output, and a rule admission is followed by its own summon back to the rule's
++    // output, so remapping either would scale or clamp the window twice.
++    if (admission == Admission::Interactive
++        && view->positioned()
++        && arrivalOutput != nullptr
++        && arrivalOutput != output) {
+       remapViewGeometry(
+           view, usableArea(*m_server, arrivalOutput), usableArea(*m_server, output), usesProportionalSize(name), true
+       );
+diff --git a/tests/harness/checks/scratchpad/reopen_keeps_position.sh b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+index ffe3b038..d554e061 100755
+--- a/tests/harness/checks/scratchpad/reopen_keeps_position.sh
++++ b/tests/harness/checks/scratchpad/reopen_keeps_position.sh
+@@ -2,21 +2,26 @@
+ # harness: outputs=2
+ # A scratchpad never reframes a floating member it shows: a window hanging off an output edge but still grabbable keeps
+ # its place across a hide and a reopen. Movement belongs to the pad's output changes instead, which carry members to the
+-# new output: one admitted while the pad already shows elsewhere joins that output, one dropped with every output
+-# remains inside the output that replaces them, one hanging off a replaced output stays grabbable, and none of them is
+-# parked at an output's centre.
++# new output: one the user moves into a pad showing elsewhere joins that output, one dropped with every output remains
++# inside the output that replaces it, one hanging off a replaced output stays grabbable, and none of them is parked at an
++# output's centre.
+ set -euo pipefail
+ 
+ readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
+ readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
++readonly PAD=pad
++readonly SCALED_PAD=scaled
+ readonly EDGE_TITLE=edge-member
+ readonly ARRIVING_TITLE=arriving-member
+ readonly HANGING_TITLE=hanging-member
++readonly SCALED_TITLE=scaled-member
+ readonly SHOTS="$UMBRIEL_RUNTIME_DIR/reopen-keeps-position"
+ # 400x240 at x = -300 leaves 100 px visible, inside the 75 px float margin, with its centre off the output.
+ readonly EDGE_X=-300
+ readonly EDGE_Y=100
+ readonly HANGING_Y=200
++readonly SCALED_WIDTH=600
++readonly SCALED_HEIGHT=400
+ readonly WIDTH=400
+ readonly HEIGHT=240
+ # The float margin keeps this many pixels of the frame on the output.
+@@ -52,17 +57,10 @@ wait_for_scratchpad() {
+   return 1
+ }
+ 
+-ensure_output() {
+-  local name=$1 mode=$2
+-  if ! "$UMBRIEL" outputs --json | jq -e --arg name "$name" '.[] | select(.name == $name)' > /dev/null; then
+-    "$UMBRIEL" output-create "$name" "$mode" > /dev/null
+-    "$UMBRIEL" msg config-reload > /dev/null
+-  fi
+-}
+-
+ spawn() {
+   local title=$1
+-  FILL_COLOR=0xFF5577AA "$CLIENT" "$title" "$WIDTH" "$HEIGHT" > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
++  shift
++  env FILL_COLOR=0xFF5577AA "$@" "$CLIENT" "$title" "$WIDTH" "$HEIGHT" > "$UMBRIEL_RUNTIME_DIR/$title.log" 2>&1 &
+   for _ in $(seq 100); do
+     grep -q '^mapped$' "$UMBRIEL_RUNTIME_DIR/$title.log" && return 0
+     sleep 0.025
+@@ -79,7 +77,7 @@ visible_pixels() {
+ 
+ readonly BASELINE=$(< "$UMBRIEL_CONFIG")
+ 
+-# The common body plus the outputs of the current phase, so the last leg can rewrite them without duplicate tables.
++# The common body plus the outputs of the current phase, so each leg can rewrite them without duplicate tables.
+ write_config() {
+   {
+     printf '%s\n' "$BASELINE"
+@@ -103,6 +101,13 @@ corner_radius = 0
+ [appearance.shadow]
+ enabled = false
+ 
++[[scratchpad]]
++name = "pad"
++
++[[scratchpad]]
++name = "scaled"
++proportional_size = true
++
+ [[window_rule]]
+ match.title = "^edge-member$"
+ default_output = "HEADLESS-1"
+@@ -116,7 +121,7 @@ default_output = "HEADLESS-2"
+ default_floating = true
+ default_floating_size_px = { width = 400, height = 240 }
+ default_position = { x = -300, y = 200, anchor = "top_left" }
+-default_scratchpad = "default"
++default_scratchpad = "pad"
+ 
+ [[window_rule]]
+ match.title = "^arriving-member$"
+@@ -124,6 +129,13 @@ default_output = "HEADLESS-1"
+ default_floating = true
+ default_floating_size_px = { width = 400, height = 240 }
+ default_position = { x = 100, y = 100, anchor = "top_left" }
++
++[[window_rule]]
++match.title = "^scaled-member$"
++default_output = "HEADLESS-2"
++default_floating = true
++default_floating_size_px = { width = 600, height = 400 }
++default_scratchpad = "scaled"
+ COMMON
+     printf '\n%s\n' "$1"
+   } > "$UMBRIEL_CONFIG"
+@@ -139,14 +151,16 @@ position = [0, 0]
+ enabled = true
+ mode = "1280x720"
+ position = [1280, 0]'
+-readonly ONE_OUTPUT='
+-
+-[output.HEADLESS-2]
++# Legacy 1280-based coordinates must not survive a replacement 800x600 output, and the replacement is not the connector
++# the pad was displaced from, so the remap cannot come from the displaced restore.
++readonly NARROW_REPLACEMENT='
++[output.HEADLESS-1]
+ enabled = true
+ mode = "800x600"
+ position = [0, 0]'
++# Leg E returns the pad to the connector it was displaced from in leg D, then takes that connector away again, so the
++# clamp runs on a home that really is the one that went away.
+ readonly SMALL_PLUS='
+-
+ [output.HEADLESS-2]
+ enabled = true
+ mode = "800x600"
+@@ -154,10 +168,9 @@ position = [0, 0]
+ 
+ [output.HEADLESS-1]
+ enabled = true
+-mode = "1280x720"
++mode = "800x600"
+ position = [800, 0]'
+ readonly WIDE_RETURN='
+-
+ [output.HEADLESS-2]
+ enabled = true
+ mode = "1600x900"
+@@ -178,15 +191,15 @@ write_config "$TWO_OUTPUTS"
+ spawn "$EDGE_TITLE"
+ wait_for_field "$EDGE_TITLE" x "$EDGE_X"
+ "$UMBRIEL" msg window-focus "$(field_of "$EDGE_TITLE" id)" > /dev/null
+-"$UMBRIEL" msg window-move-to-scratchpad > /dev/null
+-"$UMBRIEL" msg scratchpad-toggle > /dev/null
+-wait_for_scratchpad "$EDGE_TITLE" default
++"$UMBRIEL" msg window-move-to-scratchpad "$PAD" > /dev/null
++"$UMBRIEL" msg scratchpad-toggle "$PAD" > /dev/null
++wait_for_scratchpad "$EDGE_TITLE" "$PAD"
+ if [[ $(field_of "$EDGE_TITLE" x) != "$EDGE_X" || $(field_of "$EDGE_TITLE" y) != "$EDGE_Y" ]]; then
+   echo "showing the scratchpad moved its member: $(windows)"
+   exit 1
+ fi
+-"$UMBRIEL" msg scratchpad-toggle > /dev/null
+-"$UMBRIEL" msg scratchpad-toggle > /dev/null
++"$UMBRIEL" msg scratchpad-toggle "$PAD" > /dev/null
++"$UMBRIEL" msg scratchpad-toggle "$PAD" > /dev/null
+ if [[ $(field_of "$EDGE_TITLE" x) != "$EDGE_X" || $(field_of "$EDGE_TITLE" y) != "$EDGE_Y" ]]; then
+   echo "reopening the scratchpad moved its member: $(windows)"
+   exit 1
+@@ -198,11 +211,11 @@ if (( $(visible_pixels "$SHOTS/shown.png" HEADLESS-1) < 5000 )); then
+ fi
+ 
+ # Leg B: the pad moving to the other output carries its member there, at that output's edge and not its centre.
+-"$UMBRIEL" msg scratchpad-toggle > /dev/null
++"$UMBRIEL" msg scratchpad-toggle "$PAD" > /dev/null
+ "$POINTER" 2560 720 move 1920 360
+-"$UMBRIEL" msg scratchpad-toggle > /dev/null
++"$UMBRIEL" msg scratchpad-toggle "$PAD" > /dev/null
+ wait_for_field "$EDGE_TITLE" output HEADLESS-2
+-wait_for_scratchpad "$EDGE_TITLE" default
++wait_for_scratchpad "$EDGE_TITLE" "$PAD"
+ moved_x=$(field_of "$EDGE_TITLE" x)
+ moved_y=$(field_of "$EDGE_TITLE" y)
+ if ((moved_x != 1280 || moved_y != EDGE_Y)); then
+@@ -221,32 +234,30 @@ spawn "$ARRIVING_TITLE"
+ wait_for_field "$ARRIVING_TITLE" output HEADLESS-1
+ "$UMBRIEL" msg window-focus "$(field_of "$ARRIVING_TITLE" id)" > /dev/null
+ "$POINTER" 2560 720 move 640 360
+-"$UMBRIEL" msg window-move-to-scratchpad > /dev/null
+-wait_for_scratchpad "$ARRIVING_TITLE" default
++"$UMBRIEL" msg window-move-to-scratchpad "$PAD" > /dev/null
++wait_for_scratchpad "$ARRIVING_TITLE" "$PAD"
++wait_for_field "$ARRIVING_TITLE" output HEADLESS-2
+ arriving_x=$(field_of "$ARRIVING_TITLE" x)
+-if [[ $(field_of "$ARRIVING_TITLE" output) != HEADLESS-2 ]] || ((arriving_x < 1280)); then
+-  echo "the arriving member kept the output it mapped on instead of joining the pad: $(windows)"
++arriving_y=$(field_of "$ARRIVING_TITLE" y)
++# 100,100 on the first output becomes 1280 + 100,100 on the second; a show-time centre would leave x at 1720.
++if ((arriving_x != 1380 || arriving_y != 100)); then
++  echo "the arriving member did not join the pad's output in its own basis: $arriving_x,$arriving_y"
+   exit 1
+ fi
+ 
+-# Leg D: with every output gone, the members come back inside whichever output replaces them.
++# Leg D: with every output gone, the members come back inside the output that replaces them. The replacement is a
++# different connector from the one the pad was displaced from, so the placement has to come from moveScratchpad()'s own
++# remap out of the area the pad was last sized against.
+ "$UMBRIEL" output-destroy HEADLESS-1 > /dev/null
+ "$UMBRIEL" output-destroy HEADLESS-2 > /dev/null
+-write_config "$ONE_OUTPUT"
++write_config "$NARROW_REPLACEMENT"
+ "$UMBRIEL" msg config-reload > /dev/null
+-if [[ $("$UMBRIEL" output-create HEADLESS-2 800x600) != HEADLESS-2 ]]; then
++if [[ $("$UMBRIEL" output-create HEADLESS-1 800x600) != HEADLESS-1 ]]; then
+   echo "the replacement output could not be created"
+   exit 1
+ fi
+-for _ in $(seq 80); do
+-  [[ $(field_of "$ARRIVING_TITLE" output) == HEADLESS-2 ]] && break
+-  sleep 0.05
+-done
+ for title in "$ARRIVING_TITLE" "$EDGE_TITLE"; do
+-  if [[ $(field_of "$title" output) != HEADLESS-2 ]]; then
+-    echo "'$title' did not return to the replacement output: $(windows)"
+-    exit 1
+-  fi
++  wait_for_field "$title" output HEADLESS-1
+   x=$(field_of "$title" x)
+   y=$(field_of "$title" y)
+   if ((x < 0 || x + WIDTH > 800 || y < 0 || y + HEIGHT > 600)); then
+@@ -255,28 +266,50 @@ for title in "$ARRIVING_TITLE" "$EDGE_TITLE"; do
+   fi
+ done
+ 
+-# Leg E: a member hanging off an output that goes away comes back reachable on the wider output that replaces it,
+-# instead of proportionally off screen.
++# Leg E: a member hanging off an output that goes away comes back exactly at the grabbable margin of the wider output
++# that replaces it, instead of proportionally off screen.
+ write_config "$SMALL_PLUS"
+ "$UMBRIEL" msg config-reload > /dev/null
+-ensure_output HEADLESS-1 1280x720
++if [[ $("$UMBRIEL" output-create HEADLESS-2 800x600) != HEADLESS-2 ]]; then
++  echo "the home output could not be created"
++  exit 1
++fi
++wait_for_field "$EDGE_TITLE" output HEADLESS-2
+ spawn "$HANGING_TITLE"
++wait_for_field "$HANGING_TITLE" output HEADLESS-2
+ wait_for_field "$HANGING_TITLE" x "$EDGE_X"
+ wait_for_field "$HANGING_TITLE" y "$HANGING_Y"
+-wait_for_scratchpad "$HANGING_TITLE" default
++wait_for_scratchpad "$HANGING_TITLE" "$PAD"
+ "$UMBRIEL" output-destroy HEADLESS-2 > /dev/null
+ wait_for_field "$HANGING_TITLE" output HEADLESS-1
+ write_config "$WIDE_RETURN"
+ "$UMBRIEL" msg config-reload > /dev/null
+-ensure_output HEADLESS-2 1600x900
+-for _ in $(seq 80); do
+-  [[ $(field_of "$HANGING_TITLE" output) == HEADLESS-2 ]] && break
+-  sleep 0.05
+-done
++if [[ $("$UMBRIEL" output-create HEADLESS-2 1600x900) != HEADLESS-2 ]]; then
++  echo "the wider output could not be created"
++  exit 1
++fi
++wait_for_field "$HANGING_TITLE" output HEADLESS-2
+ hanging_x=$(field_of "$HANGING_TITLE" x)
+ hanging_y=$(field_of "$HANGING_TITLE" y)
+-if ((hanging_x < -(WIDTH - MARGIN) || hanging_x + WIDTH <= 0 || hanging_y + HEIGHT <= 0)); then
+-  echo "'$HANGING_TITLE' came back out of reach at $hanging_x,$hanging_y inside the wider output: $(windows)"
++# -300/800 and 200/600 of the small output become -600,300 on 1600x900; the margin pulls x back to -325.
++if ((hanging_x != -(WIDTH - MARGIN) || hanging_y != 300)); then
++  echo "'$HANGING_TITLE' came back at $hanging_x,$hanging_y instead of the grabbable margin -$((WIDTH - MARGIN)),300"
++  exit 1
++fi
++
++# Leg F: a window opening into a proportional pad that already shows on another output is sized once, against that
++# output, and not scaled again by its admission.
++"$POINTER" 2560 720 move 1920 360
++"$UMBRIEL" msg scratchpad-toggle "$SCALED_PAD" > /dev/null
++# The rule size is only observable in a client that maps at the size it was configured to.
++spawn "$SCALED_TITLE" RESIZE_FILL_COLOR=0xFF5577AA
++wait_for_scratchpad "$SCALED_TITLE" "$SCALED_PAD"
++wait_for_field "$SCALED_TITLE" output HEADLESS-1
++scaled_w=$(field_of "$SCALED_TITLE" w)
++scaled_h=$(field_of "$SCALED_TITLE" h)
++if ((scaled_w != SCALED_WIDTH || scaled_h != SCALED_HEIGHT)); then
++  echo "'$SCALED_TITLE' opened at $scaled_w,$scaled_h instead of its rule size $SCALED_WIDTH,$SCALED_HEIGHT"
+   exit 1
+ fi
+-echo "scratchpad shows kept their member at $EDGE_X,$EDGE_Y, the pad moved it to $moved_x,$moved_y, an arrival joined at $arriving_x, all came back inside the replacement output, and a hanging member came back at $hanging_x,$hanging_y"
++
++echo "a show kept its member at $EDGE_X,$EDGE_Y, the pad moved it to $moved_x,$moved_y, an arrival joined at $arriving_x,$arriving_y, a narrow replacement kept both members, a hanging member came back at $hanging_x,$hanging_y, and a proportional pad kept its member at $scaled_w,$scaled_h"
+-- 
+2.56.0.341.gebdc087dc9
+
