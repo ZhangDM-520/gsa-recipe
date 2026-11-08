@@ -64,3 +64,6 @@ config-[0-9]*
 # Temporary metadata and local reports
 *.tmp.*
 .srcinfo.err
+# The recipe half vendors only the fixtures' own oracle material. The fish
+# engine and its lib/ stay engine-side: they are frozen differential material
+# for engine tests, never a command this repository runs.
