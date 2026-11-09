@@ -1,9 +1,9 @@
-# Snapshot expansion — reconcile, then convert
+# Snapshot expansion — pin the Monday commit, expose the snapshot name
 
-Opened 2026-11-09 (owner decision 2026-11-01, "do it now"). Scope: every
-floating VCS tracker in `@core`/`@build-tools` becomes a **snapshot** — pinned
-to the last commit at or before Monday 00:00 UTC, renamed `-git` →
-`-snapshot`, with a permanent versioned `provides=` for the old name.
+Opened 2026-11-09 (owner decision 2026-11-01, "do it now"; scope and shape
+revised by the owner 2026-11-09). Scope: every tracker in `@core`/`@build-tools`
+whose source is a **moving git ref** becomes a snapshot — pinned to the last
+commit at or before Monday 00:00 UTC.
 
 Why: a floating ref makes every freshness pass a gamble. `gsa-recipe`'s
 `freshness.rs` waives a rebuild while the recorded baseline trails the moving
@@ -11,16 +11,31 @@ ref by ≤ 5 upstream commits (`DEFAULT_VCS_SKIP_TOLERANCE`,
 `REASON_FRESHNESS_WAIVED`) and reports `vcs-ref-moved` past it, so a fast
 upstream churns senseless rebuild waves — three `llvm` builds in one day during
 the 2026-11 campaign. A `#commit=` pin switches to exact semantics
-(`vcs-ref-pinned-mismatch`: rebuild only on real inconsistency), and the recipe
-stops being "git tracking" — hence the name.
+(`vcs-ref-pinned-mismatch`: rebuild only on real inconsistency).
+
+## The shape (revised 2026-11-09)
+
+Two changes per recipe, and **nothing else**:
+
+1. **The source ref** becomes `#commit=<sha>`, the last commit at or before the
+   most recent Monday 00:00 UTC.
+2. **The snapshot name is a frontend surface.** `gsa` accepts `<id>-snapshot` as
+   an input alias for a pinned `<id>`; the recipe, its directory, its
+   `pkgbase`/`pkgnames`, its `provides=` and its pacman identity are
+   **unchanged** — still `-git`. `-snapshot` is not a conventional package
+   suffix; `gcc-snapshot` is the real-name exception and stays exactly as it is.
+
+No rename, therefore no `provides=`/`replaces=`/`conflicts=` churn, no topology
+edit, no `pkgname` edit, no IgnorePkg/world/sets/index migration. That is the
+whole point of the revision: the migration cost is one source line.
 
 ## 1 · Reconciled state (measured 2026-11-09)
 
 Method, so the numbers are reproducible: scope is the topology rows whose group
 list contains `core` or `build-tools` (`gsa -Qt`, never directory names); the
 source class is the **primary** `source=()` entry's VCS ref as expanded in the
-committed `.SRCINFO`; "already pinned" is reported both for the primary source
-and for *any* source, because the 2026-11-01 audit used the looser rule.
+committed `.SRCINFO`; "already pinned" is reported both per primary source and
+per any source, because the 2026-11-01 audit used the looser rule.
 
 | | 2026-11-01 audit | 2026-11-09 (this pass) |
 | --- | --- | --- |
@@ -35,200 +50,154 @@ and for *any* source, because the 2026-11-01 audit used the looser rule.
 ¹ the audit folded `#branch=` into "floating"; on the same rule today the count
 is 114 + 23 = **137** of 230, i.e. +2 against 135 for a roster that grew by 9.
 
-The delta is explained and not a regression: **9 recipes were added** since
+The delta is explained and is not a regression: **9 recipes were added** since
 (`hunspell`, `jasper`, `kcrash`, `kguiaddons`, `solid`, `v4l-utils` non-VCS;
 `openjph`, `qt6-5compat`, `qt6-wayland` tag-pinned), and **8 were pinned on
 2026-11-01** by the rule-64 wave — `llvm-git`, `rust-git`, `mesa-git`,
 `libclc-git`, `spirv-llvm-translator-git`, `rust-bindgen-git`, `qt6-tools`,
 `gcc-snapshot`. No pin was lost.
 
-### What "already converted" actually means
+### The conversion set: 136 recipes
 
-- **`gcc-snapshot` is the only recipe carrying the `-snapshot` name** (and it
-  already has the split-output form `lib32-gcc-libs-snapshot`). It is the
-  naming precedent, not a partially finished wave.
-- **The rule-64 toolchain family is 9/9 pinned**: `llvm-git`, `rust-git`,
-  `mesa-git`, `libclc-git`, `spirv-llvm-translator-git`, `gcc-snapshot`,
-  `qt6-tools`, `pyside6-git`, `rust-bindgen-git`. One residue: `qt6-tools`
-  still carries **one unpinned auxiliary source** (the `playground/qlitehtml`
-  secondary), which the 2026-11-01 item already called out.
-- **113 floating `-git` recipes remain untouched** — the programme.
+| set | count | note |
+| --- | --- | --- |
+| floating primary | 113 | the `-git` trackers |
+| `#branch=`-pinned primary | 23 | **Q1 answered: convert them too**, so every snapshot means the same thing |
+| exempt | 1 | `gsa-pm` — the engine may free-track (owner 2026-11-01) |
+| out of scope | 69 `#tag=` + 103 non-VCS | a tag is already an exact ref; a tarball is a release |
 
-### The 113, measured
+The 23 branch-pinned recipes are `libpng-git` (`libpng16`), `libseccomp-git`
+(`release-2.6`), the `qt6-*` release-branch modules, `autofdo-git`,
+`gtk3-git`, `jack2-git`, `libarchive-git`, `libmypaint-git`, `qt5-base-git`,
+`qt6-base-git`, `sdl2-git`, `xxhash-git`, `zstd-git`. Pinning them to a Monday
+commit on their own branch keeps the maintenance-line intent while removing the
+drift.
 
-| fact | count |
-| --- | --- |
-| floating primary, name ends `-git` (rename candidates) | **113** |
-| floating but exempt (`gsa-pm` — the engine may free-track) | 1 |
-| split recipes (multiple `pkgname` outputs) | 13 (130 output names) |
-| `pkgbase` ≠ recipe id | 0 |
-| already declare `provides=` | 113 |
-| already declare `replaces=` | 4 |
-| `-snapshot` target name already taken | **0** |
+Fan-out (topology in-degree), which sizes a wave: **5** over 100
+(`git-git` 406, `meson-git` 155, `cmake-git` 143, `glib2-git` 120,
+`zlib-ng-compat-git` 118), **8** at 31–100, **59** at 5–30, **64** at ≤ 4.
+The working list with per-recipe fan-out and today's ref is
+`.logs/snapshot-manifest-2026-11-09.md` (regenerate it, never hand-maintain it).
 
-`pkgver()` schemes among the 113: **91 `git describe`**, 18 count-based,
-4 custom (`harfbuzz`, `libmysofa`, `libpciaccess`, `wayland` — all
-`describe --long --tags` spellings), and **1 with no `pkgver()` at all**
-(`ncurses-git`: its version never recomputes, so it cannot be pinned without
-gaining one).
+### Two pieces of the idiom that are forced, not chosen
 
-Fan-out (topology in-degree — how many recipes list it as a build-order
-prerequisite), which is what sizes a wave:
+- **makepkg accepts exactly one ref fragment.** `get_uri_fragment` takes
+  everything after `#` (minus a trailing `?...`), and `download_git` cases on
+  `${fragment%%=*}` as `commit|tag|branch` — so `#branch=main&commit=<sha>` is
+  a single unrecognised fragment and the build aborts. A pin therefore
+  **replaces** `#branch=`; the ref it was taken from has to be recorded
+  elsewhere. 113 recipes lose nothing (they were on the default ref); the 23
+  branch-pinned ones gain a recipe-local `_snapshot_ref=<ref>` variable, which
+  makepkg ignores and the `-Sy` provider reads when it advances the pin.
+- **The first pin is a version downgrade.** `pkgver()` recomputes from the
+  checked-out commit, so pinning HEAD back to last Monday *lowers* the version.
+  `gsa`'s install seam skips a "not-newer" archive by design, so the first pass
+  installs with `-Sf`/`-Uf`; every later weekly advance moves forward and needs
+  no force.
 
-| bucket | recipes |
-| --- | --- |
-| > 100 | 5 — `git-git` 406, `meson-git` 155, `cmake-git` 143, `glib2-git` 120, `zlib-ng-compat-git` 118 |
-| 31–100 | 5 — `ninja-git` 85, `cairo-git` 48, `icu-git` 38, `pango-git` 34, `wayland-git` 32 |
-| 5–30 | 51 |
-| ≤ 4 | 52 |
+### Excluded, deliberately
 
-Only **3 of the 113 carry an ABI tag** (`icu-git` `abi=must`; `mold-git` and
-`fcitx5-qt-git` `abi=should`), so a pin is not an ABI event for the other 110 —
-the consumer wave is a selection-expansion cost, not a correctness one.
+- **`#tag=`-pinned (69)** — release-pinned; a tag is an exact ref.
+- **non-VCS (103)** — tarball releases.
+- **`gsa-pm`** — owner exemption.
 
-Pacman-side safety, measured: **zero exact-version (`name=ver`) pins** on a
-candidate anywhere in the tree, and only two range pins
-(`gimp-git` on `babl-git>=0.1.118`, `gegl-git>=0.4.66`). A **versioned**
-provide satisfies both, which is why the old name must never be provided
-unversioned.
+### Two in-scope repairs the pin uncovers
 
-## 2 · Exclusions (deliberate, not oversights)
+- **`ncurses-git` has no `pkgver()`** — its version is hand-written
+  (`6.6.20260926.r0.g41553966`) and never recomputes, so it cannot be pinned
+  coherently. Q2 answered: gaining a `pkgver()` is in scope.
+- **`qt6-tools`** still carries one unpinned auxiliary source (the
+  `playground/qlitehtml` secondary) — pin it in the same change.
 
-- **`gsa-pm`** — owner decision 2026-11-01: the engine is safe to track git and
-  rebuild any time.
-- **`#tag=`-pinned (69)** — release-pinned, and a tag is an exact ref already.
-- **`#branch=`-pinned (23)** — a named maintenance branch (rule 30's attestation
-  carve-out): `libpng-git` on `libpng16`, `libseccomp-git` on `release-2.6`,
-  the `qt6-*` modules on their release branch, `autofdo-git`, `gtk3-git`,
-  `jack2-git`, `libarchive-git`, `libmypaint-git`, `qt5-base-git`,
-  `qt6-base-git`, `sdl2-git`, `xxhash-git`, `zstd-git`. **Open question for the
-  owner**: a branch tip moves exactly like a floating HEAD, so these carry the
-  same churn — convert them too, or keep them as the explicit "track the
-  maintenance line" set? Recommendation: keep, and let the rule-64 weekly pin
-  cover only what they name.
-- **non-VCS (103)** — tarball releases; nothing to pin.
-
-## 3 · Decisions this plan needs
-
-1. **Name idiom.** `-git` → `-snapshot` by suffix on the recipe id and on every
-   `pkgname` (`glib2-devel-git` → `glib2-devel-snapshot`), matching
-   `lib32-gcc-libs-snapshot`. Verified collision-free for all 113.
-2. **pacman honesty idiom per renamed recipe** (owner 2026-11-01):
-   `provides=('<old-name>=$pkgver')` **versioned** + `replaces=('<old-name>')` +
-   `conflicts=('<old-name>')`. The old-name provide is **permanent** — never
-   removed later. Every one of the 113 already has a `provides=()` to append to.
-3. **`pkgver` scheme.** Normalize to `<upstream>.r<rev-list --count HEAD>.g<short>`
-   (the `rust-git` spelling). This kills cross-tag inversions — `rust-bindgen-git`
-   currently reads `0.73.2.r17.gf08d4fff` where `r17` is commits *since the tag*,
-   which inverts against an older boundary. 91 of the 113 are `describe`-based
-   and need this; the already-pinned family needs the same audit.
-   Because every converted recipe is **renamed**, the version-shape change rides
-   along inside a new pacman package — it costs no extra database transition.
-4. **The Monday anchor.** `#commit=` = `git rev-list -1 --before='<Mon 00:00Z>'
-   <ref>` read from the recipe's own `SRCDEST` mirror (never a fresh clone, never
-   the network at edit time), written into the source entry; `pkgver` moves in
-   the same commit. Same command for the weekly advance, forever.
-5. **`ncurses-git`** needs a `pkgver()` added before it can be pinned.
-6. **`qt6-tools`' `playground/qlitehtml`** auxiliary source gets pinned (the
-   2026-11-01 item asked for it).
-
-## 4 · Per-recipe conversion (one procedure, no variants)
+## 2 · Per-recipe conversion
 
 ```sh
-# 1. resolve the anchor from the recipe's own mirror
-mirror=~/.gsa-src/<pkg>/          # SRCDEST's bare clone
-sha=$(git -C "$mirror" rev-list -1 --before='2026-11-09 00:00Z' <ref>)
-# 2. pin + rename + provide in one commit
-#    source=("...git+<url>#commit=$sha")   pkgver=<ver>.r<count>.g<short>
-#    pkgname=<name>-snapshot …             provides+=(<old-git-name>=$pkgver)
-#    replaces=(<old-git-name>) conflicts=(<old-git-name>)
-git mv packages/<cat>/<id>-git packages/<cat>/<id>-snapshot
-# 3. topology: id, path, and every edge mention (see §6)
-# 4. regenerate metadata and validate
-GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<id>-snapshot \
-  > packages/<cat>/<id>-snapshot/.SRCINFO
-bash -n packages/<cat>/<id>-snapshot/PKGBUILD
-gsa -Ma                       # report-only; read the rows
-bash tests/run-all.sh         # the recipe battery
-# 5. build and swap under the new name; the old name must vanish from the DB
-gsa -B --leaf <id>-snapshot
-gsa -U <id>-snapshot          # replaces+provides carries the transition
-gsa -Mi --backfill            # re-register IgnorePkg under the new names
+# 1. resolve the anchor from the recipe's OWN mirror (never the network at edit time)
+mirror=~/.gsa-src/<pkg>/                 # SRCDEST's bare clone
+ref=main                                 # the recipe's current ref; origin/HEAD when it had none
+sha=$(git -C "$mirror" rev-list -1 --before='<Mon> 00:00Z' origin/$ref)
+
+# 2. one commit: the pin (and _snapshot_ref only where the ref was explicit)
+#    source=("...git+<url>#commit=$sha")   _snapshot_ref=$ref   pkgver=<recomputed>
+GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<id> \
+  > packages/<cat>/<id>/.SRCINFO
+bash -n packages/<cat>/<id>/PKGBUILD
+
+# 3. validate, then build and install FORCED (the pin is a downgrade)
+gsa -Ma                                  # report-only; read the rows
+bash tests/run-all.sh
+gsa -B --leaf <id>
+gsa -Uf <id>                             # -f: the first pin lowers the version
 ```
 
-`--leaf` matters: the default `-S` expands to the transitive consumer closure,
-which for `git-git` (406 dependants) is a full-system rebuild. The rename is
-pacman-transparent (provide + replaces), so the consumers do **not** need to
-rebuild for the transition — only for a real ABI move.
+`--leaf` matters: the default `-S` expands to the transitive consumer closure
+(406 dependants for `git-git`). A pin is not an ABI event — only `icu-git`
+carries `abi=must` among the 136 — so consumers do not rebuild for the pin.
 
-## 5 · Waves
+No topology change, no `.SRCINFO` name change, no `pkgname` change: the only
+diff per recipe is the source line, the `pkgver`, and (for 23) `_snapshot_ref`.
 
-One coupled batch at a time — pin, rename, provide, build, battery green, then
-the next. Never a mixed state inside a batch; the provide makes the mixed state
-between batches resolvable.
+## 3 · Waves
+
+One batch at a time, battery green between batches. Because there is no rename,
+a batch cannot break the topology loader or a consumer's dependency — the risk
+is a walled build, which is local to the recipe.
 
 | wave | contents | why this order |
 | --- | --- | --- |
-| **W0 — guard** | engine report-only lint `pin-discipline` + a recipe fixture; document the naming idiom in `AGENTS.md` §4 | a ratchet first, so a new floating `-git` in `@core` goes red instead of being discovered later |
-| **W1 — leaves (52)** | fan-out ≤ 4 | cheapest end-to-end validation of the idiom: `acl`, `brotli`, `gdbm`, `jemalloc`, `libuv`, `libzip`, `libei`, `gegl`, `babl`, `fcitx5-qt` … |
-| **W2 — mid (51)** | fan-out 5–30, split by adjacency: codecs (`ffmpeg`, `libwebp`, `libjpeg-turbo`, `libheif`, `libsndfile`, `opus`, `lz4`, `bzip2`, `xz`), X/graphics (`libx11`, `libxcb`, `libxext`, `libxrandr`, `libxi`, `libxpm`, `libxft`, `freetype2`, `fontconfig`, `harfbuzz`, `pango`, `cairo`, `gtk4`, `libadwaita`, `librsvg`, `libglvnd`, `vulkan-*`), system (`ncurses`, `readline`, `libffi`, `elfutils`, `expat`, `pcre2`, `libxml2`, `libcap-ng`, `libbpf`, `liburing`, `polkit`, `krb5`, `gnutls`, `libusb`, `libinput`, `libdrm`, `libpulse`, `sndfile`…) | adjacency keeps each batch's verification inside one subsystem |
-| **W3 — build tools (5)** | `ninja-git` 85, `cmake-git` 143, `meson-git` 155, `zlib-ng-compat-git` 118, `glib2-git` 120 | these are makedepends for nearly everything: a bad batch is a whole-system wall, so each gets its own pass and its own battery run |
-| **W4 — the rest (5)** | `git-git` 406, `cairo-git` 48, `icu-git` 38 (`abi=must`), `pango-git` 34, `wayland-git` 32 | the ABI nucleus and the largest fan-out last, when the idiom is proven 108 times |
-| **W5 — engine (LAST)** | the `-Sy` snapshot provider + retire the 5-commit waiver for pinned families | owner's ordering: establish the convention by hand, then automate it |
+| **W0 — engine alias first** | `gsa` accepts `<id>-snapshot` for a pinned `<id>`, with the guard and its fixture; the `-snapshot` wording lands in `AGENTS.md` §4 | the visible half of the feature must exist before recipes start claiming it, and a wrong alias must fail loudly |
+| **W1 — leaves (64)** | fan-out ≤ 4 | cheapest end-to-end validation of the idiom |
+| **W2 — mid (59)** | fan-out 5–30, by subsystem: codecs, X/graphics, system libraries | adjacency keeps each batch's verification inside one subsystem |
+| **W3 — build tools (5)** | `ninja-git`, `cmake-git`, `meson-git`, `zlib-ng-compat-git`, `glib2-git` | makedepends for nearly everything; each gets its own pass |
+| **W4 — the rest (8)** | `git-git` 406, `cairo-git` 48, `icu-git` 38 (`abi=must`), `pango-git` 34, `wayland-git` 32, plus the 3 remaining 31–100 rows | largest fan-out and the ABI nucleus last |
+| **W5 — engine provider** | `-Sy` resolves "last commit ≤ Monday 00:00Z" and rewrites `#commit=` + `pkgver` together; then retire the 5-commit waiver for pinned families | owner's ordering: establish the convention by hand, then automate |
 
-Each wave ends with: `gsa -Ma` clean of new rows, `bash tests/run-all.sh` green,
-`gsa -S --dry-run @core` resolving, and the renamed packages installed with the
-old names gone from `pacman -Q`.
+Each wave ends with `gsa -Ma` clean of new rows, `bash tests/run-all.sh` green,
+and the wave's recipes installed at their pinned version.
 
-## 6 · Ripple, measured
+## 4 · Engine work
 
-| surface | size | how it is handled |
-| --- | --- | --- |
-| topology edge mentions of a candidate | **1906 across 557 of 665 rows** | rewritten by id; the loader validates the whole map, so a miss is an immediate rc 2 |
-| topology rows that are themselves candidates | 113 | id + path |
-| `pkgname` outputs | **130** | suffix on each |
-| recipe-local `depends`/`provides` textual references | 100 tokens across the tree | unchanged — the provide keeps them resolvable |
-| exact-version pins | **0** | nothing to fix |
-| recipe fixtures naming a candidate | 11 ids in 7 files | update in the same wave |
-| IgnorePkg closure | dynamic | `gsa -Mi --backfill` after each wave |
-| binpkg index rows | keyed by recipe id | old rows become orphans; `-M` prune |
-| `abi/subscriptions` (`:=`) records | name the provider id | stale records are skipped loudly (rule 68); re-bless via the wave |
-| `world` / `sets/` | hold ids | `gsa -Mw`/`-Ms --remove old --add new` |
-| docs citing an id | `AGENTS.md` §4/§5, `docs/JOURNAL.md` history (never rewritten) | §4/§5 updated where the rule names a recipe |
+1. **W0 — the snapshot alias.** Target resolution accepts `<id>-snapshot` when
+   `<id>`'s primary VCS source is `#commit=`-pinned, and refuses otherwise with
+   rc 2 naming the reason ("`foo-git` is not a snapshot: it tracks
+   `<ref>`"). Derived from the source ref, so **no new topology vocabulary** and
+   no per-recipe opt-in: a pin *is* the snapshot. Real ids never change, and the
+   run record, listings and plan keep printing the true id — a record must not
+   misname the package it installed. Nearest-candidate hints already cover the
+   typo path.
+2. **W5 — the `-Sy` provider.** A version-sync provider kind that resolves the
+   Monday-boundary commit for a recipe's own git URL (`_snapshot_ref` when
+   present, else the default ref) and rewrites `#commit=` **and** `pkgver` in
+   one anchored pass (rule 18: the anchor is an upstream commit, which is
+   publisher-produced). Contract amendment + fixtures.
+3. **W5 — retire the waiver for pinned families.** Once a family is exact-pinned
+   `DEFAULT_VCS_SKIP_TOLERANCE` has nothing to waive; keep it only for recipes
+   that still float.
 
-## 7 · Engine work (W5, must land last)
+## 5 · Acceptance
 
-1. **`-Sy` snapshot provider** — a version-sync provider kind that resolves
-   "last commit at or before the most recent Monday 00:00Z" for a recipe's own
-   git URL and rewrites `#commit=`/`_commit` **and** `pkgver` in one anchored
-   pass (rule 18: the anchor is the upstream commit itself, which is
-   publisher-produced). Contract §B.11/§18 amendment + fixtures.
-2. **Retire the 5-commit waiver for pinned families** — once a family is
-   exact-pinned, `DEFAULT_VCS_SKIP_TOLERANCE` has nothing to waive; keep it only
-   for recipes that still float (and after this programme, that is only
-   `gsa-pm` and whatever the owner excludes).
-3. **`pin-discipline` lint** (report-only, raised to a ratchet at the end of
-   W1) — a floating VCS ref in `@core`/`@build-tools` becomes a finding, so the
-   next recipe added cannot quietly reintroduce the class.
+Per wave: battery green · `gsa -Ma` with no new finding · the wave's recipes
+installed at the pinned version · `gsa -Sl <id>-snapshot` resolves for each.
 
-## 8 · Acceptance
+Whole programme: every `@core`/`@build-tools` tracker whose ref used to move
+carries `#commit=` · `gsa -Ma` clean · `gsa -Sy` advancing pins without a
+manual edit · `gsa -S <id>-snapshot` resolving for all 136 and refusing for a
+recipe that still floats.
 
-Per wave: battery green, `gsa -Ma` with no new finding, the wave's packages
-installed under their new names, and every old name still resolving through the
-versioned provide (`pacman -Qi <old-name>` answers via the provider, and
-`gsa -Qt` lists no id of the old form).
-
-Whole programme: `gsa -Qt` shows `-snapshot` for every converted recipe,
-`-git` names only where §2 excludes them; `gsa -Ma` clean; the
-`pin-discipline` ratchet empty; `gsa -Sy` advancing the pins without a manual
-edit.
-
-## 9 · Risks and their detection
+## 6 · Risks and their detection
 
 | risk | detection |
 | --- | --- |
-| a consumer rebuilds against a half-renamed tree | impossible inside a batch (one commit); between batches the provide keeps the name resolvable — `gsa -S --dry-run @core` after each wave |
-| an exact-version pin appears later | the `pin-discipline` lint plus a battery case that greps for `name=` on a provided old name |
-| the rename orphans a `:=` subscription | rule 68's loud `abi-stale-record` line; `gsa -Ma` |
-| a `pkgver` normalization inverts | assert monotonicity against the previous archive's version in the wave's validation |
-| the Monday anchor is unreachable (no mirror) | resolve from `SRCDEST`'s bare clone, never the network at edit time; a missing mirror defers the recipe rather than guessing |
+| a pin is taken from the wrong ref (a branch-pinned recipe pinned to the default line) | `_snapshot_ref` recorded; the wave's diff shows the ref it replaced |
+| the first install is skipped as "not newer" | `-Uf` in the procedure; a wave that reports "nothing to install" is a red flag |
+| a `describe`-based `pkgver` inverts across a tag boundary | per-wave monotonicity check against the installed version; the 2026-11-01 audit's `rust-bindgen-git` `r17` case is the known instance |
+| an alias resolves to a recipe that is not a snapshot | rc 2 with the reason; fixture pins both directions |
+| a mirror is missing so the anchor cannot be resolved | resolve from `SRCDEST`, never the network at edit time; defer the recipe rather than guess |
+
+## 7 · Deferred (not part of this programme)
+
+`pkgver` scheme normalization (`git describe` → `<upstream>.r<rev-list --count
+HEAD>.g<short>`) was bundled with the 2026-11-01 decision because a rename would
+have absorbed the version-shape change for free. With the rename withdrawn it
+would be a bare version move for 91 recipes, so it is **deferred**: the
+inversion risk above is tracked per wave instead. Revisit if a pin inverts.
