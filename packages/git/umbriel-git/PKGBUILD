@@ -8,7 +8,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1549.3898f80
+pkgver=0.1.0.r1552.0a22bd2
 pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
@@ -68,7 +68,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0022-scratchpad-close-animation.patch'
         '0023-scratchpad-show-no-recentre.patch')
 sha256sums=('SKIP'
-            '256956c62e5e137a3dc428d40c185ceaa16957776e26275d446cc1df18f4e7fd'
+            '7affe57a9f872d41f1428016a88ec83a310ca44fdd93ee697793471526e1dcd6'
             '36442c0a3d52d421b94134fb81123155169d2cc43bde14d070e7d98c36cd068b'
             '837460c6faf16c956be535dd3d51c8d47cb2f6a66f951f1d2b0f630a49cea1ae'
             '99ae6cbc53708c78e4dd7fc0fb19507ac6db4e1f2a873ff185a106225d6564e5'
@@ -98,8 +98,8 @@ prepare() {
   # Drag-release re-home waits for the deform settle (and the drag tree
   # demotes only when its last drag-presented view leaves). Upstream PR
   # noctalia-dev/umbriel#570; 0011-drag-deform-settle-crop.patch (sha256
-  # 256956c6…, ONE squashed patch — `git diff upstream/main..HEAD` at the merge
-  # 15dc93b8 on main@ad46c7d1, 13 files +1150/-9 — because the branch style is
+  # 7affe57a…, ONE squashed patch — `git diff upstream/main..HEAD` at 6351e482
+  # on main@3898f805, 18 files +1237/-13 — because the branch style is
   # merge commits and the per-commit stream conflicts on intermediate hunks once
   # main moves (the cursor.cpp tab-group region did). The union in resetMode keeps
   # landTabGroup before closeReleaseRehomeWindow: the wait covers every reparent
