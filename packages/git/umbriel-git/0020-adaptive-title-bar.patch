@@ -1,5 +1,5 @@
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 8d527e98..eaa66699 100644
+index 8d527e98..192a1798 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
 @@ -136,6 +136,11 @@ button_padding = -1
@@ -14,21 +14,26 @@ index 8d527e98..eaa66699 100644
  
  [colors.title_bar]
  background = "#292933FF"
-@@ -180,7 +185,11 @@ The `close`, `maximize`, and `minimize` colors control button backgrounds. Each
+@@ -176,11 +181,15 @@ Buttons show a drawn X for close, an outlined square for maximize, and an unders
+ 
+ `button_background = false` removes the colored backgrounds and leaves only the symbols. Buttons keep their click targets while their symbols are hidden, including when backgrounds are off. Setting `button_glyph = "never"` together with `button_background = false` hides the controls and returns their space to the title.
+ 
+-The `close`, `maximize`, and `minimize` colors control button backgrounds. Each button has independent `*_glyph` and `*_glyph_hover` colors for its idle and hovered or pressed symbol. All six glyph colors default to `"#141419FF"`, with no color difference on hover. These colors apply with or without backgrounds, support alpha, and are not adjusted automatically. For symbols alone on a dark title bar, choose lighter glyph colors. Disabled buttons keep their idle glyph color and appear dimmed. Backgrounds retain their hover and pressed feedback.
++The `close`, `maximize`, and `minimize` colors control button backgrounds. Each button has independent `*_glyph` and `*_glyph_hover` colors for its idle and hovered or pressed symbol. All six glyph colors default to `"#141419FF"`, with no color difference on hover. These colors apply with or without backgrounds and support alpha; nothing shifts them except `title_contrast`, which may replace one with black or white when it would vanish into what is behind it, as described below. For symbols alone on a dark title bar, choose lighter glyph colors. Disabled buttons keep their idle glyph color and appear dimmed, and the contrast rule applies to them too. Backgrounds retain their hover and pressed feedback.
  
  `button_corner_radius` uses logical pixels, from `0` to `100`. Its default, `-1`, follows the window's `corner_radius`, including window rules. Use `0` for square buttons or a small positive value for rounded squares. The radius is capped at half the button size, producing circles at larger values. Buttons and symbols scale with the output and overview zoom, and update on reload. The maximize button is disabled for fixed-size windows. The minimize button shows only while the window can [minimize](layout.md#minimize), so tiled and pinned windows do not have one. `background` and `text` apply to the focused window; their `_unfocused` variants apply to other windows. Colors and title bar settings reload live.
  
 -The title bar follows its window's `blur`, `blur_optimized`, and `blur_ignore_alpha` rules, together with the global [blur settings](#blur). Give `background` and `background_unfocused` some transparency, such as `"#292933CC"`, to see the blurred backdrop. The alpha threshold applies to the title bar's own background color, independently of the application's content. Opaque title bar backgrounds remain opaque with blur enabled, including after leaving overview or switching focus between windows. No layer rule is needed. Dragging, overview previews, and close animations keep the blur with the window.
 +`color_source = "window"` paints the bar with a thin strip of the window's own content instead of `background`, so the bar takes on the application's colour and follows it as the application repaints that edge. `color_source = "average"` paints the bar with that strip's mean colour instead, one uniform colour with none of the window's own detail, so a title bar, tab row or loading bar along that edge does not read as fragments of itself inside the bar. It costs a pixel readback each time the window repaints that edge, which finishes the frame before reading it, so leave it off for windows that repaint that edge every frame, such as video. `color_source_height` sets how many logical pixels that strip takes, from `1` to `4`; its default, `1`, samples the single top row and reads as one flat colour, while a larger value keeps more of the window's own detail. In `"window"` mode the bar is only ever the window's own pixels, so anything the application draws along that edge — a toolbar, a tab row, a loading bar — appears in it too; `"average"` reduces that detail to one colour and shows none of it. A window whose top edge is transparent keeps the configured `background` there, because the bar colour stays painted underneath, and the values in `[colors.title_bar]` remain the fallback for applications that draw nothing. Unfocused windows keep their own colour, dimmed over `background_unfocused`. A client-drawn window that reports its own geometry keeps the transparent shadows around it out of the colour, so the bar follows the visible window rather than its padding. `"window"` mirrors the window's own buffer instead of reading pixels back, so it adds one bar-sized rectangle per window and a copy of that strip each time the window commits, and pays a readback only when `title_contrast_sample` asks for one. `"average"` does read that strip back, once for each commit that actually repaints it, and once more when the bar's geometry or strip height changes, which finishes the frame first each time; the resulting colour is a single pixel, so no further readback follows until that edge changes again. An explicit-sync window's strip is read only once its frame is reported ready, and a window that cannot be read — protected or external-only content — keeps the last colour it gave, or the palette if it never gave one. The average is taken in the window's own colour space and shown in it. An adaptive fill is opaque, so no part of the blurred backdrop below it shows through the bar, however transparent `background` is.
 +
-+Because the bar can be any colour the application paints, the title and the button symbols carry a dark edge in every `color_source`, so they stay readable on light and dark windows alike; `title_shadow = false` removes it from both. A bar that takes its colour from the window can still match the title, so `title_contrast` reverses the title to black or white when its configured colour sits too close to the bar behind it, and leaves a colour that already reads untouched. Button symbols drawn straight on the bar, with `button_background = false`, follow the same rule; symbols on their own backgrounds are judged against those instead. `"fixed"` and `"average"` always know the bar's colour. `"window"` mirrors the window's pixels and knows none, so it does not reverse until `title_contrast_sample = true` reads that edge back once per change, which finishes the frame first — the cost `"window"` otherwise avoids.
++Because the bar can be any colour the application paints, the title and the button symbols carry a dark edge in every `color_source`, so they stay readable on light and dark windows alike; `title_shadow = false` removes it from both. A bar that matches the title can still make it unreadable, so `title_contrast` replaces the title's colour with black or white when it sits too close to the bar behind it, and leaves a colour that already reads untouched. This applies in every `color_source`: `"fixed"` judges its palette against itself, and `"average"` its mean. Symbols drawn straight on the bar, with `button_background = false`, follow the same rule against the bar; symbols on their own backgrounds are judged against those instead, disabled ones included. The comparison uses the bar's own colour, before the unfocused dimming and before any transparency blend over the backdrop, and a `background` with no alpha at all is never judged, since it is not what shows. `"window"` mirrors the window's pixels and knows no colour of its own, so it does not reverse until `title_contrast_sample = true` reads that edge back once per change, which finishes the frame first — the cost `"window"` otherwise avoids. A transparent edge is a readable edge with no colour in it, so the title is judged against the palette that shows through it; an edge that cannot be read at all keeps the last colour the window gave, or leaves the title as configured if it never gave one.
 +
 +The title bar follows its window's `blur`, `blur_optimized`, and `blur_ignore_alpha` rules, together with the global [blur settings](#blur). Give `background` and `background_unfocused` some transparency, such as `"#292933CC"`, to see the blurred backdrop. A `color_source` of `"window"` or `"average"` paints an opaque fill over it in the bar itself. The alpha threshold applies to the title bar's own background color, independently of the application's content. Opaque title bar backgrounds remain opaque with blur enabled, including after leaving overview or switching focus between windows. No layer rule is needed. Dragging, overview previews, and close animations keep the blur with the window.
  
  Rounded windows keep a straight join between the title bar and transparent content, including the content's blur and overview preview. The outer frame retains its rounded corners; hiding the title bar restores rounding to the top of the content.
  
 diff --git a/examples/config.toml b/examples/config.toml
-index a2b28d77..1bfb8070 100644
+index a2b28d77..54510136 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -111,6 +111,11 @@ radius = 3
@@ -38,8 +43,8 @@ index a2b28d77..1bfb8070 100644
 +# color_source = "fixed" # "window" paints the bar with the top of the window's own content; "average" with its mean colour.
 +# color_source_height = 1 # Rows of that edge it takes, 1 (one flat colour) to 4.
 +# title_shadow = true # Dark edge under the title and around the symbols, on any bar colour.
-+# title_contrast = true # Reverse the title to black or white when its colour vanishes into the bar.
-+# title_contrast_sample = false # "window" only: read the edge back so the title can reverse there too.
++# title_contrast = true # Reverse the title and the symbols to black or white when their colour vanishes into the bar.
++# title_contrast_sample = false # "window" only, needs title_contrast: read the edge back so the title can reverse there.
  
  # Optional button palette. Glyph colors also apply when button backgrounds are off.
  # [colors.title_bar]
@@ -160,7 +165,7 @@ index 4446f029..b0a7c1e6 100644
      const auto byte = [](float component) {
        return static_cast<int>(std::lround(std::clamp(component, 0.0F, 1.0F) * 255.0F));
 diff --git a/src/scene/ssd_frame.cpp b/src/scene/ssd_frame.cpp
-index d6436f48..bd96c395 100644
+index d6436f48..f58e02c3 100644
 --- a/src/scene/ssd_frame.cpp
 +++ b/src/scene/ssd_frame.cpp
 @@ -1,24 +1,52 @@
@@ -240,7 +245,7 @@ index d6436f48..bd96c395 100644
      for (auto* buffer : m_iconBuffers) {
        if (buffer != nullptr) {
          wlr_buffer_unlock(buffer);
-@@ -126,6 +164,39 @@ namespace umbriel {
+@@ -126,6 +164,40 @@ namespace umbriel {
      m_blurLive = live;
      updateBlur();
    }
@@ -254,11 +259,12 @@ index d6436f48..bd96c395 100644
 +  }
 +  void SsdFrame::syncContent(const wlr_box& geometry) {
 +    m_contentGeometry = geometry;
-+    // A new edge colour can flip the title, which is a label re-measure. It has to be redrawn from here: redraw() calls
-+    // updateAdaptive(), so the flip cannot request its own repaint from inside it.
-+    const std::array<float, 4> before = resolvedTitleColor();
++    // A new edge colour can flip the title (which is a label re-measure) or a symbol. Both follow the fill the contrast
++    // rule reads, so that is what is compared, and the repaint has to come from here: redraw() calls updateAdaptive(),
++    // so the flip cannot request its own.
++    const auto before = barFillColor();
 +    updateAdaptive(true);
-+    if (!(resolvedTitleColor() == before)) {
++    if (!(barFillColor() == before)) {
 +      redraw();
 +    }
 +  }
@@ -280,7 +286,7 @@ index d6436f48..bd96c395 100644
  
    void SsdFrame::updateBlur() {
      const auto& cfg = config().appearance.blur;
-@@ -164,6 +235,308 @@ namespace umbriel {
+@@ -164,6 +236,323 @@ namespace umbriel {
      wlr_scene_blur_set_alpha(m_blur, m_blurAlpha);
    }
  
@@ -380,9 +386,12 @@ index d6436f48..bd96c395 100644
 +    case TitleBarColorSource::Average:
 +      return m_averageColor.value_or(palette);
 +    case TitleBarColorSource::Window:
-+      // Mirrored pixels, not a colour: without the sample there is nothing to judge the title against, and the palette
-+      // is not what is on screen.
-+      return m_contrastSample;
++      // Mirrored pixels, not a colour: with no sample there is nothing to judge the title against, and the palette is
++      // not what is on screen. An edge read as empty is the exception, since the palette is what shows through it.
++      if (m_contrastSample.has_value()) {
++        return m_contrastSample;
++      }
++      return m_contrastSampleEmpty ? std::optional<std::array<float, 4>>(palette) : std::nullopt;
 +    case TitleBarColorSource::Fixed:
 +      break;
 +    }
@@ -441,6 +450,7 @@ index d6436f48..bd96c395 100644
 +      m_adaptiveMode = TitleBarColorSource::Fixed;
 +      m_averageColor.reset();
 +      m_contrastSample.reset();
++      m_contrastSampleEmpty = false;
 +      m_stripDeferred = false;
 +      m_strip.clear();
 +      m_strip.shrink_to_fit();
@@ -494,6 +504,16 @@ index d6436f48..bd96c395 100644
 +    const bool sampling = style.titleContrast && style.titleContrastSample;
 +    const bool samplingChanged = m_contrastSampling != sampling;
 +    m_contrastSampling = sampling;
++    if (!sampling) {
++      // Nothing judges the title in "window" mode any more, and a kept sample would keep reversing it against an edge
++      // the mirror no longer implies. A deferral left over from a sample that is no longer taken would hold `restrip`
++      // true forever; in "average" mode the flag belongs to a readback that still runs.
++      m_contrastSample.reset();
++      m_contrastSampleEmpty = false;
++      if (!average) {
++        m_stripDeferred = false;
++      }
++    }
 +    // The smear mirrors the strip, so it re-mirrors on every attach: the bar must not keep drawing a buffer the client
 +    // may have freed. The average carries no detail, so only a real change to the edge makes it read again.
 +    wlr_buffer* shown = buffer;
@@ -528,10 +548,11 @@ index d6436f48..bd96c395 100644
 +      m_stripDeferred = sample.state == StripSample::State::Deferred;
 +      if (sample.color.has_value()) {
 +        m_contrastSample = sample.color;
++        m_contrastSampleEmpty = false;
 +      } else if (sample.state == StripSample::State::Empty) {
-+        // A readable edge with nothing in it leaves the palette showing, which is then what the title sits on.
-+        m_contrastSample =
-+            m_focused ? config().colors.titleBar.background : config().colors.titleBar.backgroundUnfocused;
++        // A readable edge with nothing in it leaves the palette showing, which is what the title then sits on.
++        m_contrastSample.reset();
++        m_contrastSampleEmpty = true;
 +      }
 +    }
 +    const bool reshaped = m_adaptiveBuffer != shown
@@ -589,7 +610,7 @@ index d6436f48..bd96c395 100644
    int SsdFrame::zoomed(int value) const { return static_cast<int>(std::lround(value * m_geometry.zoom)); }
  
    clipped_region SsdFrame::frameClip(int x, int y) const {
-@@ -186,6 +559,33 @@ namespace umbriel {
+@@ -186,6 +575,33 @@ namespace umbriel {
      wlr_scene_buffer_set_corner_box(buffer, clip.inside ? &clip.area : nullptr);
    }
  
@@ -623,7 +644,7 @@ index d6436f48..bd96c395 100644
    std::span<const TitleBarButton> SsdFrame::visibleButtons() const {
      const auto& style = config().appearance.titleBar;
      return style.buttonGlyph != TitleBarButtonGlyph::Never || style.buttonBackground
-@@ -193,7 +593,10 @@ namespace umbriel {
+@@ -193,7 +609,10 @@ namespace umbriel {
          : std::span<const TitleBarButton>();
    }
  
@@ -635,7 +656,7 @@ index d6436f48..bd96c395 100644
      const auto index = static_cast<size_t>(button);
      auto*& icon = m_icons[index];
      const std::array<wlr_scene_rect*, kTitleBarButtonCount> backgrounds{m_minimize, m_maximize, m_close};
-@@ -210,8 +613,11 @@ namespace umbriel {
+@@ -210,8 +629,11 @@ namespace umbriel {
      // on its position, and the renderer copies a buffer within one pixel of that size texel for texel, leaving the
      // symbol half a pixel off center. Twice the resolution makes it resample symmetrically instead.
      const int pixels = static_cast<int>(std::ceil(size * scale)) * (scale == std::floor(scale) ? 1 : 2);
@@ -649,7 +670,7 @@ index d6436f48..bd96c395 100644
        if (icon == nullptr) {
          icon = wlr_scene_buffer_create(m_tree, buffer);
          if (icon != nullptr) {
-@@ -230,6 +636,7 @@ namespace umbriel {
+@@ -230,6 +652,7 @@ namespace umbriel {
        wlr_buffer_drop(buffer);
        m_iconSizes[index] = pixels;
        m_iconColors[index] = color;
@@ -657,7 +678,7 @@ index d6436f48..bd96c395 100644
      }
      wlr_scene_buffer_set_dest_size(icon, background->width, background->height);
      wlr_scene_buffer_set_opacity(icon, alpha);
-@@ -267,10 +674,19 @@ namespace umbriel {
+@@ -267,10 +690,19 @@ namespace umbriel {
        }
        premultiplied(color, value, backgrounds ? m_alpha * alpha : 0.0F);
        wlr_scene_rect_set_color(rect, color);
@@ -679,7 +700,7 @@ index d6436f48..bd96c395 100644
      };
      button(
          m_close, colors.close, colors.closeGlyph, colors.closeGlyphHover, SsdFramePart::Close, true,
-@@ -287,6 +703,10 @@ namespace umbriel {
+@@ -287,6 +719,10 @@ namespace umbriel {
      if (m_label != nullptr) {
        wlr_scene_buffer_set_opacity(m_label, m_alpha);
      }
@@ -690,7 +711,7 @@ index d6436f48..bd96c395 100644
      updateBlur();
    }
  
-@@ -298,6 +718,7 @@ namespace umbriel {
+@@ -298,6 +734,7 @@ namespace umbriel {
      wlr_scene_node_set_enabled(&m_tree->node, shown);
      wlr_scene_node_set_enabled(&m_gripTree->node, available && m_resizable && !m_preview);
      if (!available) {
@@ -698,7 +719,7 @@ index d6436f48..bd96c395 100644
        updateBlur();
        return;
      }
-@@ -323,11 +744,15 @@ namespace umbriel {
+@@ -323,11 +760,15 @@ namespace umbriel {
        wlr_scene_node_set_enabled(&m_grips[i]->node, m_resizable && !m_preview);
      }
      if (!shown) {
@@ -714,7 +735,7 @@ index d6436f48..bd96c395 100644
      const auto& style = config().appearance.titleBar;
      const int radius = nestedRadius(g.cornerRadius, g.borderInset);
      TitleBarLayout parts =
-@@ -348,42 +773,61 @@ namespace umbriel {
+@@ -348,42 +789,61 @@ namespace umbriel {
      drawButton(m_close, parts.button(TitleBarButton::Close));
      drawButton(m_maximize, parts.button(TitleBarButton::Maximize));
      drawButton(m_minimize, parts.button(TitleBarButton::Minimize));
@@ -800,7 +821,7 @@ index d6436f48..bd96c395 100644
      updateColors();
    }
  
-@@ -424,21 +868,31 @@ namespace umbriel {
+@@ -424,21 +884,31 @@ namespace umbriel {
          wlr_scene_node_set_position(&copy->node, m_blur->node.x, m_blur->node.y);
        }
      }
@@ -838,7 +859,7 @@ index d6436f48..bd96c395 100644
        copy->point_accepts_input = rejectInput;
        wlr_scene_buffer_set_dest_size(copy, source->dst_width, source->dst_height);
        wlr_scene_buffer_set_opacity(copy, source->opacity);
-@@ -446,13 +900,36 @@ namespace umbriel {
+@@ -446,13 +916,36 @@ namespace umbriel {
        wlr_scene_buffer_set_corner_box(copy, &source->corner_box);
        wlr_scene_node_set_position(&copy->node, m_tree->node.x + source->node.x, m_tree->node.y + source->node.y);
      };
@@ -879,7 +900,7 @@ index d6436f48..bd96c395 100644
      preview->m_preview = true;
      syncPreview(*preview);
      return preview;
-@@ -466,6 +943,12 @@ namespace umbriel {
+@@ -466,6 +959,12 @@ namespace umbriel {
        frame->setMaximized(m_maximized);
        frame->setFocused(m_focused);
        frame->setBlurOptions(m_blurOptions);
@@ -893,7 +914,7 @@ index d6436f48..bd96c395 100644
      }
    }
 diff --git a/src/scene/ssd_frame.h b/src/scene/ssd_frame.h
-index 6f5d7988..d86c00b0 100644
+index 6f5d7988..4628fa03 100644
 --- a/src/scene/ssd_frame.h
 +++ b/src/scene/ssd_frame.h
 @@ -1,29 +1,37 @@
@@ -988,7 +1009,7 @@ index 6f5d7988..d86c00b0 100644
      void updateBlur();
      clipped_region frameClip(int x, int y) const;
      void clipBuffer(wlr_scene_buffer* buffer) const;
-@@ -66,6 +109,41 @@ namespace umbriel {
+@@ -66,6 +109,44 @@ namespace umbriel {
      SurfaceBlurOptions m_blurOptions;
      bool m_blurLive = false;
      wlr_scene_buffer* m_label = nullptr;
@@ -1012,6 +1033,9 @@ index 6f5d7988..d86c00b0 100644
 +    // `color_source = "window"` has no colour of its own to judge the title against. With title_contrast_sample on, the
 +    // same strip readback that serves "average" runs here too, once per edge change, and lands in this.
 +    std::optional<std::array<float, 4>> m_contrastSample;
++    // A read that found an edge with no colour in it. The palette is what shows then, and it is read live rather than
++    // copied here, so a focus change or a reload is not judged against the palette of the moment the read happened.
++    bool m_contrastSampleEmpty = false;
 +    // The colour baked into `m_averageBuffer`, which is not the same thing as the current mean.
 +    std::array<float, 4> m_averageBufferColor{};
 +    wlr_buffer* m_averageBuffer = nullptr;
@@ -1030,7 +1054,7 @@ index 6f5d7988..d86c00b0 100644
      wlr_scene_rect* m_close = nullptr;
      wlr_scene_rect* m_maximize = nullptr;
      wlr_scene_rect* m_minimize = nullptr;
-@@ -73,6 +151,7 @@ namespace umbriel {
+@@ -73,6 +154,7 @@ namespace umbriel {
      // Keep a consumer lock for snapshots and renderer recovery after the scene uploads an icon's texture.
      std::array<wlr_buffer*, kTitleBarButtonCount> m_iconBuffers{};
      std::array<std::array<float, 4>, kTitleBarButtonCount> m_iconColors{};
@@ -1135,10 +1159,10 @@ index d5f2be8a..40dffb65 100644
  } // namespace umbriel
 diff --git a/src/scene/title_bar_contrast.h b/src/scene/title_bar_contrast.h
 new file mode 100644
-index 00000000..03fcaf26
+index 00000000..8106bebc
 --- /dev/null
 +++ b/src/scene/title_bar_contrast.h
-@@ -0,0 +1,28 @@
+@@ -0,0 +1,31 @@
 +#pragma once
 +
 +#include <array>
@@ -1156,10 +1180,13 @@ index 00000000..03fcaf26
 +  constexpr float kTitleContrastThreshold = 0.35F;
 +
 +  // `color` itself, or black or white when it would sit too close to `background` to read. A colour with no alpha is
-+  // left alone: there is nothing to read, and a flipped one would carry brightness the composite cannot ignore.
++  // left alone: there is nothing to read, and a flipped one would carry brightness the composite cannot ignore. A
++  // background with no alpha is left alone too: it is not what shows, so there is nothing to judge against.
 +  inline std::array<float, 4>
 +  contrastAdjusted(const std::array<float, 4>& color, const std::array<float, 4>& background) {
-+    if (color[3] <= 0.0F || std::abs(luminance(color) - luminance(background)) >= kTitleContrastThreshold) {
++    if (color[3] <= 0.0F
++        || background[3] <= 0.0F
++        || std::abs(luminance(color) - luminance(background)) >= kTitleContrastThreshold) {
 +      return color;
 +    }
 +    const float value = luminance(background) < 0.5F ? 1.0F : 0.0F;
@@ -1634,22 +1661,25 @@ index 00000000..d63fd98a
 +"$UMBRIEL" settle
 diff --git a/tests/harness/checks/render/title_bar_contrast.sh b/tests/harness/checks/render/title_bar_contrast.sh
 new file mode 100755
-index 00000000..3eb12d57
+index 00000000..526371de
 --- /dev/null
 +++ b/tests/harness/checks/render/title_bar_contrast.sh
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,238 @@
 +#!/usr/bin/env bash
 +# harness: outputs=1
-+# A title whose colour would vanish into the bar reverses to black or white, the dark edge behind it is on in every
-+# color_source and one key turns it off, and `color_source = "window"` only reverses when it is allowed to sample.
++# A title whose colour would vanish into the bar reverses to black or white, the dark edge behind it and around its
++# symbols is on in every color_source and one key turns it off, and `color_source = "window"` only reverses — and only
++# reads the edge back — when it is allowed to sample.
 +set -euo pipefail
 +source "$(dirname "$UMBRIEL_HARNESS_LIB")/title_bar.sh"
 +
 +readonly CLIENT="${UMBRIEL_UNMAP_CLIENT:-./build-debug/tests/unmap-client}"
 +readonly LOG="$UMBRIEL_RUNTIME_DIR/title-bar-contrast.log"
 +readonly FRAME="$UMBRIEL_RUNTIME_DIR/title-bar-contrast.png"
-+# The floating window is 480x300 at 173,109, so its 28 px bar covers 173..653 by 81..109, inset by a pixel here.
++# The floating window is 480x300 at 173,109, so its 28 px bar covers 173..653 by 81..109, inset by a pixel here. The
++# button row sits at the bar's right edge, where a short title never reaches.
 +readonly BAR="474x26+175+82"
++readonly BUTTONS="90x26+555+82"
 +
 +fail() {
 +  echo "$1"
@@ -1708,25 +1738,25 @@ index 00000000..3eb12d57
 +  "$UMBRIEL" msg config-reload > /dev/null
 +}
 +
-+# The same bar with visible symbols, drawn on the bar itself (button_background is off), so a symbol's own colour can be
-+# probed against the colour it sits on.
++# The same bar with visible symbols drawn on the bar itself (button_background is off) and the title in the bar's own
++# colour, so only the symbols and their edges paint anything.
 +configure_buttons() {
-+  configure fixed "$1" "$2" "$3" "close_glyph = \"$2\"
++  configure fixed "$1" "$1" "$3" "close_glyph = \"$2\"
 +maximize_glyph = \"$2\"
 +minimize_glyph = \"$2\"" always
 +}
 +
-+count() { "$UMBRIEL_PIXEL_PROBE" "$FRAME" count "$1" "$BAR"; }
++count() { "$UMBRIEL_PIXEL_PROBE" "$FRAME" count "$1" "${2:-$BAR}"; }
 +
 +expect_at_least() {
-+  local predicate=$1 minimum=$2 what=$3 found
-+  found=$(count "$predicate")
++  local predicate=$1 minimum=$2 what=$3 region=${4:-$BAR} found
++  found=$(count "$predicate" "$region")
 +  ((found >= minimum)) || fail "$what: only $found pixels match '$predicate'"
 +}
 +
 +expect_none() {
-+  local predicate=$1 what=$2 found
-+  found=$(count "$predicate")
++  local predicate=$1 what=$2 region=${3:-$BAR} found
++  found=$(count "$predicate" "$region")
 +  ((found == 0)) || fail "$what: $found pixels still match '$predicate'"
 +}
 +
@@ -1735,6 +1765,10 @@ index 00000000..3eb12d57
 +readonly white='r > 0.98 && g > 0.98 && b > 0.98'
 +readonly light='r > 0.85 && r < 0.96 && g > 0.85 && g < 0.96 && b > 0.85 && b < 0.96'
 +readonly dark='r < 0.5 && g < 0.5 && b < 0.5'
++# A reversal onto a light bar paints pure black, which no colour configured here reaches.
++readonly black='r < 0.02 && g < 0.02 && b < 0.02'
++# Anything that is not the bar's own white: an edge thinner than a glyph stroke only ever lands between the two.
++readonly notwhite='r < 0.98 || g < 0.98 || b < 0.98'
 +
 +[[ -x $CLIENT ]] || fail "unmap client is not built"
 +
@@ -1742,7 +1776,7 @@ index 00000000..3eb12d57
 +# window. The top edge is light, so the dark edge under the title has something to show against.
 +configure fixed '#101010FF' '#181818FF'
 +mkfifo "$UMBRIEL_RUNTIME_DIR/title-bar-contrast.fifo"
-+FILL_COLOR=0xFFFF0000 TOP_BAND_COLOR=0xFFF0F0F0 TOP_BAND_HEIGHT=1 \
++FILL_COLOR=0xFFFF0000 TOP_BAND_COLOR=0xFFF0F0F0 TOP_BAND_HEIGHT=1 REPAINT_ON_STDIN=1 \
 +  "$CLIENT" contrast-bar 480 300 < "$UMBRIEL_RUNTIME_DIR/title-bar-contrast.fifo" > "$LOG" 2>&1 &
 +exec 3> "$UMBRIEL_RUNTIME_DIR/title-bar-contrast.fifo"
 +shot() {
@@ -1786,27 +1820,89 @@ index 00000000..3eb12d57
 +shot
 +expect_none "$dark" "title_shadow = false still shaded a window-coloured title"
 +
-+# A window-coloured bar has no colour to judge the title against, so it does not reverse until it is allowed to sample.
-+# The edge is light and the title is light grey, which only a reversal makes readable.
-+configure window '#FFFFFFFF' '#E8E8E8FF' 'title_shadow = false'
++# A window-coloured bar has no colour to judge the title against, and the palette is not what shows, so it does not
++# reverse until it is allowed to sample. The palette is dark and the edge light here, so only a sample of the edge can
++# flip the title — a decision taken on the palette would leave it light grey.
++readbacks() {
++  local found
++  found=$(rg -c 'averaged a [0-9]+x[0-9]+ strip read back' "$UMBRIEL_RUNTIME_DIR/compositor.log" || true)
++  echo "${found:-0}"
++}
++configure window '#101010FF' '#E8E8E8FF' 'title_shadow = false'
 +shot
 +expect_none "$dark" "a window-coloured title reversed without the sample"
-+configure window '#FFFFFFFF' '#E8E8E8FF' 'title_shadow = false
++(( $(readbacks) == 0 )) || fail "title_contrast_sample = false still read the edge back"
++configure window '#101010FF' '#E8E8E8FF' 'title_shadow = false
 +title_contrast_sample = true'
 +shot
 +expect_at_least "$dark" 10 "a title reversing on a sampled window-coloured bar"
++(( $(readbacks) > 0 )) || fail "title_contrast_sample = true did not read the edge back"
 +
-+# The reversal reaches the symbols drawn straight on the bar, because they sit on that colour too. The edge is off so
-+# that a dark pixel can only be the symbol itself.
++# Turning the sample off again drops the colour it gave: the bar is back to being unknown, so the title stands as
++# configured rather than reversing against an edge nobody reads any more.
++configure window '#101010FF' '#E8E8E8FF' 'title_shadow = false
++title_contrast_sample = false'
++shot
++expect_none "$dark" "a kept sample kept reversing the title after the key was turned off"
++
++# "average" knows the bar's colour without a key, so the same reversal happens there against the mean.
++configure average '#101010FF' '#E8E8E8FF' 'title_shadow = false'
++shot
++expect_at_least "$dark" 10 "a title reversing against an averaged bar"
++configure average '#101010FF' '#E8E8E8FF' 'title_shadow = false
++title_contrast = false'
++shot
++expect_none "$dark" "title_contrast = false still reversed an averaged title"
++
++# A symbol can flip while the title does not: the fill moved, the title's own decision did not. Nothing but the commit
++# hook can notice that, since the symbols are painted by a repaint rather than by the mirror. The title is chosen to read
++# on both edges; the symbols reverse only on the green one, which a repaint reaches without touching the title colour.
++configure window '#101010FF' '#505050FF' 'title_shadow = false
++title_contrast_sample = true' 'close_glyph = "#737373FF"
++maximize_glyph = "#737373FF"
++minimize_glyph = "#737373FF"' always
++shot
++expect_none "$black" "a symbol reversed on an edge it reads against"
++printf 'G' >&3
++await_lines "$LOG" repainted 1
++shot
++expect_at_least "$black" 1 "a symbol left behind after the edge changed under it"
++
++# An edge with nothing in it leaves the palette showing, so that is what the title is judged against — and it is read
++# live, not remembered from the moment of the sample: the same window under a dark palette reverses, under a light one
++# it stays as configured.
++configure window '#E8E8E8FF' '#202020FF' 'title_shadow = false
++title_contrast_sample = true'
++printf 't' >&3
++await_lines "$LOG" repainted 2
++shot
++expect_none "$white" "a title judged against a light palette reversed anyway"
++configure window '#000000FF' '#202020FF' 'title_shadow = false
++title_contrast_sample = true'
++shot
++expect_at_least "$white" 10 "a title still judged against the palette of the previous sample"
++
++# The reversal reaches the symbols drawn straight on the bar, because they sit on that colour too. Only the button row is
++# counted, so the title's own reversal cannot stand in for a symbol's.
 +configure_buttons '#FFFFFFFF' '#B0B0B0FF' 'title_shadow = false'
 +shot
-+expect_at_least "$dark" 5 "a symbol reversing against the bar it sits on"
++expect_at_least "$dark" 5 "a symbol reversing against the bar it sits on" "$BUTTONS"
 +configure_buttons '#FFFFFFFF' '#B0B0B0FF' 'title_shadow = false
 +title_contrast = false'
 +shot
-+expect_none "$dark" "title_contrast = false still reversed a symbol"
++expect_none "$dark" "title_contrast = false still reversed a symbol" "$BUTTONS"
 +
-+echo "the edge follows title_shadow in fixed and window modes, the title reverses only when its colour would vanish, and the symbols follow the same rule"
++# The edge follows title_shadow around the symbols as well: a white symbol on a white bar paints nothing, so every pixel
++# that is not white in the button row is the edge itself.
++configure_buttons '#FFFFFFFF' '#FFFFFFFF' 'title_contrast = false'
++shot
++expect_at_least "$notwhite" 5 "the symbols' dark edge" "$BUTTONS"
++configure_buttons '#FFFFFFFF' '#FFFFFFFF' 'title_contrast = false
++title_shadow = false'
++shot
++expect_none "$notwhite" "title_shadow = false still shaded the symbols" "$BUTTONS"
++
++echo "the edge follows title_shadow on the title and the symbols, the title and symbols reverse only when their colour would vanish, and window mode reads the edge back only when asked"
 diff --git a/tests/harness/checks/render/title_bar_icons.sh b/tests/harness/checks/render/title_bar_icons.sh
 index ca944dd4..c542a436 100755
 --- a/tests/harness/checks/render/title_bar_icons.sh
@@ -2187,10 +2283,10 @@ index 00820af0..5b5137ac 100644
  int main() { return RUN_TESTS(); }
 diff --git a/tests/unit/title_bar_contrast.cpp b/tests/unit/title_bar_contrast.cpp
 new file mode 100644
-index 00000000..93d915fc
+index 00000000..b43be8eb
 --- /dev/null
 +++ b/tests/unit/title_bar_contrast.cpp
-@@ -0,0 +1,64 @@
+@@ -0,0 +1,71 @@
 +#include "scene/title_bar_contrast.h"
 +
 +#include "check.h"
@@ -2238,7 +2334,8 @@ index 00000000..93d915fc
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedFlipsOnlyBelowTheThreshold) {
-+  // Just under the threshold reverses; exactly at it, and above, the configured colour stands.
++  // Just under the threshold reverses; just above it the configured colour stands. The boundary itself is not pinned:
++  // both sides of it are computed luminances, so no case sits exactly on it.
 +  const auto text = colour(0.0F, 0.0F, 0.0F, 1.0F);
 +  const float justUnder = umbriel::kTitleContrastThreshold - 0.01F;
 +  const float justOver = umbriel::kTitleContrastThreshold + 0.01F;
@@ -2252,6 +2349,12 @@ index 00000000..93d915fc
 +  // composite, which the renderer cannot mask away.
 +  const auto hidden = colour(0.1F, 0.1F, 0.1F, 0.0F);
 +  CHECK(umbriel::contrastAdjusted(hidden, colour(0.1F, 0.1F, 0.1F)) == hidden);
++}
++
++UMBRIEL_TEST(contrastAdjustedLeavesATitleAloneOnNoBackground) {
++  // A bar with no alpha is not what shows, so its colour says nothing about what the title sits on.
++  const auto text = colour(0.1F, 0.1F, 0.1F, 1.0F);
++  CHECK(umbriel::contrastAdjusted(text, colour(0.1F, 0.1F, 0.1F, 0.0F)) == text);
 +}
 +
 +int main() { return RUN_TESTS(); }
