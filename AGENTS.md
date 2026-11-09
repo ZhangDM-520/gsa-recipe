@@ -133,6 +133,7 @@ OpenShadingLanguage -> blender.
 | `docs/maintainer-guide.md` | The recipe-maintenance manual: groups, recipe registration, version-synced external releases, the `app` group, coupled-stack updates, the journal-entry format. |
 | `docs/package-policy.md` | What a recipe directory may hold versus what is fetched at build time; the generator pair, the `.SRCINFO` contract. |
 | `docs/source-sharing.md` | The shared-source mirror contract (`gsa -Mm`) and what qualifies as a valid canonical mirror. |
+| `docs/snapshot-expansion.md` | The `-git` → `-snapshot` programme: reconciled state, exclusions, waves, engine work |
 | `docs/CURRENT.md` | The umbriel stack live snapshot — overwrite, never append; owned by a parallel session lane, so never edit it from a rebuild-campaign lane. |
 | `docs/adr/0001-pgo-shared-gate.md` | Why PGO verification is one shared module with per-recipe calls and fatal semantics; read before touching `lib/pgo.sh` or any `package*` tail. |
 | `docs/adr/0002-topology-one-record.md` | Why one topology record per package replaced four syntaxes; read before adding, merging, or splitting records. |
