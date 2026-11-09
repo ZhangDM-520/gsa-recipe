@@ -1,7 +1,7 @@
 pkgbase = umbriel-git
 	pkgdesc = A Wayland compositor built on wlroots
 	pkgver = 0.1.0.r1552.0a22bd2
-	pkgrel = 2
+	pkgrel = 3
 	epoch = 1
 	url = https://github.com/noctalia-dev/umbriel
 	arch = x86_64
@@ -50,7 +50,7 @@ pkgbase = umbriel-git
 	source = 0022-scratchpad-close-animation.patch
 	source = 0023-scratchpad-show-no-recentre.patch
 	sha256sums = SKIP
-	sha256sums = 7affe57a9f872d41f1428016a88ec83a310ca44fdd93ee697793471526e1dcd6
+	sha256sums = d7f485c2e8c635673b9247d62bc29cb2f3733e6d32e0700e93afa1f93d336fdc
 	sha256sums = 36442c0a3d52d421b94134fb81123155169d2cc43bde14d070e7d98c36cd068b
 	sha256sums = 837460c6faf16c956be535dd3d51c8d47cb2f6a66f951f1d2b0f630a49cea1ae
 	sha256sums = 99ae6cbc53708c78e4dd7fc0fb19507ac6db4e1f2a873ff185a106225d6564e5
