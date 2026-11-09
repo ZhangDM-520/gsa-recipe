@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1552.0a22bd2
-pkgrel=1
+pkgrel=5
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -70,7 +70,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
 sha256sums=('SKIP'
             '7affe57a9f872d41f1428016a88ec83a310ca44fdd93ee697793471526e1dcd6'
             '36442c0a3d52d421b94134fb81123155169d2cc43bde14d070e7d98c36cd068b'
-            '837460c6faf16c956be535dd3d51c8d47cb2f6a66f951f1d2b0f630a49cea1ae'
+            '260271637331de586e1d3e13101b769d552b5b3f766078f7bccd281c493d669f'
             '99ae6cbc53708c78e4dd7fc0fb19507ac6db4e1f2a873ff185a106225d6564e5'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
             '1f2a8649293e02ae4eaa20fc0ef5bcf52de034bfb16137ca433880458d0b20fa'
@@ -165,8 +165,18 @@ prepare() {
   # the per-client budget is pruned when its wl_client goes away, only exactly
   # representable transfer curves (sRGB, gamma 2.2) are accepted for imported
   # profiles and `set_tf_power`, profiles whose RGB TRCs differ are refused, and
-  # the user docs split from the design notes. Delta 44 files, +6185/-108;
-  # sha256 837460c6…. (Retire on merge.)
+  # the user docs split from the design notes. Re-cut 2026-11-09 for the round-4
+  # review on main@0a22bd2 over 0011+0012: the output description names the
+  # encoding the frame is really written in (the panel only under
+  # `sdr_gamut = "srgb"`, since `"native"` composes into sRGB), a sampled power
+  # curve is reported as `tf_power` so the parametric events and `icc_file`
+  # agree, and the protocol request/error/budget detail moved to the design
+  # note. Re-cut 2026-11-10 for the external round: a sampled curve with no
+  # parametric form now fails get_preferred_parametric with 'unsupported'
+  # instead of advertising a description no parametric client can use, and the
+  # two multi-scenario checks became one scenario per check over
+  # tests/harness/color_lib.sh. Delta 60 files, +6638/-129; sha256 26027163….
+  # (Retire on merge.)
   git apply -3 ../0013-icc-gamut.patch
 
   # [output] downsample texel footprint: the capped-downsample pass averages
