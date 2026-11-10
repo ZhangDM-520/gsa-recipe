@@ -1,42 +1,21 @@
-From ac082e360b78f1dee58b1d97f2e9d4eb44d4e807 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 10:25:06 +0800
-Subject: [PATCH 1/5] fix(scratchpad): fade a closing member above the pad
- backdrop
-
-A window closed inside a scratchpad left its close snapshot under the pad's
-own dim rect and blur. The pad then attenuated the snapshot instead of letting
-it fade: a mid-fade sample read 18 where a plain floating window reads 90, and
-hiding the pad mid-close left the snapshot on screen after the pad was gone.
-
-Capture a member's snapshot into a per-snapshot layer of the pad tree, on the
-member's pad output and clipped to it, and drive the snapshot's opacity with
-that pad's backdrop fade so a hide takes a mid-fade snapshot with it. The
-layer is dropped when the server reaps the snapshot, which is also how an
-output release reaps it.
-
-tests/harness/checks/animation/scratchpad_close.sh pins both halves: the
-member's mid-fade sample matches the floating control, and a pad hidden
-mid-close leaves nothing on screen (112 before the multiplier).
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- src/server/server.cpp                         |  42 ++++-
- src/server/server.h                           |   8 +
- src/view/view.h                               |   7 +-
- src/view/view_animation.cpp                   |  25 ++-
- src/view/view_lifecycle.cpp                   |   5 +-
- src/workspace/scratchpad.cpp                  |  47 +++++
- src/workspace/scratchpad.h                    |  11 ++
- .../checks/animation/scratchpad_close.sh      | 169 ++++++++++++++++++
- 8 files changed, 297 insertions(+), 17 deletions(-)
- create mode 100755 tests/harness/checks/animation/scratchpad_close.sh
-
+diff --git a/docs/user/scratchpad.md b/docs/user/scratchpad.md
+index a3c5fab3..4fb85bcf 100644
+--- a/docs/user/scratchpad.md
++++ b/docs/user/scratchpad.md
+@@ -170,7 +170,7 @@ Showing a populated scratchpad focuses its most recently focused member. Hiding
+ 
+ A dialog parented to a visible scratchpad window joins that scratchpad unless a window rule explicitly chooses another destination.
+ 
+-Backdrop dim and blur affect only the output showing the scratchpad.
++Backdrop dim and blur affect only the output showing the scratchpad. A member that closes while its scratchpad is shown fades like any other window, over the backdrop rather than under it, and a scratchpad hidden mid-close takes the closing window with it.
+ 
+ ## Restoring windows
+ 
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index aaee6dd4..a482e7df 100644
+index fe3fe898..66ae2ed1 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -1905,13 +1905,36 @@ namespace umbriel {
+@@ -1931,13 +1931,38 @@ namespace umbriel {
      if (!movedAlpha && !movedSlide) {
        return false;
      }
@@ -64,7 +43,10 @@ index aaee6dd4..a482e7df 100644
 +  void Server::CloseSnapshot::applyOpacity() {
      // Overshooting curves can push this out of range; wlr_scene_buffer_set_opacity asserts opacity is in [0, 1].
      const float rawAlpha = std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
-     // A lifecycle shader fades the whole snapshot at once, so its buffers and borders stay opaque under it.
+-    // A lifecycle shader fades the whole snapshot at once, so its buffers and borders stay opaque under it.
++    // A lifecycle shader fades the whole snapshot, so its nodes stay opaque under it. An owner's multiplier still
++    // attenuates them individually inside that composite: the shader API has no group-opacity uniform, so a pad hide
++    // fades each node's contribution rather than the composed frame (equal for a single surface, visible on seams).
      const bool composited = effectRegistry().lifecycleEffect(m_event) != nullptr;
      const bool builtInSlide = !composited && m_slide.target() != m_slide.from();
      // Keep the moving snapshot visible long enough for slide to read as motion. Fade keeps the configured timeline.
@@ -74,7 +56,7 @@ index aaee6dd4..a482e7df 100644
      for (const Buffer& buffer : m_buffers) {
        wlr_scene_buffer_set_opacity(buffer.node, std::clamp(buffer.baseOpacity * alpha, 0.0F, 1.0F));
      }
-@@ -1935,15 +1958,9 @@ namespace umbriel {
+@@ -1961,15 +1986,9 @@ namespace umbriel {
  
      if (m_shadow.node != nullptr) {
        auto color = m_shadow.color;
@@ -91,7 +73,29 @@ index aaee6dd4..a482e7df 100644
    }
  
    void Server::registerAnimatable(Animatable* animatable) {
-@@ -2196,6 +2213,15 @@ namespace umbriel {
+@@ -2008,13 +2027,21 @@ namespace umbriel {
+ 
+     // A snapshot only exists while fading out, so a settled one is finished.
+     // Erasing destroys its scene tree and unregisters it.
++    m_reapedSnapshotsScratch.clear();
+     std::erase_if(m_closeSnapshots, [this](const std::unique_ptr<CloseSnapshot>& snap) {
+       if (snap->hasActiveAnimations()) {
+         return false;
+       }
++      m_reapedSnapshotsScratch.push_back(snap->id());
+       unregisterAnimatable(snap.get());
+       return true;
+     });
++    // The erased snapshots destroyed their own trees, so an owner's wrapper layer is empty.
++    if (m_scratchpadManager != nullptr) {
++      for (const CloseSnapshotId id : m_reapedSnapshotsScratch) {
++        m_scratchpadManager->forgetCloseSnapshot(id);
++      }
++    }
+     return active;
+   }
+ 
+@@ -2222,6 +2249,15 @@ namespace umbriel {
      }
    }
  
@@ -108,20 +112,19 @@ index aaee6dd4..a482e7df 100644
      for (const auto& snapshot : m_closeSnapshots) {
        if (snapshot->id() == id) {
 diff --git a/src/server/server.h b/src/server/server.h
-index dccd5c84..529d66b2 100644
+index ba302e6c..4bfddd63 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
-@@ -525,6 +525,9 @@ namespace umbriel {
+@@ -536,6 +536,8 @@ namespace umbriel {
      void presentCloseSnapshot(CloseSnapshotId id, int canvasX, int canvasY, bool visible);
      // False once the snapshot has been reaped.
      bool closeSnapshotAlive(CloseSnapshotId id) const;
-+    // Attenuate a snapshot by an owner's own fade (a scratchpad's backdrop), on top of its lifecycle alpha. The owner
-+    // must keep the id alive; a reaped one is a no-op.
++    // Fold an owner's fade (a scratchpad's backdrop) into a snapshot's opacity. A reaped id is a no-op.
 +    void setCloseSnapshotFade(CloseSnapshotId id, float multiplier);
      // End a held snapshot; it is reaped at the end of the current animation tick.
      void releaseCloseSnapshot(CloseSnapshotId id);
  
-@@ -831,6 +834,7 @@ namespace umbriel {
+@@ -843,6 +845,7 @@ namespace umbriel {
        // Place the captured box at a canvas origin in output-root coordinates, or hide it while its workspace is not
        // showing.
        void present(int canvasX, int canvasY, bool visible);
@@ -129,54 +132,86 @@ index dccd5c84..529d66b2 100644
  
        AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
        bool tickAnimations(double nowMsec) override;
-@@ -840,6 +844,8 @@ namespace umbriel {
+@@ -852,6 +855,8 @@ namespace umbriel {
      private:
        void applyPresentation();
        void applyShrink(int width, int height);
-+      // Push the composed opacity (lifecycle alpha times the owner's fade multiplier) into every captured node.
++      // Push lifecycle alpha times the owner's fade into every captured node.
 +      void applyOpacity();
  
        Server* m_server = nullptr;
        CloseSnapshotId m_id = kInvalidCloseSnapshot;
-@@ -894,6 +900,8 @@ namespace umbriel {
+@@ -906,11 +911,15 @@ namespace umbriel {
        int m_shadowWidth = 0;
        int m_shadowHeight = 0;
        wlr_box m_shadowHole{};
-+      // An owner-driven fade (scratchpad backdrop) the snapshot fades along with, independent of its own timeline.
++      // An owner's fade (a scratchpad backdrop), independent of the snapshot's own timeline.
 +      float m_fadeMultiplier = 1.0F;
      };
      // unique_ptr because the registry holds raw pointers to these: a vector of
      // values would move them out from under it on reallocation.
+     std::vector<std::unique_ptr<CloseSnapshot>> m_closeSnapshots;
+     CloseSnapshotId m_nextCloseSnapshotId = 1;
++    // Ids reaped this pass, so an owner can drop its wrapper layer once the snapshot's trees are gone.
++    std::vector<CloseSnapshotId> m_reapedSnapshotsScratch;
+     std::vector<Animatable*> m_animatables;
+     std::vector<Animatable*> m_animatablesScratch;
+ 
+diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
+index e43f0141..2966adac 100644
+--- a/src/server/server_events.cpp
++++ b/src/server/server_events.cpp
+@@ -2769,13 +2769,20 @@ namespace umbriel {
+       m_insertHint->hideImmediate();
+     }
+     // Dropping the snapshot unregisters it and destroys its scene tree.
++    m_reapedSnapshotsScratch.clear();
+     std::erase_if(m_closeSnapshots, [this, output](const std::unique_ptr<CloseSnapshot>& snap) {
+       if (!snap->animatesOn(output)) {
+         return false;
+       }
++      m_reapedSnapshotsScratch.push_back(snap->id());
+       unregisterAnimatable(snap.get());
+       return true;
+     });
++    if (m_scratchpadManager != nullptr) {
++      for (const CloseSnapshotId id : m_reapedSnapshotsScratch) {
++        m_scratchpadManager->forgetCloseSnapshot(id);
++      }
++    }
+     // wlroots 0.20 does not track output lifetime for layer surfaces, so their wlr_output pointer would dangle once the
+     // output is freed. Destroy them now while the wlr_output is still valid.
+     {
 diff --git a/src/view/view.h b/src/view/view.h
-index ab322401..999ab092 100644
+index 83510eed..82cbf503 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -503,8 +503,8 @@ namespace umbriel {
+@@ -528,8 +528,8 @@ namespace umbriel {
      bool animatesOn(const Output* output) const override;
  
    private:
 -    // `withShadow` copies the shadow.
 -    CloseSnapshotId captureSnapshot(bool held, bool withShadow);
-+    // `withShadow` copies the shadow. A `scratchpadOutput` reparents the snapshot into that pad's tree, above its dim.
++    // `withShadow` copies the shadow; `scratchpadOutput` reparents the snapshot into that pad's tree.
 +    CloseSnapshotId captureSnapshot(bool held, bool withShadow, Output* scratchpadOutput = nullptr);
      friend class Cursor;
      friend class ScratchpadManager;
      friend class ColorManager;
-@@ -669,7 +669,8 @@ namespace umbriel {
+@@ -700,7 +700,8 @@ namespace umbriel {
      void watchViewSurfaceTree(wlr_surface* root, wlr_subsurface* attachment = nullptr);
      void watchViewSurface(wlr_surface* surface, wlr_subsurface* attachment);
      void clearViewSurfaceWatches();
 -    [[nodiscard]] CloseSnapshotId beginCloseAnimation();
-+    // `scratchpadOutput` is the pad the closing member was drawn in, or nullptr for an ordinary window.
++    // `scratchpadOutput` is the pad the closing member was drawn in, or nullptr for a plain window.
 +    [[nodiscard]] CloseSnapshotId beginCloseAnimation(Output* scratchpadOutput);
      // A frozen copy of this view's content and border, held over it until Server::releaseCloseSnapshot. The live view
      // stays under it at the same box and keeps drawing its own shadow, so the copy takes none.
      [[nodiscard]] CloseSnapshotId captureHeldSnapshot();
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 417f8b51..7e708a73 100644
+index e42149da..0ee2426d 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
-@@ -1055,7 +1055,7 @@ namespace umbriel {
+@@ -1238,7 +1238,7 @@ namespace umbriel {
      return fullArea;
    }
  
@@ -185,7 +220,7 @@ index 417f8b51..7e708a73 100644
      const auto& animation = config().animation;
      const bool held = m_tiled && m_workspace != nullptr && animation.holdsClosedTile();
      if (!m_mapped
-@@ -1066,7 +1066,7 @@ namespace umbriel {
+@@ -1249,7 +1249,7 @@ namespace umbriel {
          || (m_server->overview() != nullptr && m_server->overview()->active())) {
        return kInvalidCloseSnapshot;
      }
@@ -194,7 +229,7 @@ index 417f8b51..7e708a73 100644
    }
  
    CloseSnapshotId View::captureHeldSnapshot() {
-@@ -1080,9 +1080,12 @@ namespace umbriel {
+@@ -1263,9 +1263,12 @@ namespace umbriel {
      return captureSnapshot(true, false);
    }
  
@@ -202,7 +237,7 @@ index 417f8b51..7e708a73 100644
 -    Output* output =
 -        m_workspace != nullptr && m_workspace->group() != nullptr ? m_workspace->group()->output() : currentOutput();
 +  CloseSnapshotId View::captureSnapshot(bool held, bool withShadow, Output* scratchpadOutput) {
-+    // A member was removed from its pad before the capture, so the owner passes its output in.
++    // A member's pad entry is gone by now, so its output comes from the owner.
 +    Output* output = scratchpadOutput != nullptr
 +        ? scratchpadOutput
 +        : (m_workspace != nullptr && m_workspace->group() != nullptr ? m_workspace->group()->output()
@@ -210,18 +245,18 @@ index 417f8b51..7e708a73 100644
      if (output == nullptr) {
        return kInvalidCloseSnapshot;
      }
-@@ -1181,6 +1184,18 @@ namespace umbriel {
+@@ -1364,6 +1367,18 @@ namespace umbriel {
          output, snap, content, std::move(snapBorders), m_presentedBox,
          held ? std::optional{Server::CloseSnapshotOverrides{.held = true}} : std::nullopt, shadow, titleBarHeight()
      );
-+    // A scratchpad draws its members above its own dim rect and blur, so a fading member has to leave the output root
-+    // for the pad tree. Keeping the capture in the output root would dim it twice and let the pad's fade miss it.
++    // The pad draws members above its dim rect and blur, so a fading member moves into the pad tree; in the output
++    // root it would be dimmed twice and miss the pad's fade.
 +    if (id != kInvalidCloseSnapshot && scratchpadOutput != nullptr && m_server->scratchpadManager() != nullptr) {
 +      if (wlr_scene_tree* layer = m_server->scratchpadManager()->createCloseSnapshotLayer(output)) {
 +        if (shadow.tree != nullptr) {
 +          wlr_scene_node_reparent(&shadow.tree->node, layer);
 +        }
-+        // Last, so the snapshot copies draw above its shadow in the new layer.
++        // Last, so the copies draw above the shadow.
 +        wlr_scene_node_reparent(&snap->node, layer);
 +        m_server->scratchpadManager()->trackCloseSnapshot(id, output, layer);
 +      }
@@ -230,20 +265,20 @@ index 417f8b51..7e708a73 100644
      return id;
    }
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 6312678f..18f1df70 100644
+index de1e1705..b32138ef 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
-@@ -647,6 +647,9 @@ namespace umbriel {
-         setOnActiveWorkspace(m_workspace->active());
-       }
-     }
-+    // remove() drops the entry, so the close snapshot's output is read while the window still belongs to its pad.
+@@ -587,6 +587,9 @@ namespace umbriel {
+   }
+ 
+   void View::handleUnmap(bool animateClose) {
++    // Read before the links below are released: they are what resolve this window to its pad.
 +    Output* scratchpadOutput =
 +        m_server->scratchpadManager() != nullptr ? m_server->scratchpadManager()->outputFor(this) : nullptr;
-     if (m_server->scratchpadManager() != nullptr) {
-       m_server->scratchpadManager()->remove(this);
-     }
-@@ -654,7 +657,7 @@ namespace umbriel {
+     m_server->seat()->toplevelDrags().unmapped(this);
+     if (m_effectSelectionIdle != nullptr) {
+       wl_event_source_remove(m_effectSelectionIdle);
+@@ -659,7 +662,7 @@ namespace umbriel {
        overview->onViewUnmapped(this, animateClose);
      }
      // Replacement focus can hide the closing tab. Capture while its current visibility still decides eligibility.
@@ -253,35 +288,19 @@ index 6312678f..18f1df70 100644
      // window normally.
      if (m_minimized) {
 diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index 6c9db618..e5b99fdf 100644
+index fa3b6cbd..77d7729d 100644
 --- a/src/workspace/scratchpad.cpp
 +++ b/src/workspace/scratchpad.cpp
-@@ -87,6 +87,24 @@ namespace umbriel {
+@@ -94,6 +94,8 @@ namespace umbriel {
        }
      }
  
-+    // The server reaps finished snapshots after this pass, so a dead id here means its tree is already gone and only
-+    // the wrapper is left. An output release reaps through the same path.
-+    std::erase_if(m_trackedCloseSnapshots, [this](const TrackedCloseSnapshot& tracked) {
-+      if (m_server->closeSnapshotAlive(tracked.id)) {
-+        return false;
-+      }
-+      if (tracked.layer != nullptr) {
-+        wlr_scene_node_destroy(&tracked.layer->node);
-+      }
-+      return true;
-+    });
-+    for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
-+      const auto fade = m_backdropFades.find(tracked.output);
-+      m_server->setCloseSnapshotFade(
-+          tracked.id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
-+      );
-+    }
++    syncTrackedCloseSnapshots();
 +
      if (m_hidingViews.empty()) {
        return movedBackdrop;
      }
-@@ -102,6 +120,7 @@ namespace umbriel {
+@@ -109,6 +111,7 @@ namespace umbriel {
  
    bool ScratchpadManager::hasActiveAnimations() const {
      return !m_hidingViews.empty()
@@ -289,7 +308,36 @@ index 6c9db618..e5b99fdf 100644
          || std::ranges::any_of(m_backdropFades, [](const auto& entry) { return entry.second.animating(); });
    }
  
-@@ -786,6 +805,34 @@ namespace umbriel {
+@@ -118,7 +121,10 @@ namespace umbriel {
+     if (fade != m_backdropFades.end() && fade->second.animating()) {
+       return true;
+     }
+-    return std::ranges::any_of(m_hidingViews, [this, output](const View* view) { return outputFor(view) == output; });
++    return std::ranges::any_of(m_hidingViews, [this, output](const View* view) { return outputFor(view) == output; })
++        || std::ranges::any_of(m_trackedCloseSnapshots, [output](const TrackedCloseSnapshot& tracked) {
++             return tracked.output == output;
++           });
+   }
+ 
+   ScratchpadManager::Scratchpad* ScratchpadManager::findScratchpad(std::string_view name) {
+@@ -681,6 +687,16 @@ namespace umbriel {
+     if (output == nullptr || m_server == nullptr) {
+       return;
+     }
++    // A mid-fade wrapper is clipped to its capture output's box, which a layout change moves.
++    if (!m_trackedCloseSnapshots.empty()) {
++      wlr_box outputBox{};
++      wlr_output_layout_get_box(m_server->outputLayout(), output->wlr(), &outputBox);
++      for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
++        if (tracked.layer != nullptr && tracked.output == output) {
++          wlr_scene_tree_set_clip(tracked.layer, &outputBox);
++        }
++      }
++    }
+     const wlr_box targetArea = usableArea(*m_server, output);
+     if (targetArea.width <= 0 || targetArea.height <= 0) {
+       return;
+@@ -793,6 +809,52 @@ namespace umbriel {
      }
    }
  
@@ -301,8 +349,7 @@ index 6c9db618..e5b99fdf 100644
 +    if (layer == nullptr) {
 +      return nullptr;
 +    }
-+    // The snapshot keeps its canvas coordinates, so the wrapper sits at the origin and clips to this output's box in
-+    // the same global space.
++    // The snapshot keeps canvas coordinates, so the wrapper sits at the origin and clips in the same global space.
 +    wlr_box box{};
 +    wlr_output_layout_get_box(m_server->outputLayout(), output->wlr(), &box);
 +    wlr_scene_node_set_position(&layer->node, 0, 0);
@@ -315,32 +362,71 @@ index 6c9db618..e5b99fdf 100644
 +      return;
 +    }
 +    m_trackedCloseSnapshots.push_back({.id = id, .output = output, .layer = layer});
-+    const auto fade = m_backdropFades.find(output);
-+    m_server->setCloseSnapshotFade(
-+        id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
-+    );
++    syncTrackedCloseSnapshots();
++  }
++
++  void ScratchpadManager::syncTrackedCloseSnapshots() {
++    for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
++      const auto fade = m_backdropFades.find(tracked.output);
++      // A pad with no fade entry is fully hidden.
++      m_server->setCloseSnapshotFade(
++          tracked.id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
++      );
++    }
++  }
++
++  void ScratchpadManager::forgetCloseSnapshot(CloseSnapshotId id) {
++    std::erase_if(m_trackedCloseSnapshots, [id](const TrackedCloseSnapshot& tracked) {
++      if (tracked.id != id) {
++        return false;
++      }
++      if (tracked.layer != nullptr) {
++        wlr_scene_node_destroy(&tracked.layer->node);
++      }
++      return true;
++    });
 +  }
 +
    void ScratchpadManager::releaseOutput(Output* output) {
      std::vector<std::string> stranded;
      for (auto& [name, scratchpad] : m_scratchpads) {
+@@ -833,6 +895,8 @@ namespace umbriel {
+         fade.snap(visibleOn(output) ? 1.0 : 0.0);
+         updateDimAndBlur(output);
+       }
++      // The snap skips the tick that would have pushed the new value.
++      syncTrackedCloseSnapshots();
+       for (const Entry& entry : m_entries) {
+         if (entry.view == nullptr) {
+           continue;
 diff --git a/src/workspace/scratchpad.h b/src/workspace/scratchpad.h
-index ead8100c..04ca072b 100644
+index ead8100c..e51eb2ca 100644
 --- a/src/workspace/scratchpad.h
 +++ b/src/workspace/scratchpad.h
-@@ -97,6 +97,11 @@ namespace umbriel {
+@@ -97,6 +97,13 @@ namespace umbriel {
      void reconcileConfig();
      // Return entries to the output they were parked on. Entries whose output is still gone park on `fallback`.
      size_t restoreDisplaced(Output* fallback);
-+    // A close snapshot of a member fades with the pad's own backdrop fade, so it must draw above the dim rect and blur.
-+    // Returns the layer to reparent the snapshot (and its shadow) into, or nullptr to leave it where it was captured.
++    // A member's close snapshot draws above the pad's dim and blur, in a layer of the pad tree. Nullptr leaves the
++    // capture where it is.
 +    wlr_scene_tree* createCloseSnapshotLayer(Output* output);
-+    // Hand a reparented snapshot to the manager; it drops the layer once the server reaps the snapshot.
++    // The manager drops the layer once the server reaps the snapshot.
 +    void trackCloseSnapshot(CloseSnapshotId id, Output* output, wlr_scene_tree* layer);
++    // Drop a just-reaped snapshot's wrapper layer, called from the reap itself.
++    void forgetCloseSnapshot(CloseSnapshotId id);
  
    private:
      struct PendingSpawn {
-@@ -177,6 +182,12 @@ namespace umbriel {
+@@ -167,6 +174,8 @@ namespace umbriel {
+     bool restoreView(View* view, Output* fallback, bool focus, Workspace* target = nullptr);
+     // Retarget the backdrop dim/blur fade for `output` and refresh its scene nodes.
+     void retargetBackdrop(Output* output, bool visible, bool animateTransition = true);
++    // Push each tracked snapshot's current backdrop fade.
++    void syncTrackedCloseSnapshots();
+     wlr_scene_rect* dimRectFor(Output* output);
+     wlr_scene_blur* blurNodeFor(Output* output);
+     void updateDimAndBlur(Output* output);
+@@ -177,6 +186,12 @@ namespace umbriel {
      std::vector<Entry> m_entries;
      // Views mid fade-out on hide, still enabled until tickAnimations disables the node once the fade completes.
      std::vector<View*> m_hidingViews;
@@ -355,11 +441,12 @@ index ead8100c..04ca072b 100644
      std::unordered_map<Output*, AnimatedValue> m_backdropFades;
 diff --git a/tests/harness/checks/animation/scratchpad_close.sh b/tests/harness/checks/animation/scratchpad_close.sh
 new file mode 100755
-index 00000000..d6b78e94
+index 00000000..888d43c7
 --- /dev/null
 +++ b/tests/harness/checks/animation/scratchpad_close.sh
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,242 @@
 +#!/usr/bin/env bash
++# harness: outputs=2
 +# A scratchpad member's close snapshot fades at the same rate as a plain floating window's: the pad draws its members
 +# above its own dim rect, so the snapshot has to live in the pad's tree rather than under the output root. It must also
 +# follow the pad's own backdrop fade, so hiding the pad mid-close takes the snapshot with it.
@@ -373,6 +460,11 @@ index 00000000..d6b78e94
 +# The 40x40 mean at the window's centre: the clients paint 0xFF5577AA, so a fully visible window reads about 170.
 +sample_blue() {
 +  "$UMBRIEL_PIXEL_PROBE" "$1" mean 40x40+240+160 | awk '{ print int($3) }'
++}
++
++# Inside the 300x200 dialog centred on its 100x100 parent, and outside the parent itself.
++sample_dialog() {
++  "$UMBRIEL_PIXEL_PROBE" "$1" mean 40x40+170+120 | awk '{ print int($3) }'
 +}
 +
 +window_id() {
@@ -449,6 +541,13 @@ index 00000000..d6b78e94
 +default_floating = true
 +default_floating_size_px = { width = 400, height = 240 }
 +default_position = { x = 40, y = 40, anchor = "top_left" }
++
++# The dialog leg's parent: the child dialog is centred on it and is bigger than it.
++[[window_rule]]
++match.title = "^transient-parent$"
++default_floating = true
++default_floating_size_px = { width = 100, height = 100 }
++default_position = { x = 40, y = 40, anchor = "top_left" }
 +EOF
 +"$UMBRIEL" msg config-reload > /dev/null
 +"$UMBRIEL" clock-freeze
@@ -499,6 +598,8 @@ index 00000000..d6b78e94
 +  echo "scratchpad close snapshot outlived its timeline: control=$control_after member=$member_after"
 +  exit 1
 +fi
++# The reaped snapshot must not keep the compositor "animating" on the frozen clock.
++"$UMBRIEL" settle
 +
 +# Leave the pad hidden so the next leg can show it again.
 +"$UMBRIEL" msg scratchpad-toggle > /dev/null
@@ -526,226 +627,6 @@ index 00000000..d6b78e94
 +  exit 1
 +fi
 +"$UMBRIEL" clock-advance "$CLOSE_MS"
-+
-+echo "scratchpad close snapshot faded like a floating window: control $control_before -> $control_mid -> $control_after, member $member_before -> $member_mid -> $member_after, pad-hide $hiding_before -> $hiding_after"
-From ac2f29cedb5741f06796b49a73cbfcdea3218dc9 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 10:45:08 +0800
-Subject: [PATCH 2/5] fix(scratchpad): reap a close snapshot's pad layer on the
- same tick
-
-Two gaps from the internal review.
-
-An attached dialog lost its pad before the capture: `handleUnmap` resolves the
-pad through `placementRoot()`, which follows the parent link that
-`unlinkAttachment()` had already released, so a dialog's snapshot fell back to
-the output root and was dimmed again. Read the pad output at the top of
-`handleUnmap`, before the attachment is dropped, and pin it: a dialog of a
-member now reads the same mid-fade value as the floating control (18 before).
-
-The pad only noticed a reaped snapshot on its next tick, one pass after the
-server destroyed it, so `hasActiveAnimations()` stayed true with nothing
-animating and a frozen-clock `settle` reported a running animation. The server
-now hands the reaped ids to the pad, which drops each wrapper layer
-synchronously, in both the tick and output-removal paths.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- src/server/server.cpp                         |  8 +++
- src/server/server.h                           |  2 +
- src/server/server_events.cpp                  |  7 +++
- src/view/view_lifecycle.cpp                   |  6 +--
- src/workspace/scratchpad.cpp                  | 23 +++++----
- src/workspace/scratchpad.h                    |  3 ++
- .../checks/animation/scratchpad_close.sh      | 50 ++++++++++++++++++-
- 7 files changed, 84 insertions(+), 15 deletions(-)
-
-diff --git a/src/server/server.cpp b/src/server/server.cpp
-index a482e7df..0af15733 100644
---- a/src/server/server.cpp
-+++ b/src/server/server.cpp
-@@ -1999,13 +1999,21 @@ namespace umbriel {
- 
-     // A snapshot only exists while fading out, so a settled one is finished.
-     // Erasing destroys its scene tree and unregisters it.
-+    m_reapedSnapshotsScratch.clear();
-     std::erase_if(m_closeSnapshots, [this](const std::unique_ptr<CloseSnapshot>& snap) {
-       if (snap->hasActiveAnimations()) {
-         return false;
-       }
-+      m_reapedSnapshotsScratch.push_back(snap->id());
-       unregisterAnimatable(snap.get());
-       return true;
-     });
-+    // The erased snapshots destroyed their own trees, so an owner's wrapper layer is empty by now.
-+    if (m_scratchpadManager != nullptr) {
-+      for (const CloseSnapshotId id : m_reapedSnapshotsScratch) {
-+        m_scratchpadManager->forgetCloseSnapshot(id);
-+      }
-+    }
-     return active;
-   }
- 
-diff --git a/src/server/server.h b/src/server/server.h
-index 529d66b2..64604d5b 100644
---- a/src/server/server.h
-+++ b/src/server/server.h
-@@ -907,6 +907,8 @@ namespace umbriel {
-     // values would move them out from under it on reallocation.
-     std::vector<std::unique_ptr<CloseSnapshot>> m_closeSnapshots;
-     CloseSnapshotId m_nextCloseSnapshotId = 1;
-+    // Ids reaped in the current pass, so an owner can drop its wrapper layer after the snapshot's trees are gone.
-+    std::vector<CloseSnapshotId> m_reapedSnapshotsScratch;
-     std::vector<Animatable*> m_animatables;
-     std::vector<Animatable*> m_animatablesScratch;
- 
-diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index 29cfc231..5e322f60 100644
---- a/src/server/server_events.cpp
-+++ b/src/server/server_events.cpp
-@@ -2728,13 +2728,20 @@ namespace umbriel {
-       m_insertHint->hideImmediate();
-     }
-     // Dropping the snapshot unregisters it and destroys its scene tree.
-+    m_reapedSnapshotsScratch.clear();
-     std::erase_if(m_closeSnapshots, [this, output](const std::unique_ptr<CloseSnapshot>& snap) {
-       if (!snap->animatesOn(output)) {
-         return false;
-       }
-+      m_reapedSnapshotsScratch.push_back(snap->id());
-       unregisterAnimatable(snap.get());
-       return true;
-     });
-+    if (m_scratchpadManager != nullptr) {
-+      for (const CloseSnapshotId id : m_reapedSnapshotsScratch) {
-+        m_scratchpadManager->forgetCloseSnapshot(id);
-+      }
-+    }
-     // wlroots 0.20 does not track output lifetime for layer surfaces, so their wlr_output pointer would dangle once the
-     // output is freed. Destroy them now while the wlr_output is still valid.
-     {
-diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 18f1df70..aa48da9e 100644
---- a/src/view/view_lifecycle.cpp
-+++ b/src/view/view_lifecycle.cpp
-@@ -582,6 +582,9 @@ namespace umbriel {
-   }
- 
-   void View::handleUnmap(bool animateClose) {
-+    // Attaching is what resolves this window to its pad, and the links below are released before the close capture.
-+    Output* scratchpadOutput =
-+        m_server->scratchpadManager() != nullptr ? m_server->scratchpadManager()->outputFor(this) : nullptr;
-     m_server->seat()->toplevelDrags().unmapped(this);
-     if (m_effectSelectionIdle != nullptr) {
-       wl_event_source_remove(m_effectSelectionIdle);
-@@ -647,9 +650,6 @@ namespace umbriel {
-         setOnActiveWorkspace(m_workspace->active());
-       }
-     }
--    // remove() drops the entry, so the close snapshot's output is read while the window still belongs to its pad.
--    Output* scratchpadOutput =
--        m_server->scratchpadManager() != nullptr ? m_server->scratchpadManager()->outputFor(this) : nullptr;
-     if (m_server->scratchpadManager() != nullptr) {
-       m_server->scratchpadManager()->remove(this);
-     }
-diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index e5b99fdf..3b0de54d 100644
---- a/src/workspace/scratchpad.cpp
-+++ b/src/workspace/scratchpad.cpp
-@@ -87,17 +87,6 @@ namespace umbriel {
-       }
-     }
- 
--    // The server reaps finished snapshots after this pass, so a dead id here means its tree is already gone and only
--    // the wrapper is left. An output release reaps through the same path.
--    std::erase_if(m_trackedCloseSnapshots, [this](const TrackedCloseSnapshot& tracked) {
--      if (m_server->closeSnapshotAlive(tracked.id)) {
--        return false;
--      }
--      if (tracked.layer != nullptr) {
--        wlr_scene_node_destroy(&tracked.layer->node);
--      }
--      return true;
--    });
-     for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
-       const auto fade = m_backdropFades.find(tracked.output);
-       m_server->setCloseSnapshotFade(
-@@ -833,6 +822,18 @@ namespace umbriel {
-     );
-   }
- 
-+  void ScratchpadManager::forgetCloseSnapshot(CloseSnapshotId id) {
-+    std::erase_if(m_trackedCloseSnapshots, [id](const TrackedCloseSnapshot& tracked) {
-+      if (tracked.id != id) {
-+        return false;
-+      }
-+      if (tracked.layer != nullptr) {
-+        wlr_scene_node_destroy(&tracked.layer->node);
-+      }
-+      return true;
-+    });
-+  }
-+
-   void ScratchpadManager::releaseOutput(Output* output) {
-     std::vector<std::string> stranded;
-     for (auto& [name, scratchpad] : m_scratchpads) {
-diff --git a/src/workspace/scratchpad.h b/src/workspace/scratchpad.h
-index 04ca072b..b39b61a4 100644
---- a/src/workspace/scratchpad.h
-+++ b/src/workspace/scratchpad.h
-@@ -102,6 +102,9 @@ namespace umbriel {
-     wlr_scene_tree* createCloseSnapshotLayer(Output* output);
-     // Hand a reparented snapshot to the manager; it drops the layer once the server reaps the snapshot.
-     void trackCloseSnapshot(CloseSnapshotId id, Output* output, wlr_scene_tree* layer);
-+    // Drop the wrapper layer of a snapshot the server has just reaped. Called synchronously from the reap so the
-+    // tracked list never outlives its snapshot.
-+    void forgetCloseSnapshot(CloseSnapshotId id);
- 
-   private:
-     struct PendingSpawn {
-diff --git a/tests/harness/checks/animation/scratchpad_close.sh b/tests/harness/checks/animation/scratchpad_close.sh
-index d6b78e94..e989a9a7 100755
---- a/tests/harness/checks/animation/scratchpad_close.sh
-+++ b/tests/harness/checks/animation/scratchpad_close.sh
-@@ -14,6 +14,11 @@ sample_blue() {
-   "$UMBRIEL_PIXEL_PROBE" "$1" mean 40x40+240+160 | awk '{ print int($3) }'
- }
- 
-+# Inside the 300x200 dialog centred on its 100x100 parent, and outside the parent itself.
-+sample_dialog() {
-+  "$UMBRIEL_PIXEL_PROBE" "$1" mean 40x40+170+120 | awk '{ print int($3) }'
-+}
-+
- window_id() {
-   "$UMBRIEL" windows --json | jq -r --arg title "$1" '.[] | select(.title == $title) | .id'
- }
-@@ -88,6 +93,13 @@ match.title = "^close-"
- default_floating = true
- default_floating_size_px = { width = 400, height = 240 }
- default_position = { x = 40, y = 40, anchor = "top_left" }
-+
-+# The dialog leg's parent: the child dialog is centred on it and is bigger than it.
-+[[window_rule]]
-+match.title = "^transient-parent$"
-+default_floating = true
-+default_floating_size_px = { width = 100, height = 100 }
-+default_position = { x = 40, y = 40, anchor = "top_left" }
- EOF
- "$UMBRIEL" msg config-reload > /dev/null
- "$UMBRIEL" clock-freeze
-@@ -138,6 +150,8 @@ if ((member_after > 5)); then
-   echo "scratchpad close snapshot outlived its timeline: control=$control_after member=$member_after"
-   exit 1
- fi
-+# The reaped snapshot must not keep the compositor "animating" on the frozen clock.
-+"$UMBRIEL" settle
- 
- # Leave the pad hidden so the next leg can show it again.
- "$UMBRIEL" msg scratchpad-toggle > /dev/null
-@@ -165,5 +179,39 @@ if ((hiding_after > 5)); then
-   exit 1
- fi
- "$UMBRIEL" clock-advance "$CLOSE_MS"
 +"$UMBRIEL" settle
 +
 +# A dialog of a member is attached to its parent, and that link is released while the window closes. It must still be
@@ -780,158 +661,7 @@ index d6b78e94..e989a9a7 100755
 +  exit 1
 +fi
 +"$UMBRIEL" settle
- 
--echo "scratchpad close snapshot faded like a floating window: control $control_before -> $control_mid -> $control_after, member $member_before -> $member_mid -> $member_after, pad-hide $hiding_before -> $hiding_after"
-+echo "scratchpad close snapshot faded like a floating window: control $control_before -> $control_mid -> $control_after, member $member_before -> $member_mid -> $member_after, pad-hide $hiding_before -> $hiding_after, dialog $dialog_before -> $dialog_mid -> $dialog_after"
-From 492726148b046996b4e77b5bf1177d51950660bf Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 11:12:09 +0800
-Subject: [PATCH 3/5] fix(scratchpad): keep the pad's fade bookkeeping honest
- across reloads
-
-External review follow-ups.
-
-An owner's fade is applied per node even when a lifecycle shader composites the snapshot as one image: the shader
-API has no group-opacity uniform, so a pad hide attenuates each contribution inside the composite. Say so where the
-composited branch is chosen instead of implying the nodes stay opaque.
-
-`animatesOn()` now answers for a tracked snapshot too, so the manager keeps the per-output animation invariant.
-`applyConfig()` pushes its snapped fades to tracked snapshots instead of waiting for a tick, and
-`refreshOutputGeometry()` re-clips a mid-fade wrapper to its output's new box.
-
-The pin grows a hot-unplug leg: destroy the output the pad is actually on, mid-fade, then `settle`. It fails with
-"an animation is running on the frozen animation clock" when the output-removal reap forgets the wrapper.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- src/server/server.cpp                         |  5 ++-
- src/workspace/scratchpad.cpp                  | 39 +++++++++++++------
- src/workspace/scratchpad.h                    |  2 +
- .../checks/animation/scratchpad_close.sh      | 27 ++++++++++++-
- 4 files changed, 60 insertions(+), 13 deletions(-)
-
-diff --git a/src/server/server.cpp b/src/server/server.cpp
-index 0af15733..52a89893 100644
---- a/src/server/server.cpp
-+++ b/src/server/server.cpp
-@@ -1929,7 +1929,10 @@ namespace umbriel {
-   void Server::CloseSnapshot::applyOpacity() {
-     // Overshooting curves can push this out of range; wlr_scene_buffer_set_opacity asserts opacity is in [0, 1].
-     const float rawAlpha = std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
--    // A lifecycle shader fades the whole snapshot at once, so its buffers and borders stay opaque under it.
-+    // A lifecycle shader fades the whole snapshot at once, so its buffers and borders stay opaque under it. An owner's
-+    // multiplier still attenuates them individually inside that composite: the shader API has no group-opacity
-+    // uniform, so a pad hide fades each node's contribution instead of the composed frame. A single-surface window
-+    // reads the same either way; an SSD frame, border or subsurfaces blend at the multiplier inside the frozen frame.
-     const bool composited = effectRegistry().lifecycleEffect(m_event) != nullptr;
-     const bool builtInSlide = !composited && m_slide.target() != m_slide.from();
-     // Keep the moving snapshot visible long enough for slide to read as motion. Fade keeps the configured timeline.
-diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index 3b0de54d..c602b096 100644
---- a/src/workspace/scratchpad.cpp
-+++ b/src/workspace/scratchpad.cpp
-@@ -87,12 +87,7 @@ namespace umbriel {
-       }
-     }
- 
--    for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
--      const auto fade = m_backdropFades.find(tracked.output);
--      m_server->setCloseSnapshotFade(
--          tracked.id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
--      );
--    }
-+    syncTrackedCloseSnapshots();
- 
-     if (m_hidingViews.empty()) {
-       return movedBackdrop;
-@@ -119,7 +114,10 @@ namespace umbriel {
-     if (fade != m_backdropFades.end() && fade->second.animating()) {
-       return true;
-     }
--    return std::ranges::any_of(m_hidingViews, [this, output](const View* view) { return outputFor(view) == output; });
-+    return std::ranges::any_of(m_hidingViews, [this, output](const View* view) { return outputFor(view) == output; })
-+        || std::ranges::any_of(m_trackedCloseSnapshots, [output](const TrackedCloseSnapshot& tracked) {
-+             return tracked.output == output;
-+           });
-   }
- 
-   ScratchpadManager::Scratchpad* ScratchpadManager::findScratchpad(std::string_view name) {
-@@ -682,6 +680,16 @@ namespace umbriel {
-     if (output == nullptr || m_server == nullptr) {
-       return;
-     }
-+    // A mid-fade close snapshot is clipped to its capture output's box, which a layout move or resize changes.
-+    if (!m_trackedCloseSnapshots.empty()) {
-+      wlr_box outputBox{};
-+      wlr_output_layout_get_box(m_server->outputLayout(), output->wlr(), &outputBox);
-+      for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
-+        if (tracked.layer != nullptr && tracked.output == output) {
-+          wlr_scene_tree_set_clip(tracked.layer, &outputBox);
-+        }
-+      }
-+    }
-     const wlr_box targetArea = usableArea(*m_server, output);
-     if (targetArea.width <= 0 || targetArea.height <= 0) {
-       return;
-@@ -816,10 +824,17 @@ namespace umbriel {
-       return;
-     }
-     m_trackedCloseSnapshots.push_back({.id = id, .output = output, .layer = layer});
--    const auto fade = m_backdropFades.find(output);
--    m_server->setCloseSnapshotFade(
--        id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
--    );
-+    syncTrackedCloseSnapshots();
-+  }
 +
-+  void ScratchpadManager::syncTrackedCloseSnapshots() {
-+    for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
-+      const auto fade = m_backdropFades.find(tracked.output);
-+      // A pad with no fade entry is fully hidden, so its snapshots go with it.
-+      m_server->setCloseSnapshotFade(
-+          tracked.id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
-+      );
-+    }
-   }
- 
-   void ScratchpadManager::forgetCloseSnapshot(CloseSnapshotId id) {
-@@ -874,6 +889,8 @@ namespace umbriel {
-         fade.snap(visibleOn(output) ? 1.0 : 0.0);
-         updateDimAndBlur(output);
-       }
-+      // The snap skips the tick that would have pushed the new value to a fading close snapshot.
-+      syncTrackedCloseSnapshots();
-       for (const Entry& entry : m_entries) {
-         if (entry.view == nullptr) {
-           continue;
-diff --git a/src/workspace/scratchpad.h b/src/workspace/scratchpad.h
-index b39b61a4..1f4e7bc2 100644
---- a/src/workspace/scratchpad.h
-+++ b/src/workspace/scratchpad.h
-@@ -175,6 +175,8 @@ namespace umbriel {
-     bool restoreView(View* view, Output* fallback, bool focus, Workspace* target = nullptr);
-     // Retarget the backdrop dim/blur fade for `output` and refresh its scene nodes.
-     void retargetBackdrop(Output* output, bool visible, bool animateTransition = true);
-+    // Push every tracked snapshot's current backdrop fade, for changes a tick would otherwise be the only witness of.
-+    void syncTrackedCloseSnapshots();
-     wlr_scene_rect* dimRectFor(Output* output);
-     wlr_scene_blur* blurNodeFor(Output* output);
-     void updateDimAndBlur(Output* output);
-diff --git a/tests/harness/checks/animation/scratchpad_close.sh b/tests/harness/checks/animation/scratchpad_close.sh
-index e989a9a7..888d43c7 100755
---- a/tests/harness/checks/animation/scratchpad_close.sh
-+++ b/tests/harness/checks/animation/scratchpad_close.sh
-@@ -1,4 +1,5 @@
- #!/usr/bin/env bash
-+# harness: outputs=2
- # A scratchpad member's close snapshot fades at the same rate as a plain floating window's: the pad draws its members
- # above its own dim rect, so the snapshot has to live in the pad's tree rather than under the output root. It must also
- # follow the pad's own backdrop fade, so hiding the pad mid-close takes the snapshot with it.
-@@ -214,4 +215,28 @@ if ((dialog_after > 5)); then
- fi
- "$UMBRIEL" settle
- 
--echo "scratchpad close snapshot faded like a floating window: control $control_before -> $control_mid -> $control_after, member $member_before -> $member_mid -> $member_after, pad-hide $hiding_before -> $hiding_after, dialog $dialog_before -> $dialog_mid -> $dialog_after"
 +# An unplugged output reaps its snapshots; the pad must drop the wrapper layers in the same pass, or its tracked list
 +# keeps the compositor permanently "animating".
 +# The dialog leg left the pad shown, so the member appears without another toggle.
@@ -957,253 +687,3 @@ index e989a9a7..888d43c7 100755
 +"$UMBRIEL" settle
 +
 +echo "scratchpad close snapshot faded like a floating window: control $control_before -> $control_mid -> $control_after, member $member_before -> $member_mid -> $member_after, pad-hide $hiding_before -> $hiding_after, dialog $dialog_before -> $dialog_mid -> $dialog_after, hot-unplug $hotplug_before"
-From 2a20e4f406c047a594dc40c29ab51f3b85556fe2 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 11:24:31 +0800
-Subject: [PATCH 4/5] docs(scratchpad): tighten the close-snapshot comments
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-Keep the reasons that are not recoverable from the code — the composited trade-off, the read-before-release ordering,
-the layer's purpose and lifetime — and drop the rest.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- src/server/server.cpp        |  9 ++++-----
- src/server/server.h          |  9 ++++-----
- src/view/view.h              |  4 ++--
- src/view/view_animation.cpp  |  8 ++++----
- src/view/view_lifecycle.cpp  |  2 +-
- src/workspace/scratchpad.cpp |  9 ++++-----
- src/workspace/scratchpad.h   | 11 +++++------
- 7 files changed, 24 insertions(+), 28 deletions(-)
-
-diff --git a/src/server/server.cpp b/src/server/server.cpp
-index 52a89893..0a14d833 100644
---- a/src/server/server.cpp
-+++ b/src/server/server.cpp
-@@ -1929,10 +1929,9 @@ namespace umbriel {
-   void Server::CloseSnapshot::applyOpacity() {
-     // Overshooting curves can push this out of range; wlr_scene_buffer_set_opacity asserts opacity is in [0, 1].
-     const float rawAlpha = std::clamp(static_cast<float>(m_alpha.current()), 0.0F, 1.0F);
--    // A lifecycle shader fades the whole snapshot at once, so its buffers and borders stay opaque under it. An owner's
--    // multiplier still attenuates them individually inside that composite: the shader API has no group-opacity
--    // uniform, so a pad hide fades each node's contribution instead of the composed frame. A single-surface window
--    // reads the same either way; an SSD frame, border or subsurfaces blend at the multiplier inside the frozen frame.
-+    // A lifecycle shader fades the whole snapshot, so its nodes stay opaque under it. An owner's multiplier still
-+    // attenuates them individually inside that composite: the shader API has no group-opacity uniform, so a pad hide
-+    // fades each node's contribution rather than the composed frame (equal for a single surface, visible on seams).
-     const bool composited = effectRegistry().lifecycleEffect(m_event) != nullptr;
-     const bool builtInSlide = !composited && m_slide.target() != m_slide.from();
-     // Keep the moving snapshot visible long enough for slide to read as motion. Fade keeps the configured timeline.
-@@ -2011,7 +2010,7 @@ namespace umbriel {
-       unregisterAnimatable(snap.get());
-       return true;
-     });
--    // The erased snapshots destroyed their own trees, so an owner's wrapper layer is empty by now.
-+    // The erased snapshots destroyed their own trees, so an owner's wrapper layer is empty.
-     if (m_scratchpadManager != nullptr) {
-       for (const CloseSnapshotId id : m_reapedSnapshotsScratch) {
-         m_scratchpadManager->forgetCloseSnapshot(id);
-diff --git a/src/server/server.h b/src/server/server.h
-index 64604d5b..e79bf252 100644
---- a/src/server/server.h
-+++ b/src/server/server.h
-@@ -525,8 +525,7 @@ namespace umbriel {
-     void presentCloseSnapshot(CloseSnapshotId id, int canvasX, int canvasY, bool visible);
-     // False once the snapshot has been reaped.
-     bool closeSnapshotAlive(CloseSnapshotId id) const;
--    // Attenuate a snapshot by an owner's own fade (a scratchpad's backdrop), on top of its lifecycle alpha. The owner
--    // must keep the id alive; a reaped one is a no-op.
-+    // Fold an owner's fade (a scratchpad's backdrop) into a snapshot's opacity. A reaped id is a no-op.
-     void setCloseSnapshotFade(CloseSnapshotId id, float multiplier);
-     // End a held snapshot; it is reaped at the end of the current animation tick.
-     void releaseCloseSnapshot(CloseSnapshotId id);
-@@ -844,7 +843,7 @@ namespace umbriel {
-     private:
-       void applyPresentation();
-       void applyShrink(int width, int height);
--      // Push the composed opacity (lifecycle alpha times the owner's fade multiplier) into every captured node.
-+      // Push lifecycle alpha times the owner's fade into every captured node.
-       void applyOpacity();
- 
-       Server* m_server = nullptr;
-@@ -900,14 +899,14 @@ namespace umbriel {
-       int m_shadowWidth = 0;
-       int m_shadowHeight = 0;
-       wlr_box m_shadowHole{};
--      // An owner-driven fade (scratchpad backdrop) the snapshot fades along with, independent of its own timeline.
-+      // An owner's fade (a scratchpad backdrop), independent of the snapshot's own timeline.
-       float m_fadeMultiplier = 1.0F;
-     };
-     // unique_ptr because the registry holds raw pointers to these: a vector of
-     // values would move them out from under it on reallocation.
-     std::vector<std::unique_ptr<CloseSnapshot>> m_closeSnapshots;
-     CloseSnapshotId m_nextCloseSnapshotId = 1;
--    // Ids reaped in the current pass, so an owner can drop its wrapper layer after the snapshot's trees are gone.
-+    // Ids reaped this pass, so an owner can drop its wrapper layer once the snapshot's trees are gone.
-     std::vector<CloseSnapshotId> m_reapedSnapshotsScratch;
-     std::vector<Animatable*> m_animatables;
-     std::vector<Animatable*> m_animatablesScratch;
-diff --git a/src/view/view.h b/src/view/view.h
-index 999ab092..77f92606 100644
---- a/src/view/view.h
-+++ b/src/view/view.h
-@@ -503,7 +503,7 @@ namespace umbriel {
-     bool animatesOn(const Output* output) const override;
- 
-   private:
--    // `withShadow` copies the shadow. A `scratchpadOutput` reparents the snapshot into that pad's tree, above its dim.
-+    // `withShadow` copies the shadow; `scratchpadOutput` reparents the snapshot into that pad's tree.
-     CloseSnapshotId captureSnapshot(bool held, bool withShadow, Output* scratchpadOutput = nullptr);
-     friend class Cursor;
-     friend class ScratchpadManager;
-@@ -669,7 +669,7 @@ namespace umbriel {
-     void watchViewSurfaceTree(wlr_surface* root, wlr_subsurface* attachment = nullptr);
-     void watchViewSurface(wlr_surface* surface, wlr_subsurface* attachment);
-     void clearViewSurfaceWatches();
--    // `scratchpadOutput` is the pad the closing member was drawn in, or nullptr for an ordinary window.
-+    // `scratchpadOutput` is the pad the closing member was drawn in, or nullptr for a plain window.
-     [[nodiscard]] CloseSnapshotId beginCloseAnimation(Output* scratchpadOutput);
-     // A frozen copy of this view's content and border, held over it until Server::releaseCloseSnapshot. The live view
-     // stays under it at the same box and keeps drawing its own shadow, so the copy takes none.
-diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 7e708a73..37b2df7c 100644
---- a/src/view/view_animation.cpp
-+++ b/src/view/view_animation.cpp
-@@ -1081,7 +1081,7 @@ namespace umbriel {
-   }
- 
-   CloseSnapshotId View::captureSnapshot(bool held, bool withShadow, Output* scratchpadOutput) {
--    // A member was removed from its pad before the capture, so the owner passes its output in.
-+    // A member's pad entry is gone by now, so its output comes from the owner.
-     Output* output = scratchpadOutput != nullptr
-         ? scratchpadOutput
-         : (m_workspace != nullptr && m_workspace->group() != nullptr ? m_workspace->group()->output()
-@@ -1184,14 +1184,14 @@ namespace umbriel {
-         output, snap, content, std::move(snapBorders), m_presentedBox,
-         held ? std::optional{Server::CloseSnapshotOverrides{.held = true}} : std::nullopt, shadow, titleBarHeight()
-     );
--    // A scratchpad draws its members above its own dim rect and blur, so a fading member has to leave the output root
--    // for the pad tree. Keeping the capture in the output root would dim it twice and let the pad's fade miss it.
-+    // The pad draws members above its dim rect and blur, so a fading member moves into the pad tree; in the output
-+    // root it would be dimmed twice and miss the pad's fade.
-     if (id != kInvalidCloseSnapshot && scratchpadOutput != nullptr && m_server->scratchpadManager() != nullptr) {
-       if (wlr_scene_tree* layer = m_server->scratchpadManager()->createCloseSnapshotLayer(output)) {
-         if (shadow.tree != nullptr) {
-           wlr_scene_node_reparent(&shadow.tree->node, layer);
-         }
--        // Last, so the snapshot copies draw above its shadow in the new layer.
-+        // Last, so the copies draw above the shadow.
-         wlr_scene_node_reparent(&snap->node, layer);
-         m_server->scratchpadManager()->trackCloseSnapshot(id, output, layer);
-       }
-diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index aa48da9e..d7c3bb41 100644
---- a/src/view/view_lifecycle.cpp
-+++ b/src/view/view_lifecycle.cpp
-@@ -582,7 +582,7 @@ namespace umbriel {
-   }
- 
-   void View::handleUnmap(bool animateClose) {
--    // Attaching is what resolves this window to its pad, and the links below are released before the close capture.
-+    // Read before the links below are released: they are what resolve this window to its pad.
-     Output* scratchpadOutput =
-         m_server->scratchpadManager() != nullptr ? m_server->scratchpadManager()->outputFor(this) : nullptr;
-     m_server->seat()->toplevelDrags().unmapped(this);
-diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index c602b096..b983a359 100644
---- a/src/workspace/scratchpad.cpp
-+++ b/src/workspace/scratchpad.cpp
-@@ -680,7 +680,7 @@ namespace umbriel {
-     if (output == nullptr || m_server == nullptr) {
-       return;
-     }
--    // A mid-fade close snapshot is clipped to its capture output's box, which a layout move or resize changes.
-+    // A mid-fade wrapper is clipped to its capture output's box, which a layout change moves.
-     if (!m_trackedCloseSnapshots.empty()) {
-       wlr_box outputBox{};
-       wlr_output_layout_get_box(m_server->outputLayout(), output->wlr(), &outputBox);
-@@ -810,8 +810,7 @@ namespace umbriel {
-     if (layer == nullptr) {
-       return nullptr;
-     }
--    // The snapshot keeps its canvas coordinates, so the wrapper sits at the origin and clips to this output's box in
--    // the same global space.
-+    // The snapshot keeps canvas coordinates, so the wrapper sits at the origin and clips in the same global space.
-     wlr_box box{};
-     wlr_output_layout_get_box(m_server->outputLayout(), output->wlr(), &box);
-     wlr_scene_node_set_position(&layer->node, 0, 0);
-@@ -830,7 +829,7 @@ namespace umbriel {
-   void ScratchpadManager::syncTrackedCloseSnapshots() {
-     for (const TrackedCloseSnapshot& tracked : m_trackedCloseSnapshots) {
-       const auto fade = m_backdropFades.find(tracked.output);
--      // A pad with no fade entry is fully hidden, so its snapshots go with it.
-+      // A pad with no fade entry is fully hidden.
-       m_server->setCloseSnapshotFade(
-           tracked.id, fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F
-       );
-@@ -889,7 +888,7 @@ namespace umbriel {
-         fade.snap(visibleOn(output) ? 1.0 : 0.0);
-         updateDimAndBlur(output);
-       }
--      // The snap skips the tick that would have pushed the new value to a fading close snapshot.
-+      // The snap skips the tick that would have pushed the new value.
-       syncTrackedCloseSnapshots();
-       for (const Entry& entry : m_entries) {
-         if (entry.view == nullptr) {
-diff --git a/src/workspace/scratchpad.h b/src/workspace/scratchpad.h
-index 1f4e7bc2..e51eb2ca 100644
---- a/src/workspace/scratchpad.h
-+++ b/src/workspace/scratchpad.h
-@@ -97,13 +97,12 @@ namespace umbriel {
-     void reconcileConfig();
-     // Return entries to the output they were parked on. Entries whose output is still gone park on `fallback`.
-     size_t restoreDisplaced(Output* fallback);
--    // A close snapshot of a member fades with the pad's own backdrop fade, so it must draw above the dim rect and blur.
--    // Returns the layer to reparent the snapshot (and its shadow) into, or nullptr to leave it where it was captured.
-+    // A member's close snapshot draws above the pad's dim and blur, in a layer of the pad tree. Nullptr leaves the
-+    // capture where it is.
-     wlr_scene_tree* createCloseSnapshotLayer(Output* output);
--    // Hand a reparented snapshot to the manager; it drops the layer once the server reaps the snapshot.
-+    // The manager drops the layer once the server reaps the snapshot.
-     void trackCloseSnapshot(CloseSnapshotId id, Output* output, wlr_scene_tree* layer);
--    // Drop the wrapper layer of a snapshot the server has just reaped. Called synchronously from the reap so the
--    // tracked list never outlives its snapshot.
-+    // Drop a just-reaped snapshot's wrapper layer, called from the reap itself.
-     void forgetCloseSnapshot(CloseSnapshotId id);
- 
-   private:
-@@ -175,7 +174,7 @@ namespace umbriel {
-     bool restoreView(View* view, Output* fallback, bool focus, Workspace* target = nullptr);
-     // Retarget the backdrop dim/blur fade for `output` and refresh its scene nodes.
-     void retargetBackdrop(Output* output, bool visible, bool animateTransition = true);
--    // Push every tracked snapshot's current backdrop fade, for changes a tick would otherwise be the only witness of.
-+    // Push each tracked snapshot's current backdrop fade.
-     void syncTrackedCloseSnapshots();
-     wlr_scene_rect* dimRectFor(Output* output);
-     wlr_scene_blur* blurNodeFor(Output* output);
-From 11dcf1a6884dab77ecaef16c9c75e3dec75128b1 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 11:25:34 +0800
-Subject: [PATCH 5/5] docs(scratchpad): note how a closing member fades
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- docs/user/scratchpad.md | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/docs/user/scratchpad.md b/docs/user/scratchpad.md
-index 292a0ca6..22f364df 100644
---- a/docs/user/scratchpad.md
-+++ b/docs/user/scratchpad.md
-@@ -157,7 +157,7 @@ Showing a populated scratchpad focuses its most recently focused member. Hiding
- 
- A dialog parented to a visible scratchpad window joins that scratchpad unless a window rule explicitly chooses another destination.
- 
--Backdrop dim and blur affect only the output showing the scratchpad.
-+Backdrop dim and blur affect only the output showing the scratchpad. A member that closes while its scratchpad is shown fades like any other window, over the backdrop rather than under it, and a scratchpad hidden mid-close takes the closing window with it.
- 
- ## Restoring windows
- 

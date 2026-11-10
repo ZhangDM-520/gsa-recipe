@@ -1,5 +1,5 @@
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 8d527e98..238328db 100644
+index e42b68be..41f8e99e 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
 @@ -136,6 +136,11 @@ button_padding = -1
@@ -34,7 +34,7 @@ index 8d527e98..238328db 100644
  Rounded windows keep a straight join between the title bar and transparent content, including the content's blur and overview preview. The outer frame retains its rounded corners; hiding the title bar restores rounding to the top of the content.
  
 diff --git a/examples/config.toml b/examples/config.toml
-index a2b28d77..01692beb 100644
+index b86f9199..fe4be1ed 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -111,6 +111,11 @@ radius = 3
@@ -50,7 +50,7 @@ index a2b28d77..01692beb 100644
  # Optional button palette. Glyph colors also apply when button backgrounds are off.
  # [colors.title_bar]
 diff --git a/src/config/config.h b/src/config/config.h
-index 1faa2931..8e7b8774 100644
+index fe044691..301b5df5 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -39,6 +39,9 @@ namespace umbriel {
@@ -63,7 +63,7 @@ index 1faa2931..8e7b8774 100644
    enum class ModifierKey {
      Super,
      Alt,
-@@ -779,6 +782,20 @@ namespace umbriel {
+@@ -780,6 +783,20 @@ namespace umbriel {
          int buttonPadding = -1;
          TitleBarButtonGlyph buttonGlyph = TitleBarButtonGlyph::Hover;
          bool buttonBackground = true;
@@ -164,10 +164,10 @@ index 4446f029..b0a7c1e6 100644
      const auto byte = [](float component) {
        return static_cast<int>(std::lround(std::clamp(component, 0.0F, 1.0F) * 255.0F));
 diff --git a/src/scene/ssd_frame.cpp b/src/scene/ssd_frame.cpp
-index d6436f48..a6abb6b0 100644
+index d6436f48..927491d1 100644
 --- a/src/scene/ssd_frame.cpp
 +++ b/src/scene/ssd_frame.cpp
-@@ -1,24 +1,52 @@
+@@ -1,24 +1,48 @@
  #include "scene/ssd_frame.h"
  
  #include "config/config.h"
@@ -194,10 +194,6 @@ index d6436f48..a6abb6b0 100644
 +    // An unfocused window keeps its own bar color, dimmed over the palette's unfocused tone.
 +    constexpr float kAdaptiveUnfocusedOpacity = 0.65F;
 +
-+    bool fboxEqual(const wlr_fbox& a, const wlr_fbox& b) {
-+      return a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
-+    }
-+
 +    // Any bar can be any color the window paints, so text and symbols keep a dark edge, scaled by their own alpha so an
 +    // invisible one leaves no ghost.
 +    constexpr std::array<float, 4> kTitleShadowColor{0.0F, 0.0F, 0.0F, 0.55F};
@@ -222,7 +218,7 @@ index d6436f48..a6abb6b0 100644
      if (inputParent != nullptr && parent->node.parent == inputParent) {
        // Client surfaces and popups keep input priority over invisible resize grips.
        wlr_scene_node_place_below(&m_gripTree->node, &parent->node);
-@@ -36,11 +64,21 @@ namespace umbriel {
+@@ -36,11 +60,21 @@ namespace umbriel {
    }
  
    SsdFrame::~SsdFrame() {
@@ -244,7 +240,7 @@ index d6436f48..a6abb6b0 100644
      for (auto* buffer : m_iconBuffers) {
        if (buffer != nullptr) {
          wlr_buffer_unlock(buffer);
-@@ -126,6 +164,48 @@ namespace umbriel {
+@@ -126,6 +160,48 @@ namespace umbriel {
      m_blurLive = live;
      updateBlur();
    }
@@ -293,7 +289,7 @@ index d6436f48..a6abb6b0 100644
  
    void SsdFrame::updateBlur() {
      const auto& cfg = config().appearance.blur;
-@@ -164,6 +244,333 @@ namespace umbriel {
+@@ -164,6 +240,333 @@ namespace umbriel {
      wlr_scene_blur_set_alpha(m_blur, m_blurAlpha);
    }
  
@@ -507,7 +503,7 @@ index d6436f48..a6abb6b0 100644
 +    // The fill is the bar's top edge, so it takes the same rounded corners as the palette it covers.
 +    const clipped_region clip = frameClip(barX, barY);
 +    const wlr_box clipBox = clip.inside ? clip.area : wlr_box{};
-+    const bool stripMoved = !fboxEqual(m_adaptiveStrip, strip);
++    const bool stripMoved = !wlr_fbox_equal(&m_adaptiveStrip, &strip);
 +    // A mode switch is not a commit, so it must force the work: otherwise an idle window keeps the stale color.
 +    const bool modeChanged = m_adaptiveMode != style.colorSource;
 +    // Only "window" mirrors without reading, so only there does a sample add anything; the key has no effect elsewhere.
@@ -627,7 +623,7 @@ index d6436f48..a6abb6b0 100644
    int SsdFrame::zoomed(int value) const { return static_cast<int>(std::lround(value * m_geometry.zoom)); }
  
    clipped_region SsdFrame::frameClip(int x, int y) const {
-@@ -186,6 +593,33 @@ namespace umbriel {
+@@ -186,6 +589,33 @@ namespace umbriel {
      wlr_scene_buffer_set_corner_box(buffer, clip.inside ? &clip.area : nullptr);
    }
  
@@ -661,7 +657,7 @@ index d6436f48..a6abb6b0 100644
    std::span<const TitleBarButton> SsdFrame::visibleButtons() const {
      const auto& style = config().appearance.titleBar;
      return style.buttonGlyph != TitleBarButtonGlyph::Never || style.buttonBackground
-@@ -193,7 +627,10 @@ namespace umbriel {
+@@ -193,7 +623,10 @@ namespace umbriel {
          : std::span<const TitleBarButton>();
    }
  
@@ -673,7 +669,7 @@ index d6436f48..a6abb6b0 100644
      const auto index = static_cast<size_t>(button);
      auto*& icon = m_icons[index];
      const std::array<wlr_scene_rect*, kTitleBarButtonCount> backgrounds{m_minimize, m_maximize, m_close};
-@@ -210,8 +647,11 @@ namespace umbriel {
+@@ -210,8 +643,11 @@ namespace umbriel {
      // on its position, and the renderer copies a buffer within one pixel of that size texel for texel, leaving the
      // symbol half a pixel off center. Twice the resolution makes it resample symmetrically instead.
      const int pixels = static_cast<int>(std::ceil(size * scale)) * (scale == std::floor(scale) ? 1 : 2);
@@ -687,7 +683,7 @@ index d6436f48..a6abb6b0 100644
        if (icon == nullptr) {
          icon = wlr_scene_buffer_create(m_tree, buffer);
          if (icon != nullptr) {
-@@ -230,6 +670,7 @@ namespace umbriel {
+@@ -230,6 +666,7 @@ namespace umbriel {
        wlr_buffer_drop(buffer);
        m_iconSizes[index] = pixels;
        m_iconColors[index] = color;
@@ -695,7 +691,7 @@ index d6436f48..a6abb6b0 100644
      }
      wlr_scene_buffer_set_dest_size(icon, background->width, background->height);
      wlr_scene_buffer_set_opacity(icon, alpha);
-@@ -239,6 +680,15 @@ namespace umbriel {
+@@ -239,6 +676,15 @@ namespace umbriel {
    }
  
    void SsdFrame::updateColors() {
@@ -711,7 +707,17 @@ index d6436f48..a6abb6b0 100644
      const auto& colors = config().colors.titleBar;
      const auto& style = config().appearance.titleBar;
      const bool backgrounds = style.buttonBackground;
-@@ -267,10 +717,19 @@ namespace umbriel {
+@@ -246,8 +692,7 @@ namespace umbriel {
+     const auto& background = m_focused ? colors.background : colors.backgroundUnfocused;
+     premultiplied(color, background, m_alpha);
+     wlr_scene_rect_set_color(m_background, color);
+-    const float contrast =
+-        background[0] * 0.2126F + background[1] * 0.7152F + background[2] * 0.0722F < 0.5F ? 1.0F : 0.0F;
++    const float contrast = luminance(background) < 0.5F ? 1.0F : 0.0F;
+     const auto button = [&](wlr_scene_rect* rect, const std::array<float, 4>& base,
+                             const std::array<float, 4>& idleGlyph, const std::array<float, 4>& hoverGlyph,
+                             SsdFramePart part, bool enabled, TitleBarButton which) {
+@@ -267,10 +712,19 @@ namespace umbriel {
        }
        premultiplied(color, value, backgrounds ? m_alpha * alpha : 0.0F);
        wlr_scene_rect_set_color(rect, color);
@@ -733,7 +739,7 @@ index d6436f48..a6abb6b0 100644
      };
      button(
          m_close, colors.close, colors.closeGlyph, colors.closeGlyphHover, SsdFramePart::Close, true,
-@@ -287,6 +746,9 @@ namespace umbriel {
+@@ -287,6 +741,9 @@ namespace umbriel {
      if (m_label != nullptr) {
        wlr_scene_buffer_set_opacity(m_label, m_alpha);
      }
@@ -743,7 +749,7 @@ index d6436f48..a6abb6b0 100644
      updateBlur();
    }
  
-@@ -298,6 +760,7 @@ namespace umbriel {
+@@ -298,6 +755,7 @@ namespace umbriel {
      wlr_scene_node_set_enabled(&m_tree->node, shown);
      wlr_scene_node_set_enabled(&m_gripTree->node, available && m_resizable && !m_preview);
      if (!available) {
@@ -751,7 +757,7 @@ index d6436f48..a6abb6b0 100644
        updateBlur();
        return;
      }
-@@ -323,11 +786,15 @@ namespace umbriel {
+@@ -323,11 +781,15 @@ namespace umbriel {
        wlr_scene_node_set_enabled(&m_grips[i]->node, m_resizable && !m_preview);
      }
      if (!shown) {
@@ -767,7 +773,7 @@ index d6436f48..a6abb6b0 100644
      const auto& style = config().appearance.titleBar;
      const int radius = nestedRadius(g.cornerRadius, g.borderInset);
      TitleBarLayout parts =
-@@ -348,42 +815,61 @@ namespace umbriel {
+@@ -348,42 +810,61 @@ namespace umbriel {
      drawButton(m_close, parts.button(TitleBarButton::Close));
      drawButton(m_maximize, parts.button(TitleBarButton::Maximize));
      drawButton(m_minimize, parts.button(TitleBarButton::Minimize));
@@ -853,7 +859,7 @@ index d6436f48..a6abb6b0 100644
      updateColors();
    }
  
-@@ -424,21 +910,31 @@ namespace umbriel {
+@@ -424,21 +905,31 @@ namespace umbriel {
          wlr_scene_node_set_position(&copy->node, m_blur->node.x, m_blur->node.y);
        }
      }
@@ -891,7 +897,7 @@ index d6436f48..a6abb6b0 100644
        copy->point_accepts_input = rejectInput;
        wlr_scene_buffer_set_dest_size(copy, source->dst_width, source->dst_height);
        wlr_scene_buffer_set_opacity(copy, source->opacity);
-@@ -446,13 +942,35 @@ namespace umbriel {
+@@ -446,13 +937,35 @@ namespace umbriel {
        wlr_scene_buffer_set_corner_box(copy, &source->corner_box);
        wlr_scene_node_set_position(&copy->node, m_tree->node.x + source->node.x, m_tree->node.y + source->node.y);
      };
@@ -931,7 +937,7 @@ index d6436f48..a6abb6b0 100644
      preview->m_preview = true;
      syncPreview(*preview);
      return preview;
-@@ -466,6 +984,13 @@ namespace umbriel {
+@@ -466,6 +979,13 @@ namespace umbriel {
        frame->setMaximized(m_maximized);
        frame->setFocused(m_focused);
        frame->setBlurOptions(m_blurOptions);
@@ -946,10 +952,10 @@ index d6436f48..a6abb6b0 100644
      }
    }
 diff --git a/src/scene/ssd_frame.h b/src/scene/ssd_frame.h
-index 6f5d7988..5125fed0 100644
+index 6f5d7988..a03dee8a 100644
 --- a/src/scene/ssd_frame.h
 +++ b/src/scene/ssd_frame.h
-@@ -1,29 +1,37 @@
+@@ -1,11 +1,13 @@
  #pragma once
  
 +#include "config/config.h"
@@ -963,9 +969,8 @@ index 6f5d7988..5125fed0 100644
  #include <span>
  #include <string>
  #include <string_view>
- #include <vector>
+@@ -13,17 +15,22 @@
  
-+struct wlr_client_buffer;
  struct wlr_scene_node;
  struct wlr_scene_rect;
 +struct wlr_buffer;
@@ -989,7 +994,7 @@ index 6f5d7988..5125fed0 100644
      ~SsdFrame() override;
      void layout(const ViewChromeGeometry& geometry) override;
      void setFocused(bool focused) override;
-@@ -41,6 +49,11 @@ namespace umbriel {
+@@ -41,6 +48,11 @@ namespace umbriel {
      void setPressed(SsdFramePart part);
      void setBlurOptions(const SurfaceBlurOptions& options);
      void setBlurLive(bool live);
@@ -1001,7 +1006,7 @@ index 6f5d7988..5125fed0 100644
      bool maximizeEnabled() const { return m_maximizeEnabled; }
      int titleBarHeight() const { return m_geometry.titleBarHeight; }
      bool contains(const wlr_scene_node* node) const;
-@@ -52,8 +65,37 @@ namespace umbriel {
+@@ -52,8 +64,37 @@ namespace umbriel {
    private:
      void redraw();
      void updateColors();
@@ -1040,7 +1045,7 @@ index 6f5d7988..5125fed0 100644
      void updateBlur();
      clipped_region frameClip(int x, int y) const;
      void clipBuffer(wlr_scene_buffer* buffer) const;
-@@ -66,6 +108,42 @@ namespace umbriel {
+@@ -66,6 +107,42 @@ namespace umbriel {
      SurfaceBlurOptions m_blurOptions;
      bool m_blurLive = false;
      wlr_scene_buffer* m_label = nullptr;
@@ -1083,7 +1088,7 @@ index 6f5d7988..5125fed0 100644
      wlr_scene_rect* m_close = nullptr;
      wlr_scene_rect* m_maximize = nullptr;
      wlr_scene_rect* m_minimize = nullptr;
-@@ -73,6 +151,7 @@ namespace umbriel {
+@@ -73,6 +150,7 @@ namespace umbriel {
      // Keep a consumer lock for snapshots and renderer recovery after the scene uploads an icon's texture.
      std::array<wlr_buffer*, kTitleBarButtonCount> m_iconBuffers{};
      std::array<std::array<float, 4>, kTitleBarButtonCount> m_iconColors{};
@@ -1092,7 +1097,7 @@ index 6f5d7988..5125fed0 100644
      std::vector<TitleBarButton> m_buttons;
      std::array<wlr_scene_rect*, 4> m_grips{};
 diff --git a/src/scene/ssd_frame_geometry.cpp b/src/scene/ssd_frame_geometry.cpp
-index a33d60d6..66f45143 100644
+index a33d60d6..15187e87 100644
 --- a/src/scene/ssd_frame_geometry.cpp
 +++ b/src/scene/ssd_frame_geometry.cpp
 @@ -6,6 +6,7 @@
@@ -1147,7 +1152,7 @@ index a33d60d6..66f45143 100644
 +        visible = {left, top, right - left, bottom - top};
 +      }
 +    }
-+    // Minimum last: a viewport can make the source shorter than a buffer pixel, which would invert clamp's bounds.
++    // Cap after the floor: a viewport can make the source shorter than a buffer pixel, which inverts clamp()'s bounds.
 +    const double thickness = std::min(visible.height, std::max(1.0, static_cast<double>(logicalHeight) * scaleY));
 +    const wlr_fbox strip{visible.x, visible.y, visible.width, thickness};
 +    wlr_fbox inBuffer = strip;
@@ -1188,7 +1193,7 @@ index d5f2be8a..40dffb65 100644
  } // namespace umbriel
 diff --git a/src/scene/title_bar_contrast.h b/src/scene/title_bar_contrast.h
 new file mode 100644
-index 00000000..8106bebc
+index 00000000..9d9a876c
 --- /dev/null
 +++ b/src/scene/title_bar_contrast.h
 @@ -0,0 +1,31 @@
@@ -1199,7 +1204,7 @@ index 00000000..8106bebc
 +
 +namespace umbriel {
 +
-+  // Perceived brightness of an encoded colour, with the weights the button hover shift already uses.
++  // Perceived brightness of an encoded colour.
 +  inline float luminance(const std::array<float, 4>& color) {
 +    return color[0] * 0.2126F + color[1] * 0.7152F + color[2] * 0.0722F;
 +  }
@@ -2339,10 +2344,10 @@ index 00000000..b47a6935
 +
 +int main() { return RUN_TESTS(); }
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 86f473a0..c10ad307 100644
+index 50820eb0..b5bb9ac1 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -5130,6 +5130,11 @@ button_position = "left"
+@@ -5155,6 +5155,11 @@ button_position = "left"
  button_corner_radius = 4
  button_glyph = "never"
  button_background = false
@@ -2354,7 +2359,7 @@ index 86f473a0..c10ad307 100644
  [colors.title_bar]
  background = "#FF0000FF"
  background_unfocused = "#00FF00FF"
-@@ -5156,6 +5161,11 @@ minimize_glyph_hover = "#00FFFFFF"
+@@ -5181,6 +5186,11 @@ minimize_glyph_hover = "#00FFFFFF"
    CHECK_EQ(bar.buttonCornerRadius, 4);
    CHECK_EQ(bar.buttonGlyph, umbriel::TitleBarButtonGlyph::Never);
    CHECK_EQ(bar.buttonBackground, false);
@@ -2366,7 +2371,7 @@ index 86f473a0..c10ad307 100644
    const auto& colors = store.config().colors.titleBar;
    CHECK_EQ(colors.background[0], 1.0F);
    CHECK_EQ(colors.backgroundUnfocused[1], 1.0F);
-@@ -5183,6 +5193,11 @@ button_position = "middle"
+@@ -5208,6 +5218,11 @@ button_position = "middle"
  button_corner_radius = 500
  button_glyph = "sometimes"
  button_background = 1
@@ -2378,7 +2383,7 @@ index 86f473a0..c10ad307 100644
  [colors.title_bar]
  close_glyph = true
  close_glyph_hover = 1
-@@ -5200,12 +5215,22 @@ minimize_glyph_hover = {}
+@@ -5225,12 +5240,22 @@ minimize_glyph_hover = {}
    CHECK_EQ(store.config().appearance.titleBar.buttonCornerRadius, 100);
    CHECK_EQ(store.config().appearance.titleBar.buttonGlyph, umbriel::TitleBarButtonGlyph::Hover);
    CHECK_EQ(store.config().appearance.titleBar.buttonBackground, true);
@@ -2634,10 +2639,10 @@ index d6f5e21d..0542207a 100644
   * Sets the buffer's opaque region. This is an optimization hint used to
   * determine if buffers which reside under this one need to be rendered or not.
 diff --git a/umbrielfx/types/scene/surface.c b/umbrielfx/types/scene/surface.c
-index 7f644195..e65e27b0 100644
+index 75e46ab2..25b701a5 100644
 --- a/umbrielfx/types/scene/surface.c
 +++ b/umbrielfx/types/scene/surface.c
-@@ -240,6 +240,27 @@ static void scene_buffer_unmark_client_buffer(struct wlr_scene_buffer* scene_buf
+@@ -238,6 +238,27 @@ static void scene_buffer_unmark_client_buffer(struct wlr_scene_buffer* scene_buf
    }
  }
  

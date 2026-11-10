@@ -1,7 +1,7 @@
 pkgbase = umbriel-git
 	pkgdesc = A Wayland compositor built on wlroots
-	pkgver = 0.1.0.r1552.0a22bd2
-	pkgrel = 6
+	pkgver = 0.1.0.r1553.8e13926
+	pkgrel = 8
 	epoch = 1
 	url = https://github.com/noctalia-dev/umbriel
 	arch = x86_64
@@ -34,7 +34,7 @@ pkgbase = umbriel-git
 	depends = xorg-xwayland
 	depends = xdg-desktop-portal-umbriel
 	depends = wlroots0.20
-	provides = umbriel=0.1.0.r1552.0a22bd2
+	provides = umbriel=0.1.0.r1553.8e13926
 	conflicts = umbriel
 	options = !debug
 	options = lto
@@ -50,15 +50,15 @@ pkgbase = umbriel-git
 	source = 0022-scratchpad-close-animation.patch
 	source = 0023-scratchpad-show-no-recentre.patch
 	sha256sums = SKIP
-	sha256sums = d7f485c2e8c635673b9247d62bc29cb2f3733e6d32e0700e93afa1f93d336fdc
-	sha256sums = 36442c0a3d52d421b94134fb81123155169d2cc43bde14d070e7d98c36cd068b
-	sha256sums = 837460c6faf16c956be535dd3d51c8d47cb2f6a66f951f1d2b0f630a49cea1ae
-	sha256sums = 99ae6cbc53708c78e4dd7fc0fb19507ac6db4e1f2a873ff185a106225d6564e5
+	sha256sums = ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64
+	sha256sums = 7cbf6d01851123a8f1762971a5196454168c936a008010958f148acfec6ddcb7
+	sha256sums = 32350ca7895435c4cf43dab6cd6b9b13f00c261e67a51299d031b7004efe638a
+	sha256sums = e70d604c49426be408e1106ef6ff39e8dcfaeb08de55ba2f9abe091ca2ae7803
 	sha256sums = da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621
-	sha256sums = 1f2a8649293e02ae4eaa20fc0ef5bcf52de034bfb16137ca433880458d0b20fa
-	sha256sums = 757892f7263c4a73478e2a53fcc98ed470a192aeaa983d7ee4f421c2a776b4f2
-	sha256sums = 4bc48f1e2f3e9c0138e9a66d9ea942a002e93177f35b28433864ade0491778b2
-	sha256sums = 11212162a0360e25d6d3e4c2719ebcd68acacabda79f9eefb1302e5f47a65945
-	sha256sums = ec5f48e98c1e9d2955aeb53379b8bf7fe0b9f29e3e3cc8d1392ac43e62840eef
+	sha256sums = c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23
+	sha256sums = 6bae828d1bc40420712c7d41213c9541c4c52fa132d8450d68ac93802ab98e21
+	sha256sums = fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea
+	sha256sums = 7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744
+	sha256sums = 99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad
 
 pkgname = umbriel-git

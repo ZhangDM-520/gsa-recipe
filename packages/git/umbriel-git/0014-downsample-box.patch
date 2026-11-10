@@ -1,45 +1,3 @@
-From 4303a9b8c1ce343f7f294afd7458100ceea244a5 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Sun, 8 Nov 2026 09:37:47 +0800
-Subject: [PATCH] Stack downstream downsample changes
-
-Flatten the existing 0014 stack on current main and carry the round-2 review fixes: box_tf for a linear target, the clamp judged by the source extents (not an empty box), freed box programs, the sampling reload kept out of view chrome, capture mirrors repainted, the docs claim scoped, the source-box predicate and the sRGB box curve pinned, and the live capture reload pinned.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- docs/user/appearance.md                       |   4 +
- docs/user/outputs.md                          |   2 +-
- examples/config.toml                          |   6 +
- src/config/change.cpp                         |   5 +-
- src/config/change.h                           |   4 +
- src/config/config.h                           |  17 ++
- src/config/fields_general.cpp                 |   8 +
- src/server/server.cpp                         |   2 +
- src/server/server.h                           |   4 +
- src/server/server_events.cpp                  |   6 +
- src/server/server_outputs.cpp                 |  22 ++
- src/view/view.cpp                             |   7 +
- src/view/view.h                               |   4 +
- tests/harness/checks/render/downsample_box.sh | 205 ++++++++++++++++++
- tests/unit/config_change.cpp                  |  14 ++
- tests/unit/config_load.cpp                    |  28 +++
- umbrielfx/include/umbrielfx/render/pass.h     |   5 +
- umbrielfx/include/umbrielfx/types/wlr_scene.h |  42 ++++
- .../internal/render/fx_renderer/fx_renderer.h |  12 +
- .../internal/render/fx_renderer/shaders.h     |   9 +-
- umbrielfx/meson.build                         |  17 ++
- umbrielfx/render/fx_renderer/fx_pass.c        |  52 ++++-
- umbrielfx/render/fx_renderer/fx_renderer.c    |  88 +++++++-
- umbrielfx/render/fx_renderer/shaders.c        |  13 +-
- umbrielfx/render/fx_renderer/shaders/tex.frag | 110 +++++++++-
- umbrielfx/tests/capture_pacing.c              |  13 ++
- umbrielfx/tests/color.c                       | 107 +++++++++
- umbrielfx/tests/downsample.c                  |  44 ++++
- umbrielfx/types/scene/wlr_scene.c             |  43 +++-
- 29 files changed, 857 insertions(+), 36 deletions(-)
- create mode 100755 tests/harness/checks/render/downsample_box.sh
- create mode 100644 umbrielfx/tests/downsample.c
-
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
 index 593d3213..39de77e2 100644
 --- a/docs/user/appearance.md
@@ -67,21 +25,8 @@ index 593d3213..39de77e2 100644
  Set `prefer_no_csd = false` to let newly connected applications draw their own decorations. Restart applications after changing it because decoration protocol availability is fixed when an application connects.
  
  Borders render outside window content and are included in layout spacing. `corner_radius = 0` keeps every contour square. A [window rule](window-rules.md#decoration) can override `border_width`, `outer_border_width`, and `corner_radius` for the windows it matches.
-diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index f90289ad..70d56c0c 100644
---- a/docs/user/outputs.md
-+++ b/docs/user/outputs.md
-@@ -133,7 +133,7 @@ Omit `position` to place outputs automatically from left to right. Explicitly po
- 
- ### Supersampling with `render_scale`
- 
--`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
-+`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. The sampling method is configurable (`appearance.downsample`): the default `box` averages each destination pixel's source footprint. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
- 
- Native-resolution X11 applications use the physical output scale by default. To opt them into `render_scale`, see [`force_x11_supersample`](configuration.md#general).
- 
 diff --git a/examples/config.toml b/examples/config.toml
-index 4bc9b30e..798d002e 100644
+index 77676eeb..2d4beda0 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -83,6 +83,12 @@ files = []
@@ -152,7 +97,7 @@ index 3d9806e1..2e1437f3 100644
            || layerEffects
            || animation
 diff --git a/src/config/config.h b/src/config/config.h
-index 9abda3dd..72587088 100644
+index aef85fba..d8978688 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -35,6 +35,8 @@ namespace umbriel {
@@ -164,7 +109,7 @@ index 9abda3dd..72587088 100644
    enum class TitleBarButtonGlyph : uint8_t { Always, Hover, Never };
  
    enum class ModifierKey {
-@@ -841,8 +843,23 @@ namespace umbriel {
+@@ -842,8 +844,23 @@ namespace umbriel {
        } tabBar;
        bool preferNoCsd = true;
  
@@ -208,7 +153,7 @@ index 78dc3d92..782f6f00 100644
            boolean("opaque_fullscreen", &A::opaqueFullscreen),
            registry::table("blur", &A::blur, blur),
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index ea10abd9..fa95b074 100644
+index be6ee099..f9ad57be 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
 @@ -719,6 +719,8 @@ namespace umbriel {
@@ -221,10 +166,10 @@ index ea10abd9..fa95b074 100644
        wlr_scene_set_linux_dmabuf_v1(m_scene, linuxDmabuf);
      }
 diff --git a/src/server/server.h b/src/server/server.h
-index eeed958a..4b01bd9f 100644
+index be0468e4..06ba4f60 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
-@@ -439,6 +439,10 @@ namespace umbriel {
+@@ -443,6 +443,10 @@ namespace umbriel {
      // Re-send every surface's output scale (views, layer surfaces, popups). Run after anything that changes an output's
      // scale or moves surfaces between outputs outside setWorkspace; the notifies dedup, so extra calls are cheap.
      void refreshSurfaceScales();
@@ -236,7 +181,7 @@ index eeed958a..4b01bd9f 100644
      void refreshOutputPolicies();
      wlr_output* preferredOutput() const;
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index 3b63e2e5..cf6ce6df 100644
+index fa24c43d..57a28f25 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
 @@ -809,6 +809,12 @@ namespace umbriel {
@@ -286,7 +231,7 @@ index 3525bb25..53d09410 100644
      for (const auto& output : m_outputs) {
        output->updateVrr();
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index d6f70880..d8579871 100644
+index a04e3d9f..d0d0fb27 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -199,6 +199,7 @@ namespace umbriel {
@@ -311,7 +256,7 @@ index d6f70880..d8579871 100644
      moveToWorkspace(workspace, attachToLayout, LayoutAttachOrigin::ExistingView);
    }
 diff --git a/src/view/view.h b/src/view/view.h
-index 40036208..bfdd11b4 100644
+index 4052f9a8..51cd169a 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -141,6 +141,10 @@ namespace umbriel {
@@ -327,10 +272,10 @@ index 40036208..bfdd11b4 100644
      pid_t pid() const;
 diff --git a/tests/harness/checks/render/downsample_box.sh b/tests/harness/checks/render/downsample_box.sh
 new file mode 100755
-index 00000000..ab59ceaf
+index 00000000..a40b027a
 --- /dev/null
 +++ b/tests/harness/checks/render/downsample_box.sh
-@@ -0,0 +1,205 @@
+@@ -0,0 +1,197 @@
 +#!/usr/bin/env bash
 +# harness: outputs=1
 +# appearance.downsample picks how the scene samples a minified source. A client
@@ -379,16 +324,8 @@ index 00000000..ab59ceaf
 +  exit 1
 +fi
 +
-+WINDOW_ID=""
-+for _ in $(seq 80); do
-+  WINDOW_ID=$("$UMBRIEL" windows --json | jq -r --arg title "$WINDOW_TITLE" '.[] | select(.title == $title) | .id')
-+  [[ -n $WINDOW_ID ]] && break
-+  sleep 0.025
-+done
-+if [[ -z $WINDOW_ID ]]; then
-+  echo "no window id for '$WINDOW_TITLE'"
-+  exit 1
-+fi
++await_window "$WINDOW_TITLE"
++WINDOW_ID=$(window_by_title "$WINDOW_TITLE" | jq -r .id)
 +
 +IMAGE="$UMBRIEL_RUNTIME_DIR/downsample-box.png"
 +# Cap leg captures at output-raster resolution instead of logical.
@@ -455,7 +392,7 @@ index 00000000..ab59ceaf
 +"$UMBRIEL" settle > /dev/null
 +# Bilinear: one point sample per output pixel lands on a texel center and
 +# reports that texel pure, dropping the other two (aliasing).
-+expect_pair "bilinear downsample" 0 255 255 0 0
++expect_pair "bilinear downsample" 0 255 255 0
 +expect_toplevel_pair "bilinear downsample in window captures" 0 255 255 0 0
 +
 +sed -i 's/downsample = "bilinear"/downsample = "box"/' "$UMBRIEL_CONFIG"
@@ -569,10 +506,10 @@ index d034a4fb..0e090bbc 100644
    CHECK(effects.layerEffects);
    CHECK(effects.animation);
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index eb82cca3..628cec6a 100644
+index a59e7a10..5f04f86f 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -829,6 +829,34 @@ render_scale = 1.0
+@@ -854,6 +854,34 @@ render_scale = 1.0
    CHECK(!containsDiagnostic(store, "render_scale"));
  }
  
@@ -1364,16 +1301,16 @@ index 3f781bc1..cdcfee11 100644
    } else if (strcmp(argv[1], "pq-roundtrip") == 0) {
 diff --git a/umbrielfx/tests/downsample.c b/umbrielfx/tests/downsample.c
 new file mode 100644
-index 00000000..73e02cba
+index 00000000..0845bac5
 --- /dev/null
 +++ b/umbrielfx/tests/downsample.c
 @@ -0,0 +1,44 @@
 +// The downsample source-box predicate: a scene surface always carries a source
 +// box (the full buffer when the client set no viewport), so "cropped" must be
 +// judged by the extents. Only a cropped minified source takes the sampling
-+// clamp variant; a whole-buffer source must not, because always clamping is the
-+// configuration that flickered and tore on NVIDIA. No renderer or running
-+// desktop is required.
++// clamp variant; a whole-buffer source keeps the taps that leave it inside the
++// texture's own edge, which GL_CLAMP_TO_EDGE already duplicates. No renderer or
++// running desktop is required.
 +#undef NDEBUG
 +#include "umbrielfx/types/wlr_scene.h"
 +
@@ -1413,7 +1350,7 @@ index 00000000..73e02cba
 +  return failures ? 1 : 0;
 +}
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index c50409fc..72baa4b0 100644
+index c50409fc..a91a6acf 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
 @@ -3743,6 +3743,23 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
@@ -1449,8 +1386,8 @@ index c50409fc..72baa4b0 100644
 +      // single-tap footprint, so a cropped minified source needs the clamp
 +      // for its whole footprint too. A whole-buffer source does not: taps that
 +      // leave it land in the texture's own edge, which GL_CLAMP_TO_EDGE
-+      // already duplicates, and the clamp variant on every minified draw is
-+      // the configuration that flickered on NVIDIA.
++      // already duplicates, so it keeps the fetch byte-identical to the
++      // unclamped shader.
 +      crosses_crop_edge =
 +          downsample_box && wlr_scene_source_box_is_cropped(&scene_buffer->src_box, texture->width, texture->height);
 +    }
@@ -1494,6 +1431,3 @@ index c50409fc..72baa4b0 100644
  static void scene_output_handle_destroy(struct wlr_addon* addon) {
    struct wlr_scene_output* scene_output = wl_container_of(addon, scene_output, addon);
    wlr_scene_output_destroy(scene_output);
--- 
-2.56.0.341.gebdc087dc9
-

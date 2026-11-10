@@ -1,64 +1,3 @@
-From f8222bdeb176a5b9f70d57e230bfa91152f323c1 Mon Sep 17 00:00:00 2001
-From: ZhangDM-520 <jixianqiang1540@gmail.com>
-Date: Mon, 9 Nov 2026 01:30:07 +0800
-Subject: [PATCH] feat(blur): honor backdrop blur regions requested by clients
-
-Applications such as GTK4 terminals ask the compositor to blur the part of
-their own surface that shows the desktop, through ext_background_effect_v1,
-and fall back to a window rule when the protocol is missing. Advertise the
-global with the blur capability and blur exactly the requested area.
-
-The manager keeps one double-buffered region per surface in the surface's
-synced state, so set_blur_region composes with wl_surface.commit. Blur owners
-clip their existing backdrop blur node to that region instead of a second node,
-so the transparency mask and corner radii stay aligned. A popup that drops its
-buffer hides its blur again, and a reload re-derives every live popup.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
----
- CONTRIBUTING.md                               |   2 +-
- docs/design/README.md                         |   1 +
- docs/design/background-effect.md              |  25 ++
- docs/user/appearance.md                       |  12 +-
- examples/config.toml                          |   4 +
- meson.build                                   |  29 ++
- src/config/config.h                           |   4 +
- src/config/fields_general.cpp                 |  13 +-
- src/layer/layer_surface.cpp                   |  13 +-
- src/overview/overview.cpp                     |   7 +-
- src/scene/surface_blur.cpp                    |  82 ++++-
- src/scene/surface_blur.h                      |  31 +-
- src/server/background_effect.cpp              | 262 ++++++++++++++
- src/server/background_effect.h                |  40 +++
- src/server/server.cpp                         |  12 +-
- src/server/server.h                           |   3 +
- src/server/server_events.cpp                  |   8 +-
- src/view/decoration.cpp                       |   4 +-
- src/view/decoration.h                         |   2 +-
- src/view/popup.cpp                            |  48 ++-
- src/view/popup.h                              |  17 +-
- src/view/view.cpp                             |   2 +
- src/view/view.h                               |   8 +
- src/view/view_animation.cpp                   |   2 +-
- src/view/view_chrome.cpp                      |  50 ++-
- src/view/view_lifecycle.cpp                   |   1 +
- tests/harness/check.sh                        |   1 +
- .../checks/protocol/background_blur.sh        | 336 ++++++++++++++++++
- .../checks/protocol/background_blur_popup.sh  | 109 ++++++
- .../checks/protocol/security_context.sh       |   1 +
- .../clients/background_effect_client.cpp      | 316 ++++++++++++++++
- tests/harness/clients/popup_client.cpp        | 118 +++++-
- tests/meson.build                             |  15 +
- tests/unit/blur_region.cpp                    | 256 +++++++++++++
- 34 files changed, 1772 insertions(+), 62 deletions(-)
- create mode 100644 docs/design/background-effect.md
- create mode 100644 src/server/background_effect.cpp
- create mode 100644 src/server/background_effect.h
- create mode 100755 tests/harness/checks/protocol/background_blur.sh
- create mode 100755 tests/harness/checks/protocol/background_blur_popup.sh
- create mode 100644 tests/harness/clients/background_effect_client.cpp
- create mode 100644 tests/unit/blur_region.cpp
-
 diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
 index 1903721e..ca48d341 100644
 --- a/CONTRIBUTING.md
@@ -116,7 +55,7 @@ index 00000000..9a87b4d1
 +
 +`org_kde_kwin_blur` is not part of wayland-protocols and its XML is LGPL-2.1-or-later; it is not advertised. A client that only speaks that protocol still needs a window or layer rule for blur.
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 39de77e2..8d527e98 100644
+index 39de77e2..e42b68be 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
 @@ -252,6 +252,7 @@ The bar is hidden while its window is fullscreen or maximized to the edges. Titl
@@ -127,7 +66,7 @@ index 39de77e2..8d527e98 100644
  optimized = true
  passes = 2
  radius = 5
-@@ -263,10 +264,13 @@ saturation = 1.1
+@@ -263,16 +264,19 @@ saturation = 1.1
  
  `enabled` is the master switch. Individual surfaces still opt in through [window rules](window-rules.md) or [layer rules](layer-rules.md). Blur appears only where a surface is transparent.
  
@@ -135,18 +74,30 @@ index 39de77e2..8d527e98 100644
 -| ------------ | ------- | -------------------------------------------------------------- |
 -| `enabled`    | `true`  | Enable blur rendering.                                         |
 -| `optimized`  | `true`  | Share one cached background blur across surfaces on an output. |
-+Applications that draw their own backdrop blur can ask for it instead: Umbriel advertises `ext_background_effect_v1`, so a client names the part of its surface that should be blurred. A request turns blur on for that surface and limits it to the requested area, which combines with a rule rather than replacing it: an empty region means no blur. `client_requests = false` keeps the protocol advertised but ignores requests, so a client cannot opt itself in.
+-| `passes`     | `2`     | Blur passes from 0 to 8.                                       |
+-| `radius`     | `5`     | Blur radius from 0 to 100.                                     |
+-| `noise`      | `0.02`  | Noise overlay from 0.0 to 1.0.                                 |
+-| `brightness` | `0.9`   | Brightness multiplier from 0.0 to 2.0.                         |
+-| `contrast`   | `0.9`   | Contrast multiplier from 0.0 to 2.0.                           |
+-| `saturation` | `1.1`   | Saturation multiplier from 0.0 to 2.0.                         |
++Applications that draw their own backdrop blur can ask for it instead: Umbriel advertises `ext_background_effect_v1`, so a client names the part of its surface that should be blurred. A non-empty region turns blur on for that surface and limits it to that area even without a rule, an empty region means no blur, and a surface that makes no request keeps whatever its window or layer rule says. `client_requests = false` keeps the protocol advertised but ignores requests, so a client cannot opt itself in.
 +
 +| Key               | Default | Description                                                    |
 +| ----------------- | ------- | -------------------------------------------------------------- |
 +| `enabled`         | `true`  | Enable blur rendering.                                         |
 +| `client_requests` | `true`  | Honor blur regions that clients request for their own surface. |
 +| `optimized`       | `true`  | Share one cached background blur across surfaces on an output. |
- | `passes`     | `2`     | Blur passes from 0 to 8.                                       |
- | `radius`     | `5`     | Blur radius from 0 to 100.                                     |
- | `noise`      | `0.02`  | Noise overlay from 0.0 to 1.0.                                 |
++| `passes`          | `2`     | Blur passes from 0 to 8.                                       |
++| `radius`          | `5`     | Blur radius from 0 to 100.                                     |
++| `noise`           | `0.02`  | Noise overlay from 0.0 to 1.0.                                 |
++| `brightness`      | `0.9`   | Brightness multiplier from 0.0 to 2.0.                         |
++| `contrast`        | `0.9`   | Contrast multiplier from 0.0 to 2.0.                           |
++| `saturation`      | `1.1`   | Saturation multiplier from 0.0 to 2.0.                         |
+ 
+ Optimized blur samples the background beneath the window stack. Set it to `false` when translucent surfaces should blur the surfaces directly behind them, at a higher rendering cost. The shared background cache follows background layer-shell updates, including animated map and unmap transitions. Unchanged commits that only request frame callbacks reuse the cached blur.
+ 
 diff --git a/examples/config.toml b/examples/config.toml
-index 798d002e..a2b28d77 100644
+index 2d4beda0..b86f9199 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -92,6 +92,10 @@ files = []
@@ -215,10 +166,10 @@ index 8ca23c6d..9ddf6494 100644
      xdg_output_server_c,
    ],
 diff --git a/src/config/config.h b/src/config/config.h
-index df68bade..1faa2931 100644
+index 861c8d49..fe044691 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -795,6 +795,10 @@ namespace umbriel {
+@@ -796,6 +796,10 @@ namespace umbriel {
        bool opaqueFullscreen = true;
        struct Blur {
          bool enabled = true;
@@ -1112,7 +1063,7 @@ index 66641847..0fb909a1 100644
  
      wl_listener m_commit{};
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index d8579871..d2025204 100644
+index d0d0fb27..14dcc009 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -148,6 +148,7 @@ namespace umbriel {
@@ -1132,7 +1083,7 @@ index d8579871..d2025204 100644
      if (m_effectSelectionIdle != nullptr) {
        wl_event_source_remove(m_effectSelectionIdle);
 diff --git a/src/view/view.h b/src/view/view.h
-index bdce069f..835d4673 100644
+index 51cd169a..bdc43dcb 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -17,6 +17,7 @@
@@ -1157,7 +1108,7 @@ index bdce069f..835d4673 100644
      SurfaceBlurOptions popupBlurOptions() const { return m_decoration.popupBlurOptions(); }
      void updateShadow();
      void updateShadow(int contentWidth, int contentHeight);
-@@ -1137,6 +1143,8 @@ namespace umbriel {
+@@ -1159,6 +1165,8 @@ namespace umbriel {
      AnimatedValue m_ruleOpacity{1.0};
      AnimatedValue m_ruleBlur{0.0};
      bool m_backgroundRender = false;
@@ -1167,7 +1118,7 @@ index bdce069f..835d4673 100644
      std::optional<bool> m_appliedSupersampleRule;
      float m_dragOpacity = 1.0F;
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 477e7b32..5229c090 100644
+index 3616a639..b4c45729 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
 @@ -91,7 +91,7 @@ namespace umbriel {
@@ -2071,23 +2022,23 @@ index 00000000..ec79d412
 +  return 0;
 +}
 diff --git a/tests/harness/clients/popup_client.cpp b/tests/harness/clients/popup_client.cpp
-index a20f470b..180618ab 100644
+index 40a82c25..36d1c48b 100644
 --- a/tests/harness/clients/popup_client.cpp
 +++ b/tests/harness/clients/popup_client.cpp
-@@ -2,7 +2,11 @@
- // harness can then request redundant focus for the toplevel and observe whether
- // the compositor incorrectly dismisses the popup. With --popup-on-stdin it
+@@ -4,7 +4,11 @@
  // instead creates an ungrabbed popup when a line arrives on stdin, so a check
--// can open one while the toplevel is not shown.
-+// can open one while the toplevel is not shown. On that path an `unmap` line
-+// drops the popup buffer, so a check can take a popup away without destroying
-+// it, and a `sync` line answers with a `frame` once the compositor has read
-+// everything sent before it. FILL_COLOR, POPUP_FILL_COLOR, POPUP_WIDTH and
-+// POPUP_HEIGHT override the painted colours and the popup size.
+ // can open one while the toplevel is not shown. With --unmap-on-close it unmaps
+ // the toplevel on a close request and keeps its popup, so a check can unmap a
+-// window while its popup holds the keyboard grab.
++// window while its popup holds the keyboard grab. On the popup-on-stdin path an
++// `unmap` line drops the popup buffer, so a check can take a popup away without
++// destroying it, and a `sync` line answers with a `frame` once the compositor
++// has read everything sent before it. FILL_COLOR, POPUP_FILL_COLOR, POPUP_WIDTH
++// and POPUP_HEIGHT override the painted colours and the popup size.
  
  #include "xdg-shell-client-protocol.h"
  
-@@ -23,6 +27,8 @@ namespace {
+@@ -25,6 +29,8 @@ namespace {
    constexpr int kWindowHeight = 700;
    constexpr int kPopupWidth = 120;
    constexpr int kPopupHeight = 80;
@@ -2096,7 +2047,7 @@ index a20f470b..180618ab 100644
    constexpr uint32_t kLeftButton = 0x110;
  
    struct Buffer {
-@@ -46,7 +52,12 @@ namespace {
+@@ -48,7 +54,12 @@ namespace {
      xdg_popup* popup = nullptr;
      Buffer windowBuffer;
      Buffer popupBuffer;
@@ -2107,9 +2058,9 @@ index a20f470b..180618ab 100644
      bool mapped = false;
 +    bool popupWanted = false;
      bool popupMapped = false;
+     bool unmapOnClose = false;
    };
- 
-@@ -76,25 +87,64 @@ namespace {
+@@ -79,25 +90,64 @@ namespace {
      return buffer;
    }
  
@@ -2181,7 +2132,7 @@ index a20f470b..180618ab 100644
    void popupConfigure(void*, xdg_popup*, int32_t, int32_t, int32_t, int32_t) {}
  
    void popupDone(void*, xdg_popup*) {
-@@ -116,7 +166,7 @@ namespace {
+@@ -119,7 +169,7 @@ namespace {
      xdg_surface_add_listener(state.popupXdgSurface, &kPopupXdgSurfaceListener, &state);
  
      xdg_positioner* positioner = xdg_wm_base_create_positioner(state.wmBase);
@@ -2190,7 +2141,7 @@ index a20f470b..180618ab 100644
      xdg_positioner_set_anchor_rect(positioner, 0, 0, 1, 1);
      xdg_positioner_set_anchor(positioner, XDG_POSITIONER_ANCHOR_TOP_LEFT);
      xdg_positioner_set_gravity(positioner, XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT);
-@@ -128,6 +178,7 @@ namespace {
+@@ -131,6 +181,7 @@ namespace {
      if (grabSerial) {
        xdg_popup_grab(state.popup, state.seat, *grabSerial);
      }
@@ -2198,7 +2149,7 @@ index a20f470b..180618ab 100644
      wl_surface_commit(state.popupSurface);
    }
  
-@@ -193,13 +244,13 @@ namespace {
+@@ -196,13 +247,13 @@ namespace {
    void surfaceConfigure(void* data, xdg_surface* xdgSurface, uint32_t serial) {
      auto& state = *static_cast<State*>(data);
      xdg_surface_ack_configure(xdgSurface, serial);
@@ -2218,7 +2169,7 @@ index a20f470b..180618ab 100644
      wl_surface_commit(state.surface);
    }
  
-@@ -259,10 +310,28 @@ namespace {
+@@ -271,12 +322,30 @@ namespace {
      }
    }
  
@@ -2240,6 +2191,8 @@ index a20f470b..180618ab 100644
  
  int main(int argc, char** argv) {
    State state;
+   const bool popupOnStdin = argc > 1 && std::strcmp(argv[1], "--popup-on-stdin") == 0;
+   state.unmapOnClose = argc > 1 && std::strcmp(argv[1], "--unmap-on-close") == 0;
 +  state.popupWidth = envSize("POPUP_WIDTH", kPopupWidth);
 +  state.popupHeight = envSize("POPUP_HEIGHT", kPopupHeight);
 +  state.windowFill = envColor("FILL_COLOR", kWindowFill);
@@ -2247,7 +2200,7 @@ index a20f470b..180618ab 100644
    state.display = wl_display_connect(nullptr);
    if (state.display == nullptr) {
      std::println(stderr, "popup-client: cannot connect to WAYLAND_DISPLAY");
-@@ -283,8 +352,8 @@ int main(int argc, char** argv) {
+@@ -297,8 +366,8 @@ int main(int argc, char** argv) {
      return EXIT_FAILURE;
    }
  
@@ -2258,7 +2211,7 @@ index a20f470b..180618ab 100644
    if (state.windowBuffer.resource == nullptr || state.popupBuffer.resource == nullptr) {
      std::println(stderr, "popup-client: failed to allocate shared-memory buffers");
      return EXIT_FAILURE;
-@@ -323,9 +392,20 @@ int main(int argc, char** argv) {
+@@ -336,9 +405,20 @@ int main(int argc, char** argv) {
          break;
        }
        if ((fds[1].revents & (POLLIN | POLLHUP)) != 0) {
@@ -2583,6 +2536,3 @@ index 00000000..877d32be
 +}
 +
 +int main() { return RUN_TESTS(); }
--- 
-2.56.0.341.gebdc087dc9
-

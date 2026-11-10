@@ -32,7 +32,7 @@ index aea640da..3adcee65 100644
      m_progress = 0.0;
      m_targetProgress = 0.0;
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index 05efa4c7..00a93cb3 100644
+index 05efa4c7..0ce654a2 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -615,12 +615,22 @@ namespace umbriel {
@@ -133,7 +133,7 @@ index 05efa4c7..00a93cb3 100644
    }
  
    void View::raiseTransientTree() {
-@@ -779,16 +830,46 @@ namespace umbriel {
+@@ -779,16 +830,43 @@ namespace umbriel {
      if (attached()) {
        return;
      }
@@ -145,24 +145,6 @@ index 05efa4c7..00a93cb3 100644
 +    }
 +  }
  
-+  View::TransientStep View::applyTransientStep(TransientWalkAction action) {
-+    switch (action) {
-+    case TransientWalkAction::SyncSceneParent: {
-+      return {.leftDragTree = syncTransientSceneParent()};
-+    }
-+    case TransientWalkAction::RaiseToTop: {
-+      // An attached dialog's subtree stacks as its parent arranged it.
-+      if (attached()) {
-+        return {.descend = false};
-+      }
-+      const bool leftDragTree = syncTransientSceneParent();
-+      wlr_scene_node_raise_to_top(&m_sceneTree->node);
-+      return {.leftDragTree = leftDragTree};
-+    }
-+    }
-+    return {};
-+  }
-+
 +  bool View::walkTransientTree(TransientWalkAction action) {
 +    bool leftDragTree = false;
      const auto views = m_server->registry().all();
@@ -173,9 +155,24 @@ index 05efa4c7..00a93cb3 100644
 +      if (child == nullptr || child == this || child->transientParent() != this) {
 +        continue;
 +      }
-+      const TransientStep step = child->applyTransientStep(action);
-+      leftDragTree = step.leftDragTree || leftDragTree;
-+      if (step.descend) {
++      bool descend = true;
++      switch (action) {
++      case TransientWalkAction::SyncSceneParent: {
++        leftDragTree = child->syncTransientSceneParent() || leftDragTree;
++        break;
++      }
++      case TransientWalkAction::RaiseToTop: {
++        // An attached dialog's subtree stacks as its parent arranged it.
++        if (child->attached()) {
++          descend = false;
++          break;
++        }
++        leftDragTree = child->syncTransientSceneParent() || leftDragTree;
++        wlr_scene_node_raise_to_top(&child->m_sceneTree->node);
++        break;
++      }
++      }
++      if (descend) {
 +        leftDragTree = child->walkTransientTree(action) || leftDragTree;
        }
      }
@@ -183,7 +180,7 @@ index 05efa4c7..00a93cb3 100644
    }
  
    void View::setInScratchpad(bool scratchpad) {
-@@ -800,7 +881,40 @@ namespace umbriel {
+@@ -800,13 +878,61 @@ namespace umbriel {
      refreshStateRuleEffects();
    }
  
@@ -194,40 +191,31 @@ index 05efa4c7..00a93cb3 100644
 +    // settles, so the release's re-homes wait for it; a later state change
 +    // (fullscreen, pin, scratchpad) applies immediately and drops the wait.
 +    // closeReleaseRehomeWindow() ends the release's say over where the view rests.
-+    const bool leavingDragTree = applySceneParent(parent);
-+    if (!leavingDragTree) {
++    if (!applySceneParent(parent)) {
 +      return;
 +    }
 +    // Transient children elevated with this view follow it home; the elevation is
 +    // re-checked once, after the whole subtree has moved.
-+    if (walkTransientTree(TransientWalkAction::SyncSceneParent) || leavingDragTree) {
-+      demoteDragTreeIfIdle();
-+    }
-+  }
-+
-+  bool View::leavesDragTree(wlr_scene_tree* parent) const {
-+    return m_sceneTree->node.parent == m_server->dragTree() && parent != m_server->dragTree();
++    walkTransientTree(TransientWalkAction::SyncSceneParent);
++    demoteDragTreeIfIdle();
 +  }
 +
 +  bool View::applySceneParent(wlr_scene_tree* parent) {
 +    if (deferRehome(parent)) {
 +      return false;
 +    }
-+    const bool leavingDragTree = leavesDragTree(parent);
++    const bool leavingDragTree = m_sceneTree->node.parent == m_server->dragTree() && parent != m_server->dragTree();
 +    m_pendingHomeParent = nullptr;
 +    m_releaseRehomeArmed = false;
-+    reparentSceneNode(parent);
-+    return leavingDragTree;
-+  }
-+
-+  void View::reparentSceneNode(wlr_scene_tree* parent) {
      wlr_scene_node_reparent(&m_sceneTree->node, parent);
      syncShadowPool();
      // Another parent can put the window elsewhere in layout coordinates.
-@@ -809,6 +923,31 @@ namespace umbriel {
+     if (m_xsurface != nullptr && m_mapped) {
+       syncXwaylandConfigure();
      }
-   }
- 
++    return leavingDragTree;
++  }
++
 +  void View::closeReleaseRehomeWindow() { m_releaseRehomeArmed = false; }
 +
 +  void View::flushReleaseRehome() {
@@ -251,13 +239,11 @@ index 05efa4c7..00a93cb3 100644
 +          && other->m_sceneTree != nullptr
 +          && other->m_sceneTree->node.parent == m_server->dragTree();
 +    });
-+  }
-+
+   }
+ 
    void View::syncShadowPool() {
-     wlr_scene_tree* pool = m_workspace != nullptr && m_sceneTree->node.parent == m_workspace->viewLayer(true)
-         ? m_workspace->tileShadowLayer()
 diff --git a/src/view/view.h b/src/view/view.h
-index 3c575722..fecb984a 100644
+index 3c575722..8a904a52 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -301,6 +301,9 @@ namespace umbriel {
@@ -266,7 +252,7 @@ index 3c575722..fecb984a 100644
      void setTabHidden(bool hidden);
 +    // True while the drag tree presents this view or a transient ancestor (held,
 +    // settling, or landed on a pinned root): a workspace must not show or hide it.
-+    [[nodiscard]] bool dragPresentationOwnsVisibility() const;
++    bool dragPresentationOwnsVisibility() const;
      bool tabHidden() const { return m_tabHidden; }
      // Minimized: hidden, but keeping its workspace, floating box, stacking slot, and taskbar entries. Focusing the
      // window shows it again.
@@ -276,17 +262,17 @@ index 3c575722..fecb984a 100644
      void endDragPhysics();
 +    // True while the physics sheet is displaced from its resting box: grabbed,
 +    // or still settling after the release.
-+    [[nodiscard]] bool dragSheetDisplaced() const;
++    bool dragSheetDisplaced() const;
 +    // The release's say over where the view rests: the window closes when the
 +    // release handler ends, flush lands the wait immediately.
 +    void closeReleaseRehomeWindow();
 +    void flushReleaseRehome();
 +    // True while a view rests under the drag tree.
-+    [[nodiscard]] bool dragTreeOccupied() const;
++    bool dragTreeOccupied() const;
      // Refits the sheet to the content tree's drawn bounds when they changed, or when the grab moved.
      void fitDragPhysics(bool grabMoved);
      struct DragFit {
-@@ -829,7 +841,34 @@ namespace umbriel {
+@@ -829,7 +841,25 @@ namespace umbriel {
      void syncModalShade();
      void releaseDialog();
      [[nodiscard]] bool inheritScratchpadFromParent(bool restoreTiled);
@@ -294,12 +280,6 @@ index 3c575722..fecb984a 100644
 +    // What to do to a transient descendant: re-home it under the tree its parent
 +    // lives in, or do that and stack it over its siblings.
 +    enum class TransientWalkAction { SyncSceneParent, RaiseToTop };
-+    // What one step did to a descendant.
-+    struct TransientStep {
-+      bool descend = true; // the descendant's own subtree follows the walk
-+      bool leftDragTree = false;
-+    };
-+    TransientStep applyTransientStep(TransientWalkAction action);
 +    // The one owner of the transient traversal: applies `action` depth-first to
 +    // every descendant, newest registry entry first. Returns true when any of them
 +    // left the drag tree.
@@ -307,13 +287,10 @@ index 3c575722..fecb984a 100644
 +    // Absorbs a re-home into the release's wait while the sheet is displaced:
 +    // true when the node must stay where it is.
 +    [[nodiscard]] bool deferRehome(wlr_scene_tree* target);
-+    // True when moving this node to `parent` takes it out of the drag tree.
-+    [[nodiscard]] bool leavesDragTree(wlr_scene_tree* parent) const;
-+    // Applies one node's re-home: the release's wait, then the move. Returns true
-+    // when the node left the drag tree. The caller owns the subtree.
++    // Applies one node's re-home: the release's wait, then the move with the
++    // shadow and X11 state that follow it. Returns true when the node left the
++    // drag tree. The caller owns the subtree.
 +    bool applySceneParent(wlr_scene_tree* parent);
-+    // Moves this view's node with the shadow and X11 state that follow it.
-+    void reparentSceneNode(wlr_scene_tree* parent);
 +    // Lowers the drag tree under its icons once no drag-presented view is left.
 +    void demoteDragTreeIfIdle();
 +    // Re-homes this node under the tree its transient parent lives in. Returns
@@ -322,7 +299,7 @@ index 3c575722..fecb984a 100644
      void raiseTransientTree();
      void updateForeignIdentity();
      void updateForeignState();
-@@ -992,6 +1031,12 @@ namespace umbriel {
+@@ -992,6 +1022,12 @@ namespace umbriel {
      ViewPresentation m_presentation;
      DragPhysics m_dragPhysics;
      double m_dragPhysicsMsec = 0; // animation clock at the sheet's last tick
@@ -758,7 +735,7 @@ index 00000000..ec4481ec
 +echo "a dragged window's dialog rides along across a workspace switch"
 diff --git a/tests/harness/checks/drag/settle_held_workspace_switch.sh b/tests/harness/checks/drag/settle_held_workspace_switch.sh
 new file mode 100755
-index 00000000..b61f243f
+index 00000000..75074a85
 --- /dev/null
 +++ b/tests/harness/checks/drag/settle_held_workspace_switch.sh
 @@ -0,0 +1,69 @@
@@ -792,7 +769,7 @@ index 00000000..b61f243f
 +settle_map "$TITLE" 400 300 0xFF00FF00
 +settle_sheet_extent "$TITLE"
 +
-+settle_drag_hold "$TITLE" "$SPAN"
++settle_drag "$TITLE" "$SPAN" hold
 +"$UMBRIEL" clock-freeze
 +"$UMBRIEL" clock-advance 16 > /dev/null
 +held=$(settle_green)
@@ -1372,10 +1349,10 @@ index 00000000..26a2097c
 +echo "a settling window moves outputs with its workspace, and stays where it landed"
 diff --git a/tests/harness/drag_settle_lib.sh b/tests/harness/drag_settle_lib.sh
 new file mode 100644
-index 00000000..7438f2ec
+index 00000000..bad0aa54
 --- /dev/null
 +++ b/tests/harness/drag_settle_lib.sh
-@@ -0,0 +1,186 @@
+@@ -0,0 +1,185 @@
 +# Shared by the checks that pin what a released, still-deforming sheet does while
 +# its workspace moves. A released sheet rests under the shared drag tree, outside
 +# every workspace layer, until its spring settles; the drag that carries a window
@@ -1501,7 +1478,6 @@ index 00000000..7438f2ec
 +  settle_press "$2" $((x + w / 4)) $((y + h * 3 / 4)) "$3"
 +}
 +
-+settle_drag_hold() { settle_drag "$1" "$2" hold; }
 +settle_drag_queue() { settle_drag "$1" "$2" release; }
 +
 +settle_shot() { grim -o "${1:-HEADLESS-1}" "$SETTLE_IMAGE"; }
