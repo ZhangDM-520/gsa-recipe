@@ -1,5 +1,5 @@
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 593d3213..0449e59e 100644
+index 593d3213..25f75de3 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
 @@ -132,6 +132,11 @@ button_padding = -1
@@ -25,7 +25,7 @@ index 593d3213..0449e59e 100644
 +`button_corner_radius` uses logical pixels, from `0` to `100`. Its default, `-1`, follows the window's `corner_radius`, including window rules. Use `0` for square buttons or a small positive value for rounded squares. The radius is capped at half the button size, producing circles at larger values. Buttons and symbols scale with the output and overview zoom, and update on reload. The maximize button is disabled for fixed-size windows. The minimize button shows only while the window can [minimize](layout.md#minimize), so tiled and pinned windows do not have one. `background` and `text` apply to the focused window; their `_unfocused` variants apply to other windows. Colors and title bar settings reload live. Two of those settings are on by default and act on the title and symbol colors themselves: `title_shadow` draws a dark edge under the title and around the symbols, and `title_contrast` reverses a color that would sink into the bar, in every `color_source`; both are described below.
  
 -The title bar follows its window's `blur`, `blur_optimized`, and `blur_ignore_alpha` rules, together with the global [blur settings](#blur). Give `background` and `background_unfocused` some transparency, such as `"#292933CC"`, to see the blurred backdrop. The alpha threshold applies to the title bar's own background color, independently of the application's content. Opaque title bar backgrounds remain opaque with blur enabled, including after leaving overview or switching focus between windows. No layer rule is needed. Dragging, overview previews, and close animations keep the blur with the window.
-+`color_source = "window"` paints the bar with a thin strip of the window's own content instead of `background`, so the bar takes on the application's color and follows it as the application repaints that edge. `color_source = "average"` paints the bar with that strip's mean color instead, one uniform color with none of the window's own detail, so a title bar, tab row or loading bar along that edge does not read as fragments of itself inside the bar. It costs a pixel readback when the window repaints that edge, which finishes the frame before reading it, so leave it off for windows that repaint that edge every frame, such as video; a burst of repaints pays for at most one readback per two of them, never closer together than a few milliseconds, and the read covers the width the title spans plus a small margin rather than the whole bar. `color_source_height` sets how many logical pixels that strip takes, from `1` to `4`; its default, `1`, samples the single top row and reads as one flat color, while a larger value keeps more of the window's own detail. In `"window"` mode the bar is only ever the window's own pixels, so anything the application draws along that edge — a toolbar, a tab row, a loading bar — appears in it too; `"average"` reduces that detail to one color and shows none of it. A window whose top edge is transparent keeps the configured `background` there, because the bar color stays painted underneath, and the values in `[colors.title_bar]` remain the fallback for applications that draw nothing. Unfocused windows keep their own color, dimmed over `background_unfocused`. A client-drawn window that reports its own geometry keeps the transparent shadows around it out of the color, so the bar follows the visible window rather than its padding. `"window"` mirrors the window's own buffer instead of reading pixels back, so it adds one bar-sized rectangle per window and a copy of that strip each time the window commits, and pays a readback only when `title_contrast_sample` asks for one. `"average"` does read that strip back, at most once per two commits that actually repaint it, and once more when the bar's geometry or strip height changes, which finishes the frame first each time; the resulting color is a single pixel, so no further readback follows until that edge changes again. An explicit-sync window's strip is read only once its frame is reported ready, and read anyway after a brief wait when that report never arrives, so a stalled client cannot hold the bar on a stale color; a window that cannot be read — protected or external-only content — keeps the last color it gave, or the palette if it never gave one. The average is taken in the window's own color space and shown in it. An adaptive fill is opaque while the window is focused and the application's own edge is opaque; an unfocused bar draws it dimmed over `background_unfocused`, and a translucent top edge stays translucent, so the blurred backdrop shows through in both.
++`color_source = "window"` paints the bar with a thin strip of the window's own content instead of `background`, so the bar takes on the application's color and follows it as the application repaints that edge. `color_source = "average"` paints the bar with that strip's mean color instead, one uniform color with none of the window's own detail, so a title bar, tab row or loading bar along that edge does not read as fragments of itself inside the bar. It costs a pixel readback when the window repaints that edge, which finishes the frame before reading it, and a burst of repaints pays for at most one readback per two of them, never closer together than a few milliseconds; the read covers the width the title spans plus a small margin instead of the whole bar, so leave it off for windows that repaint that edge every frame, such as video. `color_source_height` sets how many logical pixels that strip takes, from `1` to `4`; its default, `1`, samples the single top row and reads as one flat color, while a larger value keeps more of the window's own detail. In `"window"` mode the bar is only ever the window's own pixels, so anything the application draws along that edge — a toolbar, a tab row, a loading bar — appears in it too; `"average"` reduces that detail to one color and shows none of it. A window whose top edge is transparent keeps the configured `background` there, because the bar color stays painted underneath, and the values in `[colors.title_bar]` remain the fallback for applications that draw nothing. Unfocused windows keep their own color, dimmed over `background_unfocused`. A client-drawn window that reports its own geometry keeps the transparent shadows around it out of the color, so the bar follows the visible window rather than its padding. `"window"` mirrors the window's own buffer instead of reading pixels back, so it adds one bar-sized rectangle per window and a copy of that strip each time the window commits, and pays a readback only when `title_contrast_sample` asks for one, on the same cadence and at the same width. `"average"` does read that strip back on that cadence and at that width, once per commit that actually repaints the sampled region and once more when the bar's geometry, the strip height or the title changes, each finishing the frame first; the resulting color is a single pixel, so no further readback follows until that edge changes again. An explicit-sync window's strip is read only once its frame is reported ready, and read anyway after a brief wait when that report never arrives, so a stalled client cannot hold the bar on a stale color; a window that cannot be read — protected or external-only content — keeps the last color it gave, or the palette if it never gave one. The average is taken in the window's own color space and shown in it. An adaptive fill is opaque while the window is focused and the application's own edge is opaque; an unfocused bar draws it dimmed over `background_unfocused`, and a translucent top edge stays translucent, so the blurred backdrop shows through in both.
 +
 +Because the bar can be any color the application paints, the title and the button symbols carry a dark edge in every `color_source`, so they stay readable on light and dark windows alike; `title_shadow = false` removes it from both. A bar that matches the title can still make it unreadable, so `title_contrast` replaces the title's color with black or white when it sits too close to the bar behind it, and leaves a color that already reads untouched. This applies in every `color_source`: `"fixed"` judges its palette against itself, and `"average"` its mean. Symbols drawn straight on the bar, with `button_background = false`, follow the same rule against the bar; symbols on a painted button color are judged against that instead, disabled ones included, and one with no alpha leaves the symbol on the bar. The comparison uses the bar's own color, before the unfocused dimming and before any transparency blend over the backdrop, and a `background` with no alpha at all is never judged, since it is not what shows. `"window"` mirrors the window's pixels and knows no color of its own, so it does not reverse until `title_contrast_sample = true` reads that edge back once per change, which finishes the frame first — the cost `"window"` otherwise avoids. A transparent edge is a readable edge with no color in it, so the title is judged against the palette that shows through it; an edge that cannot be read at all keeps the last color the window gave, or leaves the title as configured if it never gave one.
 +
@@ -50,7 +50,7 @@ index ef2c34a7..458b510b 100644
  # Optional button palette. Glyph colors also apply when button backgrounds are off.
  # [colors.title_bar]
 diff --git a/src/config/config.h b/src/config/config.h
-index 03783df5..a755999f 100644
+index 03783df5..519c4152 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -36,6 +36,9 @@ namespace umbriel {
@@ -67,11 +67,11 @@ index 03783df5..a755999f 100644
          int buttonPadding = -1;
          TitleBarButtonGlyph buttonGlyph = TitleBarButtonGlyph::Hover;
          bool buttonBackground = true;
-+        // "window" paints the bar with the top strip of the window's own content instead of the palette colour, and
-+        // "average" paints it with that strip's mean colour; the palette stays underneath as the fallback.
++        // "window" paints the bar with the top strip of the window's own content instead of the palette color, and
++        // "average" paints it with that strip's mean color; the palette stays underneath as the fallback.
 +        TitleBarColorSource colorSource = TitleBarColorSource::Fixed;
 +        // How many logical pixels of the window's top edge that strip takes. The bar stretches them over its whole
-+        // height, so a thinner strip reads as one flat colour and a thicker one keeps more of the window's own detail.
++        // height, so a thinner strip reads as one flat color and a thicker one keeps more of the window's own detail.
 +        int colorSourceHeight = 1;
 +        // Dark edge under the title and the symbols, on any bar color, in every color_source.
 +        bool titleShadow = true;
@@ -85,7 +85,7 @@ index 03783df5..a755999f 100644
          std::vector<TitleBarButton> buttons{TitleBarButton::Minimize, TitleBarButton::Maximize, TitleBarButton::Close};
          TitleBarButtonGeometry buttonGeometry() const {
 diff --git a/src/config/fields_general.cpp b/src/config/fields_general.cpp
-index 83d73c3f..46476d85 100644
+index 83d73c3f..caa5d443 100644
 --- a/src/config/fields_general.cpp
 +++ b/src/config/fields_general.cpp
 @@ -107,6 +107,21 @@ namespace umbriel {
@@ -100,7 +100,7 @@ index 83d73c3f..46476d85 100644
 +                  {.name = "average", .value = TitleBarColorSource::Average},
 +              }
 +          ),
-+          // One flat colour row up to four rows of the window's own detail; the bar stretches them over its height.
++          // One flat color row up to four rows of the window's own detail; the bar stretches them over its height.
 +          integer(
 +              "color_source_height", kTitleBarStripHeightMin, kTitleBarStripHeightMax, &A::TitleBar::colorSourceHeight
 +          ),
@@ -112,10 +112,10 @@ index 83d73c3f..46476d85 100644
                "button_position", &A::TitleBar::buttonPosition,
 diff --git a/src/scene/adaptive_sampling.h b/src/scene/adaptive_sampling.h
 new file mode 100644
-index 00000000..64eca871
+index 00000000..f488fe00
 --- /dev/null
 +++ b/src/scene/adaptive_sampling.h
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,123 @@
 +#pragma once
 +
 +#include <cstdint>
@@ -125,15 +125,15 @@ index 00000000..64eca871
 +  // When the adaptive title bar may read the window's top edge back. A readback finishes the frame, so a burst of
 +  // commits pays for at most one read per kSampleEveryCommits commits and per kSampleMinIntervalMsec, and an
 +  // acquire fence that has not signalled is waited on only until kFenceGiveUpMsec, then read anyway: a stalled client
-+  // cannot strand the bar on a stale colour. Pure, so the cadence and the bound are testable without a compositor.
++  // cannot strand the bar on a stale color. Pure, so the cadence and the bound are testable without a compositor.
 +  class AdaptiveSampling {
 +  public:
 +    enum class Action : std::uint8_t {
-+      // The cadence held this read back; the caller still owes the edge a read.
++      // The cadence held this read back: the caller owes the edge a read once the interval allows it.
 +      Skip,
 +      // The fence has not signalled yet. Retry on the next update, or when the fallback timer fires.
 +      Wait,
-+      // This commit's fence never signalled and its wait ran out: keep what the bar shows until the next commit.
++      // This fence was already read anyway; keep what the bar shows until the client commits anew.
 +      GiveUp,
 +      Read,
 +      // Read even though the fence has not signalled, because the wait ran out.
@@ -174,7 +174,8 @@ index 00000000..64eca871
 +
 +  inline AdaptiveSampling::Action AdaptiveSampling::decide(const Input& input) const {
 +    if (!input.fenceSignalled) {
-+      if (input.fromCommit && m_gaveUp && m_gaveUpGeneration == input.generation) {
++      // A commit brings a new generation, so this covers the redraws and timers that follow an abandoned fence.
++      if (m_gaveUp && m_gaveUpGeneration == input.generation) {
 +        return Action::GiveUp;
 +      }
 +      if (m_fenceWaiting && input.nowMsec - m_fenceSinceMsec >= kFenceGiveUpMsec) {
@@ -239,7 +240,7 @@ index 00000000..64eca871
 +
 +} // namespace umbriel
 diff --git a/src/scene/color.h b/src/scene/color.h
-index 4446f029..b0a7c1e6 100644
+index 4446f029..953ff6db 100644
 --- a/src/scene/color.h
 +++ b/src/scene/color.h
 @@ -3,7 +3,9 @@
@@ -260,7 +261,7 @@ index 4446f029..b0a7c1e6 100644
 +  enum class PixelOrder : uint8_t { Argb, Abgr, Xrgb, Xbgr };
 +
 +  // Mean of packed 32-bit pixels as Wayland stores them: premultiplied, so the sums are already alpha-weighted and
-+  // dividing by the alpha total gives the straight colour. Null when nothing is left to show.
++  // dividing by the alpha total gives the straight color. Null when nothing is left to show.
 +  inline std::optional<std::array<float, 4>> averagePixels(const uint32_t* pixels, size_t count, PixelOrder order) {
 +    if (pixels == nullptr || count == 0) {
 +      return std::nullopt;
@@ -281,7 +282,7 @@ index 4446f029..b0a7c1e6 100644
 +    if (alpha <= 0.0) {
 +      return std::nullopt;
 +    }
-+    // Straight colour, clamped: malformed input that is not premultiplied could otherwise overshoot.
++    // Straight color, clamped: malformed input that is not premultiplied could otherwise overshoot.
 +    const auto straight = [alpha](double sum) { return static_cast<float>(std::clamp(sum / alpha, 0.0, 1.0)); };
 +    return std::array<float, 4>{
 +        straight(red), straight(green), straight(blue), static_cast<float>(alpha / static_cast<double>(count))
@@ -292,7 +293,7 @@ index 4446f029..b0a7c1e6 100644
      const auto byte = [](float component) {
        return static_cast<int>(std::lround(std::clamp(component, 0.0F, 1.0F) * 255.0F));
 diff --git a/src/scene/ssd_frame.cpp b/src/scene/ssd_frame.cpp
-index d6436f48..2e5f4dfd 100644
+index d6436f48..971a4753 100644
 --- a/src/scene/ssd_frame.cpp
 +++ b/src/scene/ssd_frame.cpp
 @@ -1,24 +1,60 @@
@@ -383,7 +384,7 @@ index d6436f48..2e5f4dfd 100644
      for (auto* buffer : m_iconBuffers) {
        if (buffer != nullptr) {
          wlr_buffer_unlock(buffer);
-@@ -126,6 +175,133 @@ namespace umbriel {
+@@ -126,6 +175,114 @@ namespace umbriel {
      m_blurLive = live;
      updateBlur();
    }
@@ -394,37 +395,23 @@ index d6436f48..2e5f4dfd 100644
 +    m_content = surface;
 +    m_contentGeometry = geometry;
 +    // Another surface is another edge color to judge against, and only redraw() re-measures the title.
-+    const auto fill = barFillColor();
-+    updateAdaptive(false);
-+    if (barFillColor() != fill) {
-+      redraw();
-+    }
++    refreshFill(false);
 +  }
 +  void SsdFrame::syncContent(const wlr_box& geometry) {
 +    m_contentGeometry = geometry;
 +    ++m_commitGeneration;
-+    // Only the contrast rule turns an edge color into a repaint; the mirror follows the commit on its own. A symbol on
-+    // its own button color never sees the fill, so with backgrounds painted only the title can move. The repaint has to
-+    // come from here because redraw() calls updateAdaptive(), so a flip cannot request its own.
-+    const bool contrast = config().appearance.titleBar.titleContrast;
-+    const bool bareSymbols = !config().appearance.titleBar.buttonBackground;
-+    const std::array<float, 4> title = resolvedTitleColor();
-+    const auto fill = barFillColor();
-+    updateAdaptive(true);
-+    if (contrast && (resolvedTitleColor() != title || (bareSymbols && barFillColor() != fill))) {
-+      redraw();
-+    }
++    refreshFill(true);
 +  }
 +
 +  void SsdFrame::allowInPlaceDamage(wlr_buffer* buffer) {
-+    m_ignoredLock = umbrielfx_scene_buffer_ignore_client_lock(buffer) != nullptr;
++    m_inPlaceDamage = umbrielfx_scene_buffer_ignore_client_lock(buffer) != nullptr;
 +  }
 +
 +  void SsdFrame::withdrawInPlaceDamage() {
-+    if (!m_ignoredLock) {
++    if (!m_inPlaceDamage) {
 +      return;
 +    }
-+    m_ignoredLock = false;
++    m_inPlaceDamage = false;
 +    // Ask the scene buffer which buffer it holds: a remembered client buffer would dangle once the client frees it.
 +    if (m_adaptive != nullptr && m_adaptive->buffer != nullptr) {
 +      umbrielfx_scene_buffer_drop_ignored_client_lock(wlr_client_buffer_get(m_adaptive->buffer));
@@ -440,7 +427,7 @@ index d6436f48..2e5f4dfd 100644
 +      return true;
 +    }
 +    bool signalled = false;
-+    // A failed check must not withhold the bar: read the edge rather than keep a stale colour.
++    // A failed check must not withhold the bar: read the edge rather than keep a stale color.
 +    if (!wlr_drm_syncobj_timeline_check(sync->acquire_timeline, sync->acquire_point, 0, &signalled)) {
 +      return true;
 +    }
@@ -487,7 +474,7 @@ index d6436f48..2e5f4dfd 100644
 +    );
 +  }
 +
-+  void SsdFrame::armStripFallback() {
++  void SsdFrame::armStripFallback(std::uint32_t delayMsec) {
 +    if (m_loop == nullptr || m_preview) {
 +      return;
 +    }
@@ -497,7 +484,7 @@ index d6436f48..2e5f4dfd 100644
 +        return;
 +      }
 +    }
-+    wl_event_source_timer_update(m_stripTimer, static_cast<int>(AdaptiveSampling::kFenceGiveUpMsec));
++    wl_event_source_timer_update(m_stripTimer, static_cast<int>(delayMsec));
 +  }
 +
 +  int SsdFrame::onStripFallbackTimer(void* data) {
@@ -505,19 +492,14 @@ index d6436f48..2e5f4dfd 100644
 +    if (!self->m_stripDeferred) {
 +      return 0;
 +    }
-+    // No further commit is coming, so the wait ends here: decide again, which reads the edge anyway.
-+    const auto fill = self->barFillColor();
-+    const auto title = self->resolvedTitleColor();
-+    self->updateAdaptive(false);
-+    if (self->barFillColor() != fill || self->resolvedTitleColor() != title) {
-+      self->redraw();
-+    }
++    // No further commit is coming, so the wait or the skip ends here and the edge is read.
++    self->refreshFill(false);
 +    return 0;
 +  }
  
    void SsdFrame::updateBlur() {
      const auto& cfg = config().appearance.blur;
-@@ -164,6 +340,357 @@ namespace umbriel {
+@@ -164,6 +321,376 @@ namespace umbriel {
      wlr_scene_blur_set_alpha(m_blur, m_blurAlpha);
    }
  
@@ -578,9 +560,9 @@ index d6436f48..2e5f4dfd 100644
 +    if (!order.has_value()) {
 +      return {StripSample::State::Refused, std::nullopt};
 +    }
-+    m_strip.resize(static_cast<size_t>(box.width) * static_cast<size_t>(box.height));
++    m_stripPixels.resize(static_cast<size_t>(box.width) * static_cast<size_t>(box.height));
 +    const wlr_texture_read_pixels_options options{
-+        .data = m_strip.data(),
++        .data = m_stripPixels.data(),
 +        .format = format,
 +        .stride = static_cast<uint32_t>(box.width) * 4U,
 +        .dst_x = 0,
@@ -591,7 +573,7 @@ index d6436f48..2e5f4dfd 100644
 +    if (!wlr_texture_read_pixels(m_content->buffer->texture, &options)) {
 +      return {StripSample::State::Refused, std::nullopt};
 +    }
-+    auto mean = averagePixels(m_strip.data(), m_strip.size(), *order);
++    auto mean = averagePixels(m_stripPixels.data(), m_stripPixels.size(), *order);
 +    if (!mean.has_value()) {
 +      return {StripSample::State::Empty, std::nullopt};
 +    }
@@ -656,6 +638,24 @@ index d6436f48..2e5f4dfd 100644
 +    return m_averageBuffer;
 +  }
 +
++  bool SsdFrame::refreshFill(bool fromCommit) {
++    const std::array<float, 4> title = resolvedTitleColor();
++    const auto fill = barFillColor();
++    updateAdaptive(fromCommit);
++    // Only the contrast rule turns a resolved color into a repaint; the mirror follows the commit on its own. A symbol
++    // on its own button color never sees the fill, so with backgrounds painted only the title can move.
++    const auto& style = config().appearance.titleBar;
++    if (!style.titleContrast) {
++      return false;
++    }
++    const bool bareSymbols = !style.buttonBackground;
++    if (resolvedTitleColor() == title && (!bareSymbols || barFillColor() == fill)) {
++      return false;
++    }
++    redraw();
++    return true;
++  }
++
 +  void SsdFrame::updateAdaptive(bool fromCommit) {
 +    // The palette stays painted underneath, so a transparent edge or a missing buffer leaves no hole.
 +    const auto& style = config().appearance.titleBar;
@@ -679,8 +679,8 @@ index d6436f48..2e5f4dfd 100644
 +        m_stripDeferred = false;
 +        m_sampling.reset();
 +      }
-+      m_strip.clear();
-+      m_strip.shrink_to_fit();
++      m_stripPixels.clear();
++      m_stripPixels.shrink_to_fit();
 +      return;
 +    }
 +    if (m_adaptive == nullptr) {
@@ -762,12 +762,13 @@ index d6436f48..2e5f4dfd 100644
 +      m_sampling.record(action, input);
 +      switch (action) {
 +      case AdaptiveSampling::Action::Skip:
-+        // Owed, not dropped: the next update reads the edge this one skipped.
++        // Owed, not dropped: the timer reads the last frame of a burst that ends on a skipped commit.
 +        m_stripDeferred = true;
++        armStripFallback(AdaptiveSampling::kSampleMinIntervalMsec);
 +        break;
 +      case AdaptiveSampling::Action::Wait:
 +        m_stripDeferred = true;
-+        armStripFallback();
++        armStripFallback(AdaptiveSampling::kFenceGiveUpMsec);
 +        break;
 +      case AdaptiveSampling::Action::GiveUp:
 +        // This commit's fence was abandoned; a later commit brings a new one.
@@ -805,7 +806,7 @@ index d6436f48..2e5f4dfd 100644
 +      }
 +    }
 +    // The smear mirrors the strip, so it re-mirrors on every attach: the bar must not keep drawing a buffer the client
-+    // may have freed. The average carries no detail, so only a real change to the edge makes it read again.
++    // may have freed. The average carries no detail, so only a change inside the sampled region makes it read again.
 +    wlr_buffer* shown = buffer;
 +    const wlr_fbox* sourceBox = &strip;
 +    wl_output_transform transform = m_content->current.transform;
@@ -943,23 +944,19 @@ index d6436f48..2e5f4dfd 100644
      }
      wlr_scene_buffer_set_dest_size(icon, background->width, background->height);
      wlr_scene_buffer_set_opacity(icon, alpha);
-@@ -239,6 +800,15 @@ namespace umbriel {
+@@ -239,6 +800,11 @@ namespace umbriel {
    }
  
    void SsdFrame::updateColors() {
 +    // A fill that resolves here (a deferred readback, or a strip that moved) changes what the title and the symbols are
-+    // judged against. Only redraw() re-measures the title, so a change is a repaint; the pass it starts settles,
-+    // because the fill it held when it began is the one it keeps.
-+    const auto fill = barFillColor();
-+    updateAdaptive(false);
-+    if (barFillColor() != fill) {
-+      redraw();
++    // judged against. The repaint it starts settles, because the fill it held when it began is the one it keeps.
++    if (refreshFill(false)) {
 +      return;
 +    }
      const auto& colors = config().colors.titleBar;
      const auto& style = config().appearance.titleBar;
      const bool backgrounds = style.buttonBackground;
-@@ -246,8 +816,7 @@ namespace umbriel {
+@@ -246,8 +812,7 @@ namespace umbriel {
      const auto& background = m_focused ? colors.background : colors.backgroundUnfocused;
      premultiplied(color, background, m_alpha);
      wlr_scene_rect_set_color(m_background, color);
@@ -969,7 +966,7 @@ index d6436f48..2e5f4dfd 100644
      const auto button = [&](wlr_scene_rect* rect, const std::array<float, 4>& base,
                              const std::array<float, 4>& idleGlyph, const std::array<float, 4>& hoverGlyph,
                              SsdFramePart part, bool enabled, TitleBarButton which) {
-@@ -267,10 +836,19 @@ namespace umbriel {
+@@ -267,10 +832,19 @@ namespace umbriel {
        }
        premultiplied(color, value, backgrounds ? m_alpha * alpha : 0.0F);
        wlr_scene_rect_set_color(rect, color);
@@ -991,7 +988,7 @@ index d6436f48..2e5f4dfd 100644
      };
      button(
          m_close, colors.close, colors.closeGlyph, colors.closeGlyphHover, SsdFramePart::Close, true,
-@@ -287,6 +865,9 @@ namespace umbriel {
+@@ -287,6 +861,9 @@ namespace umbriel {
      if (m_label != nullptr) {
        wlr_scene_buffer_set_opacity(m_label, m_alpha);
      }
@@ -1001,7 +998,7 @@ index d6436f48..2e5f4dfd 100644
      updateBlur();
    }
  
-@@ -298,6 +879,9 @@ namespace umbriel {
+@@ -298,6 +875,9 @@ namespace umbriel {
      wlr_scene_node_set_enabled(&m_tree->node, shown);
      wlr_scene_node_set_enabled(&m_gripTree->node, available && m_resizable && !m_preview);
      if (!available) {
@@ -1011,7 +1008,7 @@ index d6436f48..2e5f4dfd 100644
        updateBlur();
        return;
      }
-@@ -323,11 +907,16 @@ namespace umbriel {
+@@ -323,11 +903,16 @@ namespace umbriel {
        wlr_scene_node_set_enabled(&m_grips[i]->node, m_resizable && !m_preview);
      }
      if (!shown) {
@@ -1028,7 +1025,7 @@ index d6436f48..2e5f4dfd 100644
      const auto& style = config().appearance.titleBar;
      const int radius = nestedRadius(g.cornerRadius, g.borderInset);
      TitleBarLayout parts =
-@@ -348,42 +937,62 @@ namespace umbriel {
+@@ -348,42 +933,62 @@ namespace umbriel {
      drawButton(m_close, parts.button(TitleBarButton::Close));
      drawButton(m_maximize, parts.button(TitleBarButton::Maximize));
      drawButton(m_minimize, parts.button(TitleBarButton::Minimize));
@@ -1115,7 +1112,7 @@ index d6436f48..2e5f4dfd 100644
      updateColors();
    }
  
-@@ -424,21 +1033,31 @@ namespace umbriel {
+@@ -424,21 +1029,31 @@ namespace umbriel {
          wlr_scene_node_set_position(&copy->node, m_blur->node.x, m_blur->node.y);
        }
      }
@@ -1153,7 +1150,7 @@ index d6436f48..2e5f4dfd 100644
        copy->point_accepts_input = rejectInput;
        wlr_scene_buffer_set_dest_size(copy, source->dst_width, source->dst_height);
        wlr_scene_buffer_set_opacity(copy, source->opacity);
-@@ -446,13 +1065,35 @@ namespace umbriel {
+@@ -446,13 +1061,35 @@ namespace umbriel {
        wlr_scene_buffer_set_corner_box(copy, &source->corner_box);
        wlr_scene_node_set_position(&copy->node, m_tree->node.x + source->node.x, m_tree->node.y + source->node.y);
      };
@@ -1193,7 +1190,7 @@ index d6436f48..2e5f4dfd 100644
      preview->m_preview = true;
      syncPreview(*preview);
      return preview;
-@@ -466,6 +1107,13 @@ namespace umbriel {
+@@ -466,6 +1103,13 @@ namespace umbriel {
        frame->setMaximized(m_maximized);
        frame->setFocused(m_focused);
        frame->setBlurOptions(m_blurOptions);
@@ -1208,7 +1205,7 @@ index d6436f48..2e5f4dfd 100644
      }
    }
 diff --git a/src/scene/ssd_frame.h b/src/scene/ssd_frame.h
-index 6f5d7988..79daf2d1 100644
+index 6f5d7988..76a9a93a 100644
 --- a/src/scene/ssd_frame.h
 +++ b/src/scene/ssd_frame.h
 @@ -1,29 +1,41 @@
@@ -1259,7 +1256,7 @@ index 6f5d7988..79daf2d1 100644
      void setPressed(SsdFramePart part);
      void setBlurOptions(const SurfaceBlurOptions& options);
      void setBlurLive(bool live);
-+    // The window content an adaptive bar takes its colour from, and that window's geometry in surface-local
++    // The window content an adaptive bar takes its color from, and that window's geometry in surface-local
 +    // coordinates. Borrowed: the view owns the surface.
 +    void setContentSurface(wlr_surface* surface, const wlr_box& geometry);
 +    // Re-reads the strip after the window committed, with the geometry the commit left behind.
@@ -1267,37 +1264,40 @@ index 6f5d7988..79daf2d1 100644
      bool maximizeEnabled() const { return m_maximizeEnabled; }
      int titleBarHeight() const { return m_geometry.titleBarHeight; }
      bool contains(const wlr_scene_node* node) const;
-@@ -52,8 +69,46 @@ namespace umbriel {
+@@ -52,8 +69,49 @@ namespace umbriel {
    private:
      void redraw();
      void updateColors();
 -    void updateButtonIcon(TitleBarButton button, const std::array<float, 4>& color, float alpha, bool visible);
 +    void updateAdaptive(bool fromCommit);
++    // Resolves the fill, then repaints when it moved what the title or the bare symbols are judged against. Returns
++    // whether it repainted, which stops a caller that would otherwise draw with what the repaint replaces.
++    bool refreshFill(bool fromCommit);
 +    void hideAdaptive();
 +    // What one readback of the edge produced: a value, a refusal, or a readable edge with nothing to average.
 +    struct StripSample {
-+      // `Empty` means the strip was read and holds no colour (a transparent edge), so the palette is the honest
-+      // answer; `Refused` means it could not be read (protected or external-only), so the last colour still stands.
++      // `Empty` means the strip was read and holds no color (a transparent edge), so the palette is the honest
++      // answer; `Refused` means it could not be read (protected or external-only), so the last color still stands.
 +      enum class State : uint8_t { Fresh, Refused, Empty };
 +      State state = State::Refused;
 +      std::optional<std::array<float, 4>> color;
 +    };
 +    StripSample averageStrip(const wlr_fbox& strip);
 +    // Whether `box` of the client buffer changed in this commit's damage. The caller gates it on a commit.
-+    [[nodiscard]] bool stripTouched(const wlr_fbox& box) const;
++    bool stripTouched(const wlr_fbox& box) const;
 +    // Whether this commit's explicit-sync acquire point has signalled, or has no fence at all.
-+    [[nodiscard]] bool stripFenceSignalled() const;
++    bool stripFenceSignalled() const;
 +    // The part of the edge worth sampling: the title plus a little slack, as a fraction of the visible width.
-+    [[nodiscard]] double sampleWidthFraction() const;
++    double sampleWidthFraction() const;
 +    void cacheSampleWidth(const TabLabel* label, const TitleBarLayout& parts);
-+    // Reads an edge whose fence outlived its wait: one sample, then the bar keeps it until the next commit.
-+    void armStripFallback();
++    // Reads the edge once `delayMsec` has passed, for a fence that outlived its wait or a read the cadence skipped.
++    void armStripFallback(std::uint32_t delayMsec);
 +    static int onStripFallbackTimer(void* data);
-+    // A one-pixel buffer of `color`, kept until the colour changes.
++    // A one-pixel buffer of `color`, kept until the color changes.
 +    wlr_buffer* averageBufferFor(const std::array<float, 4>& color);
 +    // The color the bar shows, which is what the title is drawn on; empty when "window" was not allowed to sample it.
 +    std::optional<std::array<float, 4>> barFillColor() const;
-+    // The title's colour after the contrast rule.
++    // The title's color after the contrast rule.
 +    std::array<float, 4> resolvedTitleColor() const;
 +    // Let wlroots keep reusing the mirrored client buffer's texture for in-place shm damage, and withdraw that when the
 +    // mirror is replaced or cleared.
@@ -1315,27 +1315,27 @@ index 6f5d7988..79daf2d1 100644
      void updateBlur();
      clipped_region frameClip(int x, int y) const;
      void clipBuffer(wlr_scene_buffer* buffer) const;
-@@ -66,6 +121,50 @@ namespace umbriel {
+@@ -66,6 +124,50 @@ namespace umbriel {
      SurfaceBlurOptions m_blurOptions;
      bool m_blurLive = false;
      wlr_scene_buffer* m_label = nullptr;
-+    // The same title in the shadow colour, one pixel down and right, so it stays readable on any bar colour.
++    // The same title in the shadow color, one pixel down and right, so it stays readable on any bar color.
 +    wlr_scene_buffer* m_labelShadow = nullptr;
 +    // Consumer locks on the title and shadow: the scene drops its own after uploading, and snapshots copy these.
 +    wlr_buffer* m_labelBuffer = nullptr;
 +    wlr_buffer* m_shadowBuffer = nullptr;
-+    // Paints the bar with the top strip of the window content; kept below the label and above the palette colour.
++    // Paints the bar with the top strip of the window content; kept below the label and above the palette color.
 +    wlr_scene_buffer* m_adaptive = nullptr;
 +    wlr_surface* m_content = nullptr;
 +    wlr_box m_contentGeometry{};
 +    // Whether the mirrored buffer carries the mark that lets wlroots reuse its texture for in-place shm damage.
-+    bool m_ignoredLock = false;
-+    // A readback the client's explicit-sync point was not ready for: retried on the next update.
++    bool m_inPlaceDamage = false;
++    // A read the cadence or an unsignalled fence held back: the fallback timer or the next update still owes it.
 +    bool m_stripDeferred = false;
 +    AdaptiveSampling m_sampling;
 +    // Bumped on every commit, so a fence that was read anyway is not read again until the client commits anew.
 +    std::uint64_t m_commitGeneration = 0;
-+    // Flags the commit generation of an abandoned fence, and the timer that ends the wait without another commit.
++    // Runs the fallback for a read the loop would otherwise owe until the next commit; a preview has no loop.
 +    wl_event_loop* m_loop = nullptr;
 +    wl_event_source* m_stripTimer = nullptr;
 +    // Width of the title plus a little slack, in logical pixels; 0 samples the whole edge.
@@ -1349,11 +1349,11 @@ index 6f5d7988..79daf2d1 100644
 +    // The last read found an edge with no color in it, so the palette is what shows and `barFillColor()` returns it
 +    // live.
 +    bool m_contrastSampleEmpty = false;
-+    // The colour baked into `m_averageBuffer`, which is not the same thing as the current mean.
++    // The color baked into `m_averageBuffer`, which is not the same thing as the current mean.
 +    std::array<float, 4> m_averageBufferColor{};
 +    wlr_buffer* m_averageBuffer = nullptr;
-+    // Scratch for one strip readback, kept to avoid allocating per repaint.
-+    std::vector<uint32_t> m_strip;
++    // Scratch for one strip readback, reused while consecutive reads cover the same area.
++    std::vector<uint32_t> m_stripPixels;
 +    // The mode the contents were built for: a switch is not a commit, so it must force the work.
 +    TitleBarColorSource m_adaptiveMode = TitleBarColorSource::Fixed;
 +    wl_output_transform m_adaptiveTransform = WL_OUTPUT_TRANSFORM_NORMAL;
@@ -1366,7 +1366,7 @@ index 6f5d7988..79daf2d1 100644
      wlr_scene_rect* m_close = nullptr;
      wlr_scene_rect* m_maximize = nullptr;
      wlr_scene_rect* m_minimize = nullptr;
-@@ -73,6 +172,7 @@ namespace umbriel {
+@@ -73,6 +175,7 @@ namespace umbriel {
      // Keep a consumer lock for snapshots and renderer recovery after the scene uploads an icon's texture.
      std::array<wlr_buffer*, kTitleBarButtonCount> m_iconBuffers{};
      std::array<std::array<float, 4>, kTitleBarButtonCount> m_iconColors{};
@@ -1453,14 +1453,14 @@ index a33d60d6..10b14a5f 100644
 +  }
  } // namespace umbriel
 diff --git a/src/scene/ssd_frame_geometry.h b/src/scene/ssd_frame_geometry.h
-index d5f2be8a..39df484b 100644
+index d5f2be8a..6c7c839e 100644
 --- a/src/scene/ssd_frame_geometry.h
 +++ b/src/scene/ssd_frame_geometry.h
 @@ -56,4 +56,19 @@ namespace umbriel {
        const TitleBarButtonGeometry& geometry, double x, double y, int radius = 0
    );
    wlr_box contentBoxInTile(const wlr_box& tile, int titleBarHeight);
-+  // How many logical pixels of the window's top edge an adaptive title bar can take: one flat colour row up to a few
++  // How many logical pixels of the window's top edge an adaptive title bar can take: one flat color row up to a few
 +  // rows of the window's own detail.
 +  inline constexpr int kTitleBarStripHeightMin = 1;
 +  inline constexpr int kTitleBarStripHeightMax = 4;
@@ -1478,7 +1478,7 @@ index d5f2be8a..39df484b 100644
  } // namespace umbriel
 diff --git a/src/scene/title_bar_contrast.h b/src/scene/title_bar_contrast.h
 new file mode 100644
-index 00000000..9d9a876c
+index 00000000..2a4c7061
 --- /dev/null
 +++ b/src/scene/title_bar_contrast.h
 @@ -0,0 +1,31 @@
@@ -1489,7 +1489,7 @@ index 00000000..9d9a876c
 +
 +namespace umbriel {
 +
-+  // Perceived brightness of an encoded colour.
++  // Perceived brightness of an encoded color.
 +  inline float luminance(const std::array<float, 4>& color) {
 +    return color[0] * 0.2126F + color[1] * 0.7152F + color[2] * 0.0722F;
 +  }
@@ -1498,7 +1498,7 @@ index 00000000..9d9a876c
 +  // title vanishes into the bar, which an adaptive fill makes possible.
 +  constexpr float kTitleContrastThreshold = 0.35F;
 +
-+  // `color` itself, or black or white when it would sit too close to `background` to read. A colour with no alpha is
++  // `color` itself, or black or white when it would sit too close to `background` to read. A color with no alpha is
 +  // left alone: there is nothing to read, and a flipped one would carry brightness the composite cannot ignore. A
 +  // background with no alpha is left alone too: it is not what shows, so there is nothing to judge against.
 +  inline std::array<float, 4>
@@ -1578,7 +1578,7 @@ index 80a6fd98..959eb139 100644
      cairo_destroy(cr);
      return createCairoBuffer(surface);
 diff --git a/src/scene/title_bar_icon.h b/src/scene/title_bar_icon.h
-index 24c41382..21ffc80c 100644
+index 24c41382..c0645406 100644
 --- a/src/scene/title_bar_icon.h
 +++ b/src/scene/title_bar_icon.h
 @@ -3,10 +3,15 @@
@@ -1593,7 +1593,7 @@ index 24c41382..21ffc80c 100644
 -  // Rasterizes geometric button strokes into a transparent square at the requested device resolution.
 -  [[nodiscard]] wlr_buffer* renderTitleBarIcon(TitleBarButton button, int pixels, const std::array<float, 4>& color);
 +  // Rasterizes geometric button strokes into a transparent square at the requested device resolution. `outline`, when
-+  // set, strokes the same path wider underneath, so the symbol keeps an edge over an arbitrary title bar colour.
++  // set, strokes the same path wider underneath, so the symbol keeps an edge over an arbitrary title bar color.
 +  [[nodiscard]] wlr_buffer* renderTitleBarIcon(
 +      TitleBarButton button, int pixels, const std::array<float, 4>& color,
 +      const std::optional<std::array<float, 4>>& outline = std::nullopt
@@ -1639,27 +1639,27 @@ index ed62016f..28f17a6b 100644
        ipc->notifyWindowCommitted();
      }
 diff --git a/tests/harness/checks/input/title_bar_button_hover.sh b/tests/harness/checks/input/title_bar_button_hover.sh
-index b5a24eb4..094c2b05 100644
+index b5a24eb4..7ad44b8d 100644
 --- a/tests/harness/checks/input/title_bar_button_hover.sh
 +++ b/tests/harness/checks/input/title_bar_button_hover.sh
 @@ -35,6 +35,8 @@ enabled = false
  mode = "forced"
  height = 28
  button_position = "right"
-+# This check reads the button colour under the symbols, so the symbol outline is kept out of it.
++# This check reads the button color under the symbols, so the symbol outline is kept out of it.
 +title_shadow = false
  [colors.title_bar]
  background = "#000000FF"
  background_unfocused = "#000000FF"
 diff --git a/tests/harness/checks/input/title_bar_glyph_hover.sh b/tests/harness/checks/input/title_bar_glyph_hover.sh
-index d9557dde..f71bf4f4 100644
+index d9557dde..ca75f7e6 100644
 --- a/tests/harness/checks/input/title_bar_glyph_hover.sh
 +++ b/tests/harness/checks/input/title_bar_glyph_hover.sh
 @@ -18,6 +18,9 @@ height = 40
  button_position = "right"
  button_glyph = "hover"
  button_background = true
-+# This check reads the symbol colours themselves, so neither the outline nor a contrast reversal may repaint them.
++# This check reads the symbol colors themselves, so neither the outline nor a contrast reversal may repaint them.
 +title_shadow = false
 +title_contrast = false
  [colors.title_bar]
@@ -1808,7 +1808,7 @@ index 00000000..e02312ab
 +echo "an overview card paints the bar its window resolved, and the palette only when nothing was resolved"
 diff --git a/tests/harness/checks/render/title_bar_adaptive.sh b/tests/harness/checks/render/title_bar_adaptive.sh
 new file mode 100755
-index 00000000..5d4d92b4
+index 00000000..8685b63d
 --- /dev/null
 +++ b/tests/harness/checks/render/title_bar_adaptive.sh
 @@ -0,0 +1,320 @@
@@ -1835,7 +1835,7 @@ index 00000000..5d4d92b4
 +  exit 1
 +}
 +
-+# $1 color_source, $2 title colour (default transparent), $3 "closing" to enable a fade-out the checks can
++# $1 color_source, $2 title color (default transparent), $3 "closing" to enable a fade-out the checks can
 +# sample, $4 "buttons" to paint the button backgrounds, $5 rows of the window's edge to sample.
 +configure() {
 +  local source=$1 text=${2:-"#00000000"} closing=${3:-} buttons=${4:-} rows=${5:-1} radius=${6:-0}
@@ -1956,9 +1956,9 @@ index 00000000..5d4d92b4
 +"$UMBRIEL" settle
 +grim "$FRAME"
 +# The bar takes the window's top edge, not its body, and not the palette's magenta.
-+expect "$green" 1000 "a window-coloured bar"
++expect "$green" 1000 "a window-colored bar"
 +expect_none "$red" "the bar sampled the window body instead of its top edge"
-+expect_none "$magenta" "the palette colour stayed on a window-coloured bar"
++expect_none "$magenta" "the palette color stayed on a window-colored bar"
 +
 +# The sample height is live: one row is the green edge, three rows reach into the red body.
 +configure window "#00000000" "" "" 3
@@ -1976,29 +1976,29 @@ index 00000000..5d4d92b4
 +"$UMBRIEL" settle
 +grim "$FRAME"
 +expect "$blue" 1000 "a bar following a repaint"
-+expect_none "$green" "the bar kept the previous window colour"
++expect_none "$green" "the bar kept the previous window color"
 +
 +# The fill is clipped to the frame's rounded corner, like the palette it covers: an unclipped fill squares that corner
-+# off and paints the window's colour over the desktop. The window starts at 173,109, so (174,82) is the bar's first
++# off and paints the window's color over the desktop. The window starts at 173,109, so (174,82) is the bar's first
 +# pixel and lies outside a 12 px arc. The band is blue at this point, so the fill is blue and the desktop is black.
 +configure window "" "" "" 1 12
 +"$UMBRIEL" settle
 +grim "$FRAME"
 +read -r corner_r corner_g corner_b < <(pixel 174 82)
 +if (( corner_r < 32 && corner_g < 32 && corner_b > 128 )); then
-+  fail "the window-coloured fill squared off the rounded corner: $corner_r $corner_g $corner_b"
++  fail "the window-colored fill squared off the rounded corner: $corner_r $corner_g $corner_b"
 +fi
 +configure window
 +"$UMBRIEL" settle
 +grim "$FRAME"
-+expect "$blue" 1000 "the window-coloured bar after the radius returns to zero"
++expect "$blue" 1000 "the window-colored bar after the radius returns to zero"
 +
-+# The palette colour is still the fixed choice, and the switch works live.
++# The palette color is still the fixed choice, and the switch works live.
 +configure fixed
 +"$UMBRIEL" settle
 +grim "$FRAME"
-+expect "$magenta" 1000 "the palette colour after switching back to fixed"
-+expect_none "$red" "the window colour survived color_source = \"fixed\""
++expect "$magenta" 1000 "the palette color after switching back to fixed"
++expect_none "$red" "the window color survived color_source = \"fixed\""
 +
 +# The close animation draws the title above the fill: a snapshot that stacks the fill over it shows a flat smear.
 +window_id=$("$UMBRIEL" windows --json | jq -r '.[] | select(.title == "adaptive-bar") | .id')
@@ -2006,7 +2006,7 @@ index 00000000..5d4d92b4
 +configure window "#FFFFFFFF" closing buttons
 +"$UMBRIEL" settle
 +grim "$FRAME"
-+expect_in 'r > 0.9 && g > 0.9 && b > 0.9' "$BAR_FULL" 40 "the title over the window-coloured fill"
++expect_in 'r > 0.9 && g > 0.9 && b > 0.9' "$BAR_FULL" 40 "the title over the window-colored fill"
 +"$UMBRIEL" clock-freeze > /dev/null
 +"$UMBRIEL" msg window-close "$window_id" > /dev/null
 +"$UMBRIEL" clock-advance 250 > /dev/null
@@ -2015,14 +2015,14 @@ index 00000000..5d4d92b4
 +# The fill sits under the buttons in the live bar, so the snapshot has to keep that order: buttons over fill, and the
 +# fill itself present rather than faded to the palette.
 +expect_in 'b > 0.6 && b < 0.9 && r < 0.15 && g < 0.15' "$BAR_FULL" 1000 \
-+  "the window-coloured fill in the bar's close animation"
++  "the window-colored fill in the bar's close animation"
 +expect_in 'r > 0.6 && g < 0.15 && b < 0.15' "$BAR_FULL" 40 "the button backgrounds in the bar's close animation"
 +"$UMBRIEL" clock-advance 1000 > /dev/null
 +"$UMBRIEL" settle
 +
-+# The average takes one colour from the whole edge: a band that is green on one side and blue on the other must show the
++# The average takes one color from the whole edge: a band that is green on one side and blue on the other must show the
 +# same blend at both ends of the bar. The smear shows the sides. This is what tells the two modes apart, and it is what
-+# keeps a tab row or a loading bar on that edge out of the colour.
++# keeps a tab row or a loading bar on that edge out of the color.
 +readonly LOG2="$UMBRIEL_RUNTIME_DIR/adaptive-average.log"
 +configure average
 +# A fresh pipe: the first client's write end is closed with it.
@@ -2078,7 +2078,7 @@ index 00000000..5d4d92b4
 +  fail "an averaged bar was stale after switching live: left $left_r $left_g $left_b, right $right_r $right_g $right_b"
 +fi
 +
-+# And the mean follows further repaints rather than freezing on the colour it was first baked with.
++# And the mean follows further repaints rather than freezing on the color it was first baked with.
 +printf 'R' >&4
 +await_lines "$LOG2" repainted 2
 +"$UMBRIEL" settle
@@ -2090,7 +2090,7 @@ index 00000000..5d4d92b4
 +  fail "an averaged bar did not follow a repaint: left $left_r $left_g $left_b, right $right_r $right_g $right_b"
 +fi
 +
-+# A commit that damages only the body must not read the strip back: the average is a flat colour, so a readback there
++# A commit that damages only the body must not read the strip back: the average is a flat color, so a readback there
 +# is pure cost, and it finishes the frame first. The compositor logs each readback, so the count is the observable.
 +readbacks() { rg -c 'averaged a [0-9]+x[0-9]+ strip read back' "$UMBRIEL_RUNTIME_DIR/compositor.log" || true; }
 +before=$(readbacks)
@@ -2104,14 +2104,14 @@ index 00000000..5d4d92b4
 +  fail "a body-only commit read the strip back: $before -> $after"
 +fi
 +
-+# A transparent edge is a readable edge with no colour in it, so the palette comes back. A buffer that cannot be read
-+# at all is the other case: it keeps the last colour the window gave. The two must not share a path.
++# A transparent edge is a readable edge with no color in it, so the palette comes back. A buffer that cannot be read
++# at all is the other case: it keeps the last color the window gave. The two must not share a path.
 +printf 't' >&4
 +await_lines "$LOG2" repainted 4
 +"$UMBRIEL" settle
 +grim "$FRAME"
-+expect "$magenta" 1000 "the palette colour under a transparent averaged edge"
-+expect_none 'g > 0.4 && g < 0.6 && b > 0.4 && b < 0.6' "the averaged colour survived a transparent edge"
++expect "$magenta" 1000 "the palette color under a transparent averaged edge"
++expect_none 'g > 0.4 && g < 0.6 && b > 0.4 && b < 0.6' "the averaged color survived a transparent edge"
 +
 +# The mean has to outlive the scene's upload, which drops the scene's own lock once a texture exists: a bar that does
 +# not hold its own would snapshot nothing and fade the palette instead of the mean. The repaint also proves the mean
@@ -2568,10 +2568,10 @@ index a1d421fd..828fcc0c 100644
    ['drag-physics', ['unit/drag_physics.cpp'], []],
 diff --git a/tests/unit/adaptive_sampling.cpp b/tests/unit/adaptive_sampling.cpp
 new file mode 100644
-index 00000000..fe492927
+index 00000000..ebee893b
 --- /dev/null
 +++ b/tests/unit/adaptive_sampling.cpp
-@@ -0,0 +1,102 @@
+@@ -0,0 +1,115 @@
 +#include "scene/adaptive_sampling.h"
 +
 +#include "check.h"
@@ -2587,6 +2587,10 @@ index 00000000..fe492927
 +
 +  AdaptiveSampling::Input stateChange(std::uint64_t nowMsec) {
 +    return {.fromCommit = false, .fenceSignalled = true, .generation = 1, .nowMsec = nowMsec};
++  }
++
++  AdaptiveSampling::Input redraw(std::uint64_t nowMsec, bool fenceSignalled = true, std::uint64_t generation = 1) {
++    return {.fromCommit = false, .fenceSignalled = fenceSignalled, .generation = generation, .nowMsec = nowMsec};
 +  }
 +} // namespace
 +
@@ -2649,10 +2653,19 @@ index 00000000..fe492927
 +  const AdaptiveSampling::Input bound = commit(AdaptiveSampling::kFenceGiveUpMsec, false);
 +  CHECK(sampling.decide(bound) == AdaptiveSampling::Action::ReadAnyway);
 +  sampling.record(AdaptiveSampling::Action::ReadAnyway, bound);
-+  // A timer or a redraw must not read the same unfinished commit over and over.
-+  CHECK(sampling.decide(commit(AdaptiveSampling::kFenceGiveUpMsec + 40, false)) == AdaptiveSampling::Action::GiveUp);
++  // A redraw must not read the same unfinished commit over and over; only a commit starts a new generation.
++  CHECK(sampling.decide(redraw(AdaptiveSampling::kFenceGiveUpMsec + 40, false)) == AdaptiveSampling::Action::GiveUp);
 +  // The client's next commit brings a new fence, which gets its own wait.
 +  CHECK(sampling.decide(commit(AdaptiveSampling::kFenceGiveUpMsec + 50, false, 2)) == AdaptiveSampling::Action::Wait);
++}
++
++UMBRIEL_TEST(aSkippedCommitIsReadWhenTheBurstEnds) {
++  AdaptiveSampling sampling;
++  sampling.record(AdaptiveSampling::Action::Read, commit(0));
++  CHECK(sampling.decide(commit(4)) == AdaptiveSampling::Action::Skip);
++  sampling.record(AdaptiveSampling::Action::Skip, commit(4));
++  // The client stops after the skipped commit: the fallback timer's update has to read the frame the cadence owed.
++  CHECK(sampling.decide(redraw(AdaptiveSampling::kSampleMinIntervalMsec)) == AdaptiveSampling::Action::Read);
 +}
 +
 +UMBRIEL_TEST(aFenceThatSignalsEndsTheWait) {
@@ -2814,7 +2827,7 @@ index db4fc157..ac659bd9 100644
         {"close_glyph", "close_glyph_hover", "maximize_glyph", "maximize_glyph_hover", "minimize_glyph",
          "minimize_glyph_hover"}) {
 diff --git a/tests/unit/ssd_frame_geometry.cpp b/tests/unit/ssd_frame_geometry.cpp
-index 00820af0..8fe41889 100644
+index 00820af0..cb13e5bc 100644
 --- a/tests/unit/ssd_frame_geometry.cpp
 +++ b/tests/unit/ssd_frame_geometry.cpp
 @@ -287,4 +287,158 @@ UMBRIEL_TEST(contentBoxInTileRemovesTitleBar) {
@@ -2830,7 +2843,7 @@ index 00820af0..8fe41889 100644
 +  CHECK_EQ(none.y, 0.0);
 +  CHECK_EQ(none.width, 400.0);
 +  CHECK_EQ(none.height, 5.0);
-+  // The thinnest sample is one logical row: the bar shows a single flat colour.
++  // The thinnest sample is one logical row: the bar shows a single flat color.
 +  const wlr_fbox single = titleBarStripSourceBox(full, 400, 300, {}, 400, 300, WL_OUTPUT_TRANSFORM_NORMAL, 1);
 +  CHECK_EQ(single.height, 1.0);
 +  CHECK_EQ(single.width, 400.0);
@@ -2978,7 +2991,7 @@ index 00820af0..8fe41889 100644
  int main() { return RUN_TESTS(); }
 diff --git a/tests/unit/title_bar_contrast.cpp b/tests/unit/title_bar_contrast.cpp
 new file mode 100644
-index 00000000..b43be8eb
+index 00000000..937cca4b
 --- /dev/null
 +++ b/tests/unit/title_bar_contrast.cpp
 @@ -0,0 +1,71 @@
@@ -2989,30 +3002,30 @@ index 00000000..b43be8eb
 +#include <array>
 +
 +namespace {
-+  constexpr std::array<float, 4> colour(float red, float green, float blue, float alpha = 1.0F) {
++  constexpr std::array<float, 4> color(float red, float green, float blue, float alpha = 1.0F) {
 +    return {red, green, blue, alpha};
 +  }
 +} // namespace
 +
 +UMBRIEL_TEST(luminanceRanksColoursByPerceivedBrightness) {
-+  CHECK(umbriel::luminance(colour(0.0F, 0.0F, 0.0F)) < umbriel::luminance(colour(0.5F, 0.5F, 0.5F)));
-+  CHECK(umbriel::luminance(colour(0.5F, 0.5F, 0.5F)) < umbriel::luminance(colour(1.0F, 1.0F, 1.0F)));
++  CHECK(umbriel::luminance(color(0.0F, 0.0F, 0.0F)) < umbriel::luminance(color(0.5F, 0.5F, 0.5F)));
++  CHECK(umbriel::luminance(color(0.5F, 0.5F, 0.5F)) < umbriel::luminance(color(1.0F, 1.0F, 1.0F)));
 +  // Green reads brighter than blue at the same intensity, which is why the weights are not equal.
-+  CHECK(umbriel::luminance(colour(0.0F, 1.0F, 0.0F)) > umbriel::luminance(colour(0.0F, 0.0F, 1.0F)));
++  CHECK(umbriel::luminance(color(0.0F, 1.0F, 0.0F)) > umbriel::luminance(color(0.0F, 0.0F, 1.0F)));
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedKeepsAColourThatAlreadyReads) {
 +  // Light text on a dark bar is the ordinary case: it survives untouched, alpha included.
-+  const auto light = colour(0.93F, 0.93F, 0.95F, 0.8F);
-+  CHECK(umbriel::contrastAdjusted(light, colour(0.16F, 0.16F, 0.2F)) == light);
-+  const auto dark = colour(0.1F, 0.1F, 0.12F, 1.0F);
-+  CHECK(umbriel::contrastAdjusted(dark, colour(0.9F, 0.9F, 0.9F)) == dark);
++  const auto light = color(0.93F, 0.93F, 0.95F, 0.8F);
++  CHECK(umbriel::contrastAdjusted(light, color(0.16F, 0.16F, 0.2F)) == light);
++  const auto dark = color(0.1F, 0.1F, 0.12F, 1.0F);
++  CHECK(umbriel::contrastAdjusted(dark, color(0.9F, 0.9F, 0.9F)) == dark);
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedReversesIntoALightBar) {
 +  // Dark text on a bar the window painted dark: the title flips to white, keeping its own alpha.
-+  const auto text = colour(0.15F, 0.15F, 0.15F, 0.75F);
-+  const auto adjusted = umbriel::contrastAdjusted(text, colour(0.2F, 0.2F, 0.25F));
++  const auto text = color(0.15F, 0.15F, 0.15F, 0.75F);
++  const auto adjusted = umbriel::contrastAdjusted(text, color(0.2F, 0.2F, 0.25F));
 +  CHECK_EQ(adjusted[0], 1.0F);
 +  CHECK_EQ(adjusted[1], 1.0F);
 +  CHECK_EQ(adjusted[2], 1.0F);
@@ -3020,8 +3033,8 @@ index 00000000..b43be8eb
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedReversesIntoADarkBar) {
-+  const auto text = colour(0.85F, 0.85F, 0.85F, 1.0F);
-+  const auto adjusted = umbriel::contrastAdjusted(text, colour(0.8F, 0.82F, 0.8F));
++  const auto text = color(0.85F, 0.85F, 0.85F, 1.0F);
++  const auto adjusted = umbriel::contrastAdjusted(text, color(0.8F, 0.82F, 0.8F));
 +  CHECK_EQ(adjusted[0], 0.0F);
 +  CHECK_EQ(adjusted[1], 0.0F);
 +  CHECK_EQ(adjusted[2], 0.0F);
@@ -3029,32 +3042,32 @@ index 00000000..b43be8eb
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedFlipsOnlyBelowTheThreshold) {
-+  // Just under the threshold reverses; just above it the configured colour stands. The boundary itself is not pinned:
++  // Just under the threshold reverses; just above it the configured color stands. The boundary itself is not pinned:
 +  // both sides of it are computed luminances, so no case sits exactly on it.
-+  const auto text = colour(0.0F, 0.0F, 0.0F, 1.0F);
++  const auto text = color(0.0F, 0.0F, 0.0F, 1.0F);
 +  const float justUnder = umbriel::kTitleContrastThreshold - 0.01F;
 +  const float justOver = umbriel::kTitleContrastThreshold + 0.01F;
-+  const auto reversed = umbriel::contrastAdjusted(text, colour(justUnder, justUnder, justUnder));
++  const auto reversed = umbriel::contrastAdjusted(text, color(justUnder, justUnder, justUnder));
 +  CHECK_EQ(reversed[0], 1.0F);
-+  CHECK(umbriel::contrastAdjusted(text, colour(justOver, justOver, justOver)) == text);
++  CHECK(umbriel::contrastAdjusted(text, color(justOver, justOver, justOver)) == text);
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedLeavesAnInvisibleTitleAlone) {
-+  // An alpha of zero is how a palette hides the title. Reversing it would leave a bright colour behind a transparent
++  // An alpha of zero is how a palette hides the title. Reversing it would leave a bright color behind a transparent
 +  // composite, which the renderer cannot mask away.
-+  const auto hidden = colour(0.1F, 0.1F, 0.1F, 0.0F);
-+  CHECK(umbriel::contrastAdjusted(hidden, colour(0.1F, 0.1F, 0.1F)) == hidden);
++  const auto hidden = color(0.1F, 0.1F, 0.1F, 0.0F);
++  CHECK(umbriel::contrastAdjusted(hidden, color(0.1F, 0.1F, 0.1F)) == hidden);
 +}
 +
 +UMBRIEL_TEST(contrastAdjustedLeavesATitleAloneOnNoBackground) {
-+  // A bar with no alpha is not what shows, so its colour says nothing about what the title sits on.
-+  const auto text = colour(0.1F, 0.1F, 0.1F, 1.0F);
-+  CHECK(umbriel::contrastAdjusted(text, colour(0.1F, 0.1F, 0.1F, 0.0F)) == text);
++  // A bar with no alpha is not what shows, so its color says nothing about what the title sits on.
++  const auto text = color(0.1F, 0.1F, 0.1F, 1.0F);
++  CHECK(umbriel::contrastAdjusted(text, color(0.1F, 0.1F, 0.1F, 0.0F)) == text);
 +}
 +
 +int main() { return RUN_TESTS(); }
 diff --git a/umbrielfx/include/umbrielfx/types/wlr_scene.h b/umbrielfx/include/umbrielfx/types/wlr_scene.h
-index 5597b1d6..cfb77fd9 100644
+index 5597b1d6..151d6657 100644
 --- a/umbrielfx/include/umbrielfx/types/wlr_scene.h
 +++ b/umbrielfx/include/umbrielfx/types/wlr_scene.h
 @@ -993,6 +993,14 @@ void wlr_scene_buffer_set_buffer_with_options(
@@ -3064,7 +3077,7 @@ index 5597b1d6..cfb77fd9 100644
 +/**
 + * Marks a client buffer as safe for in-place shm damage even though another scene buffer keeps a lock on it, the way
 + * wlr_scene_surface marks its own lock, and returns the client buffer to undo the mark with. Returns NULL when
-+ * `buffer` is not a client buffer, or is a single-pixel buffer whose colour the scene caches.
++ * `buffer` is not a client buffer, or is a single-pixel buffer whose color the scene caches.
 + */
 +struct wlr_client_buffer* umbrielfx_scene_buffer_ignore_client_lock(struct wlr_buffer* buffer);
 +void umbrielfx_scene_buffer_drop_ignored_client_lock(struct wlr_client_buffer* buffer);
