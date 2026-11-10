@@ -1,0 +1,58 @@
+diff --git a/pkg/query/aur_warnings.go b/pkg/query/aur_warnings.go
+index 1067c17..632e5c1 100644
+--- a/pkg/query/aur_warnings.go
++++ b/pkg/query/aur_warnings.go
+@@ -67,12 +67,15 @@ func (warnings *AURWarnings) CalculateMissing(remoteNames []string,
+ func (warnings *AURWarnings) Print() {
+ 	normalMissing, debugMissing := filterDebugPkgs(warnings.Missing)
+ 
++	// Demoted to debug (house patch): a self-managed tree deliberately holds
++	// packages no AUR recipe exists for, so this list is a statement about
++	// our own recipes, not about the AUR. --debug still shows it.
+ 	if len(normalMissing) > 0 {
+-		warnings.log.Warnln(gotext.Get("Packages not in AUR:"), formatNames(normalMissing))
++		warnings.log.Debugln(gotext.Get("Packages not in AUR:"), formatNames(normalMissing))
+ 	}
+ 
+ 	if len(debugMissing) > 0 {
+-		warnings.log.Warnln(gotext.Get("Missing AUR Debug Packages:"), formatNames(debugMissing))
++		warnings.log.Debugln(gotext.Get("Missing AUR Debug Packages:"), formatNames(debugMissing))
+ 	}
+ 
+ 	if len(warnings.Orphans) > 0 {
+@@ -83,9 +86,12 @@ func (warnings *AURWarnings) Print() {
+ 		warnings.log.Warnln(gotext.Get("Flagged Out Of Date AUR Packages:"), formatNames(warnings.OutOfDate))
+ 	}
+ 
++	// Demoted to debug (house patch): self-built packages routinely sit ahead
++	// of their AUR counterpart by design. Mirrors the libalpm demotion in our
++	// pacman, so the same fact is quiet on every path.
+ 	if len(warnings.LocalNewer) > 0 {
+ 		for _, newer := range warnings.LocalNewer {
+-			warnings.log.Warnln(newer)
++			warnings.log.Debugln(newer)
+ 		}
+ 	}
+ }
+diff --git a/pkg/upgrade/sources.go b/pkg/upgrade/sources.go
+index e2294b3..fa87048 100644
+--- a/pkg/upgrade/sources.go
++++ b/pkg/upgrade/sources.go
+@@ -53,11 +53,16 @@ func UpDevel(
+ 	return toUpgrade
+ }
+ 
++// printIgnoringPackage reports a held-back upgrade. Demoted to debug (house
++// patch): IgnorePkg is a deliberate, large protective set on this host, so a
++// per-package notice on every run is noise rather than signal. Still
++// retrievable with --debug; same demote-not-delete call as the libalpm patch
++// in our pacman.
+ func printIgnoringPackage(log *text.Logger, pkg db.IPackage, newPkgVersion string) {
+ 	left, right := query.GetVersionDiff(pkg.Version(), newPkgVersion)
+ 
+ 	pkgName := pkg.Name()
+-	log.Warnln(gotext.Get("%s: ignoring package upgrade (%s => %s)",
++	log.Debugln(gotext.Get("%s: ignoring package upgrade (%s => %s)",
+ 		text.Cyan(pkgName),
+ 		left, right,
+ 	))

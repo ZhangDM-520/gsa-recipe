@@ -2,8 +2,10 @@
 
 **Idle.** No active task.
 
-Last action: `.logs/action-2026-11-10-flag-strip-toolchain-tags.md`
-(strip of the flag-audit appends, 7 toolchain tags, gsa-pm /etc/gsa delivery).
+Last actions (both committed, not pushed):
+- `.logs/action-2026-11-10-yay-git-mute.md` — new `packages/git/yay-git`
+  (app) with `yay-quiet-aur-notices.patch`; built, installed
+  (`13.1.0.r0.g0938a75e-2`), `yay -Qu` now clean.
+- `.logs/action-2026-11-10-copilot-instructions-brief.md` — brief improved.
 
-Next: commit + push both halves, then `gsa -Sy` and `sudo gsa -S gsa-pm`
-(the store builds fetched HEAD). Nothing is committed.
+Next: push `main` (2 commits ahead of `origin/main`). Battery 27/27.

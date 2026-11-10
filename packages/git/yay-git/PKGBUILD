@@ -1,0 +1,70 @@
+# Maintainer: ZhangDM-520 <jixianqiang1540@gmail.com>
+# Built from the upstream git tree; the AUR recipes (yay, yay-bin) are not
+# used. House patch mutes the IgnorePkg and not-in-AUR notices exactly as
+# packages/git/paru-git does — see yay-quiet-aur-notices.patch.
+
+pkgname=yay-git
+_pkgname=yay
+pkgver=13.1.0.r0.g0938a75e
+# pkgrel 2: the same upstream commit is already packaged as -1 by the AUR
+# recipe; this build carries the mute patch and its pkgver matches, so a bump
+# is the only way the replacement installs as an upgrade rather than a
+# downgrade or a same-version skip.
+pkgrel=2
+pkgdesc='Pacman wrapper and AUR helper (git version; house-muted IgnorePkg and not-in-AUR notices)'
+arch=(x86_64)
+url='https://github.com/Jguer/yay'
+license=(GPL-3.0-only)
+depends=(git pacman)
+# go: the compiler; git: the VCS source and the pkgver/describe step;
+# gettext: msgfmt builds the shipped catalogues.
+makedepends=(go git gettext)
+provides=("${_pkgname}=${pkgver}")
+conflicts=("${_pkgname}" "${_pkgname}-bin")
+# !debug: the Go binary's DWARF is not a maintained capability here (house
+# trim, same call as packages/git/paru-git).
+options=(!debug)
+source=("${_pkgname}::git+https://github.com/Jguer/yay.git"
+        'yay-quiet-aur-notices.patch')
+b2sums=('SKIP'
+        '0466203fddba309cef67de204b0ae6b9cd4a07cae41873ed8762acd732a9f9176c624cf7e88093e5b4fb6af0d4c2c561b5ee648ae01e4ff134292b03aec0a41c')
+
+pkgver() {
+  cd "${_pkgname}"
+  # --abbrev=8 matches the version shape of the yay-git package this recipe
+  # supersedes: with the default 7 the same commit sorts BELOW the AUR build
+  # (…g0938a75 < …g0938a75e), so the swap would present as a downgrade.
+  git describe --long --tags --abbrev=8 | sed 's/^v//;s/\([^-]*-g\)/r\1/;s/-/./g'
+}
+
+prepare() {
+  cd "${_pkgname}"
+
+  # Demote the per-package "ignoring package upgrade" notice and the
+  # "not in AUR" / "local newer than AUR" lists to --debug (house patch,
+  # 2026-11-10): this host's protective IgnorePkg set and its self-managed
+  # recipe tree are designed state, so those lines are noise on every run.
+  # Same demote-not-delete call as 0002-libalpm-quiet-… in packages/stable/
+  # pacman and packages/git/paru-git; retrievable with `yay --debug`. Patch
+  # drift on upstream movement is a rebase wall, not a reason to pin (house
+  # VCS convention).
+  patch -Np1 -i ../yay-quiet-aur-notices.patch
+}
+
+build() {
+  cd "${_pkgname}"
+
+  # VERSION and PREFIX are the only knobs the Makefile needs: VERSION is
+  # stamped into the binary, PREFIX decides the compiled-in locale path
+  # (its default /usr/local would not find /usr/share/locale).
+  make build VERSION="${pkgver}" PREFIX=/usr
+}
+
+package() {
+  cd "${_pkgname}"
+
+  make install DESTDIR="${pkgdir}" PREFIX=/usr
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+}
+
+# vim: set ts=2 sw=2 et:

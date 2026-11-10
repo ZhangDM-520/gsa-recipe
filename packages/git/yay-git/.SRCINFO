@@ -1,0 +1,22 @@
+pkgbase = yay-git
+	pkgdesc = Pacman wrapper and AUR helper (git version; house-muted IgnorePkg and not-in-AUR notices)
+	pkgver = 13.1.0.r0.g0938a75e
+	pkgrel = 2
+	url = https://github.com/Jguer/yay
+	arch = x86_64
+	license = GPL-3.0-only
+	makedepends = go
+	makedepends = git
+	makedepends = gettext
+	depends = git
+	depends = pacman
+	provides = yay=13.1.0.r0.g0938a75e
+	conflicts = yay
+	conflicts = yay-bin
+	options = !debug
+	source = yay::git+https://github.com/Jguer/yay.git
+	source = yay-quiet-aur-notices.patch
+	b2sums = SKIP
+	b2sums = 0466203fddba309cef67de204b0ae6b9cd4a07cae41873ed8762acd732a9f9176c624cf7e88093e5b4fb6af0d4c2c561b5ee648ae01e4ff134292b03aec0a41c
+
+pkgname = yay-git
