@@ -1,6 +1,6 @@
 pkgbase = libproxy-git
 	pkgdesc = A library that provides automatic proxy configuration management (git build)
-	pkgver = 0.5.0.r92.g736a3e1
+	pkgver = 0.5.0.r99.g0ac6285
 	pkgrel = 1
 	url = https://libproxy.github.io/libproxy/
 	arch = x86_64
@@ -15,11 +15,11 @@ pkgbase = libproxy-git
 	depends = glib2
 	depends = glibc
 	depends = libgcc
-	provides = libproxy=0.5.0.r92.g736a3e1
+	provides = libproxy=0.5.0.r99.g0ac6285
 	provides = libproxy.so
 	conflicts = libproxy
 	conflicts = libproxy-webkit<0.5.0-1
-	source = git+https://github.com/libproxy/libproxy.git
+	source = git+https://github.com/libproxy/libproxy.git#commit=0ac628598eb742f697b692014ae204eca0f75512
 	sha256sums = SKIP
 
 pkgname = libproxy-git

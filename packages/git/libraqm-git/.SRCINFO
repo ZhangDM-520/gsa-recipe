@@ -1,6 +1,6 @@
 pkgbase = libraqm-git
 	pkgdesc = A library that encapsulates the logic for complex text layout (git build)
-	pkgver = 0.5.0.r27.gb51b28b
+	pkgver = 0.11.0.r0.g08ee153
 	pkgrel = 1
 	url = https://github.com/HOST-Oman/libraqm/
 	arch = x86_64
@@ -11,10 +11,10 @@ pkgbase = libraqm-git
 	depends = fribidi
 	depends = glibc
 	depends = harfbuzz
-	provides = libraqm=0.5.0.r27.gb51b28b
+	provides = libraqm=0.11.0.r0.g08ee153
 	provides = libraqm.so
 	conflicts = libraqm
-	source = git+https://github.com/HOST-Oman/libraqm.git
+	source = git+https://github.com/HOST-Oman/libraqm.git#commit=08ee1537e63f93bf926498e12b12ed15ee383216
 	sha256sums = SKIP
 
 pkgname = libraqm-git

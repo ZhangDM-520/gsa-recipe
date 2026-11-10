@@ -16,7 +16,7 @@ pkgbase = qt6-serialport
 	depends = libstdc++
 	depends = qt6-base
 	depends = systemd-libs
-	source = git+https://code.qt.io/qt/qtserialport#branch=dev
+	source = git+https://code.qt.io/qt/qtserialport#commit=8bc4d0cbda0479f9a7e49240231fb4a45372a7fa
 	sha256sums = SKIP
 
 pkgname = qt6-serialport

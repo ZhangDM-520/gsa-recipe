@@ -16,7 +16,7 @@ pkgbase = qt6-webchannel
 	depends = libstdc++
 	depends = qt6-base
 	depends = qt6-declarative
-	source = git+https://code.qt.io/qt/qtwebchannel#branch=dev
+	source = git+https://code.qt.io/qt/qtwebchannel#commit=3dd081df27b71bb2fac39273e5225988bfdb5915
 	sha256sums = SKIP
 
 pkgname = qt6-webchannel

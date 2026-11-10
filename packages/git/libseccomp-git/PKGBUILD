@@ -38,7 +38,8 @@ validpgpkeys=(
   '7100AADFAE6E6E940D2E0AD655E45A5AE8CA7C8A' # Paul Moore <paul@paul-moore.com>
   '47A68FCE37C7D7024FD65E11356CE62C2B524099' # Tom Hromatka <tom.hromatka@oracle.com>
 )
-source=("git+https://github.com/seccomp/${_pkgname}.git#branch=release-2.6")
+_snapshot_ref=release-2.6
+source=("git+https://github.com/seccomp/${_pkgname}.git#commit=a81cc2de8ee7a33633defc88bb8a2d986b421613")
 sha256sums=('SKIP')
 
 pkgver() {

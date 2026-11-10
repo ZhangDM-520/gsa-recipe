@@ -4,7 +4,7 @@
 # only)
 
 pkgname=libwmf-git
-pkgver=0.2.16.r3.g63f93ca
+pkgver=0.2.17.r11.g86dc6b1
 pkgrel=1
 pkgdesc="A library for reading vector images in Microsoft's native Windows Metafile Format (git build)"
 arch=('x86_64')
@@ -24,7 +24,7 @@ makedepends=('git' 'libxt')
 provides=("libwmf=$pkgver" 'libwmf-0.2.so' 'libwmflite-0.2.so')
 conflicts=('libwmf')
 options=('staticlibs')
-source=('git+https://github.com/caolanm/libwmf.git')
+source=('git+https://github.com/caolanm/libwmf.git#commit=86dc6b163b0146acd20a768b4a9f10881824015f')
 b2sums=('SKIP')
 
 pkgver() {

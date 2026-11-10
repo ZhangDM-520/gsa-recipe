@@ -4,7 +4,7 @@
 
 pkgname=libcamera-git
 _pkgname=libcamera
-pkgver=0.7.2.r165.ga92285e9c
+pkgver=0.8.0.r2.gbe7e83e9
 pkgrel=1
 pkgdesc="A complex camera support library for Linux, Android, and ChromeOS (git build)"
 arch=('x86_64')
@@ -26,7 +26,7 @@ makedepends=('cmake' 'git' 'meson' 'ninja' 'python-jinja' 'python-ply' 'python-p
 provides=("libcamera=$pkgver" "libcamera-ipa=${pkgver}" 'libcamera.so' 'libcamera-base.so')
 conflicts=('libcamera' 'libcamera-ipa')
 # upstream moved hosting: git.libcamera.org redirects to freedesktop gitlab
-source=("git+https://gitlab.freedesktop.org/camera/${_pkgname}.git")
+source=("git+https://gitlab.freedesktop.org/camera/${_pkgname}.git#commit=be7e83e91348250c015aad6d6f59f1468555bae8")
 b2sums=('SKIP')
 
 pkgver() {

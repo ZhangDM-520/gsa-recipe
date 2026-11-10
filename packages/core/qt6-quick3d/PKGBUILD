@@ -38,7 +38,8 @@ _pkgfn=${pkgname/6-/}
 # rework (qtbase 383e7ffe429): qssgrhicontext.cpp is hand-ported by
 # qtquick3d-srb-variant-adapt.patch (provenance + RETIRE condition in
 # prepare()); the prepare() assertions stay as the tripwire.
-source=(git+https://code.qt.io/qt/$_pkgfn#branch=dev
+_snapshot_ref=dev
+source=(git+https://code.qt.io/qt/$_pkgfn#commit=da959e75ceafcc500c6c9fa9bedf6182af36f113
         qtquick3d-srb-variant-adapt.patch)
 sha256sums=('SKIP'
             'dcd44cb80f121d0187eeb85dd560b9dce8304177819e08e5ed3cc09d853d627d')

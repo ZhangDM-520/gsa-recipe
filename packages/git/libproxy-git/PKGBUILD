@@ -8,7 +8,7 @@
 
 pkgname=libproxy-git
 _pkgname=libproxy
-pkgver=0.5.0.r92.g736a3e1
+pkgver=0.5.0.r99.g0ac6285
 pkgrel=1
 pkgdesc="A library that provides automatic proxy configuration management (git build)"
 arch=('x86_64')
@@ -18,7 +18,7 @@ depends=('curl' 'duktape' 'glib2' 'glibc' 'libgcc')
 makedepends=('git' 'gobject-introspection' 'gsettings-desktop-schemas' 'meson' 'vala')
 provides=("libproxy=$pkgver" 'libproxy.so')
 conflicts=('libproxy' 'libproxy-webkit<0.5.0-1')
-source=("git+https://github.com/libproxy/libproxy.git")
+source=("git+https://github.com/libproxy/libproxy.git#commit=0ac628598eb742f697b692014ae204eca0f75512")
 sha256sums=('SKIP')
 
 pkgver() {

@@ -1,6 +1,6 @@
 pkgbase = libfdk-aac-git
 	pkgdesc = Modified library of Fraunhofer AAC decoder and encoder (git build)
-	pkgver = 2.0.3.r146.g2ef9a14
+	pkgver = 3.0.0.r1.gc41c3c7
 	pkgrel = 1
 	url = https://github.com/mstorsjo/fdk-aac
 	arch = x86_64
@@ -8,11 +8,11 @@ pkgbase = libfdk-aac-git
 	makedepends = git
 	makedepends = cmake
 	depends = glibc
-	provides = libfdk-aac=2.0.3.r146.g2ef9a14
+	provides = libfdk-aac=3.0.0.r1.gc41c3c7
 	provides = libfdk-aac.so
 	conflicts = libfdk-aac
 	options = staticlibs
-	source = git+https://github.com/mstorsjo/fdk-aac.git
+	source = git+https://github.com/mstorsjo/fdk-aac.git#commit=c41c3c7516ea8d0d78a53b96b30bed3a29745cc6
 	sha256sums = SKIP
 
 pkgname = libfdk-aac-git

@@ -14,8 +14,9 @@ depends=('google-glog' 'protobuf' 'libelf' 'openssl')
 makedepends=('cmake' 'git' 'lld' 'ninja' 'python')
 provides=("${_pkgname}=${pkgver%.r*}")
 conflicts=("${_pkgname}")
+_snapshot_ref=master
 source=(
-  "${_pkgname}::git+${url}#branch=master"
+  "${_pkgname}::git+${url}#commit=f95d1a170dfe24ec5ce4117aa4b0f6d836841703"
   'llvm-project::git+https://github.com/llvm/llvm-project.git#branch=main'
   'abseil-cpp::git+https://github.com/abseil/abseil-cpp.git'
   'perf_data_converter::git+https://github.com/google/perf_data_converter.git'

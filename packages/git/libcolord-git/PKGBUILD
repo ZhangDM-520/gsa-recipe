@@ -4,9 +4,9 @@
 
 pkgname=libcolord-git
 _pkgname=colord
-pkgver=1.4.8.r16.g56ccc23
+pkgver=1.4.8.r79.g78a33c9
 # pkgrel 2: trimmed to stock libcolord's file set (repo-colord overlap)
-pkgrel=2
+pkgrel=1
 pkgdesc="System daemon for managing color devices (client library, git build)"
 arch=('x86_64')
 url="https://www.freedesktop.org/software/colord/"
@@ -21,7 +21,7 @@ makedepends=('git' 'gobject-introspection' 'libgusb' 'libgudev' 'meson' 'ninja' 
 # answer the removal prompt. Bump the pin when repo colord's rel moves.
 provides=("libcolord=$pkgver" "libcolord=1.4.8-2" 'libcolord.so' 'libcolordcompat.so')
 conflicts=('libcolord')
-source=("git+https://github.com/hughsie/${_pkgname}")
+source=("git+https://github.com/hughsie/${_pkgname}#commit=78a33c9fb83ce4cca42864ec360ce6937d2ac1f4")
 b2sums=('SKIP')
 # colord release tags are signed by Richard Hughes (stock pins ?signed#tag=);
 # branch HEAD is tracked, so nothing is pinned here.

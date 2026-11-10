@@ -14,7 +14,7 @@ depends=('glibc' 'libgcc' 'libgomp')
 makedepends=('git')
 provides=("libb2=$pkgver" 'libb2.so')
 conflicts=('libb2')
-source=("git+https://github.com/BLAKE2/${_pkgname}.git")
+source=("git+https://github.com/BLAKE2/${_pkgname}.git#commit=643decfbf8ae600c3387686754d74c84144950d1")
 b2sums=('SKIP')
 
 prepare() {

@@ -28,7 +28,8 @@ makedepends=('git' 'intltool' 'python')
 # sonames shipped: libmypaint.so.0, libmypaint-gegl.so.0
 provides=("libmypaint=$pkgver" 'libmypaint.so' 'libmypaint-gegl.so')
 conflicts=('libmypaint')
-source=('git+https://github.com/mypaint/libmypaint.git#branch=libmypaint-v1')
+_snapshot_ref=libmypaint-v1
+source=('git+https://github.com/mypaint/libmypaint.git#commit=3c8795527a6388f7ebb0c3522641ee02045f8ee7')
 b2sums=('SKIP')
 
 pkgver() {

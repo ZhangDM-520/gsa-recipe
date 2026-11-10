@@ -22,7 +22,7 @@ pkgbase = libei-git
 	provides = libeis.so
 	provides = liboeffis.so
 	conflicts = libei
-	source = git+https://gitlab.freedesktop.org/libinput/libei.git
+	source = git+https://gitlab.freedesktop.org/libinput/libei.git#commit=a9bf31da06f06bfce73702191c3db93aae289459
 	sha256sums = SKIP
 
 pkgname = libei-git

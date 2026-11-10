@@ -3,7 +3,7 @@
 # Contributor: Dave Reisner <dreisner@archlinux.org>
 
 pkgname=kmod-git
-pkgver=v34+335+g65ac890
+pkgver=v34+381+g5d3ff37
 pkgrel=1
 pkgdesc="Linux kernel module management tools and library"
 arch=('x86_64')
@@ -17,7 +17,7 @@ provides=('module-init-tools=3.16' 'libkmod.so' "kmod=$pkgver")
 conflicts=('module-init-tools' 'kmod')
 replaces=('module-init-tools')
 #validpgpkeys=('EAB33C9690013C733916AC839BA2A5A630CBEA53')  # Lucas DeMarchi
-source=("git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git"
+source=("git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git#commit=5d3ff37d86ab1fb905cff261d24e91acb1bbfb85"
         'depmod-search.conf'
         'depmod.hook' 'depmod.script')
 md5sums=('SKIP'

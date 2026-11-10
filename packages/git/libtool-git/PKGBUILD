@@ -10,7 +10,7 @@
 # and its libltdl/libtool-multilib capabilities are superseded below.
 
 pkgname=libtool-git
-pkgver=2.6.2.r4.g4f47d556
+pkgver=2.6.2.r6.g181de9ef
 pkgrel=1
 pkgdesc='A generic library support script (git build)'
 arch=('x86_64')
@@ -25,7 +25,7 @@ provides=("libtool=$pkgver" "libltdl=$pkgver" "libtool-multilib=$pkgver" 'libltd
 conflicts=('libtool' 'libltdl' 'libtool-multilib')
 # gnulib + its bootstrap module set are libtool's git submodules; injected
 # as separate sources the same way stock Arch does (./bootstrap needs them)
-source=('git+https://git.savannah.gnu.org/git/libtool.git'
+source=('git+https://git.savannah.gnu.org/git/libtool.git#commit=181de9efcf38425a4d04561134615343dc893fcb'
         'git+https://git.savannah.gnu.org/git/gnulib.git'
         'gnulib-bootstrap::git+https://github.com/gnulib-modules/bootstrap.git')
 b2sums=('SKIP' 'SKIP' 'SKIP')

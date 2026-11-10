@@ -1,6 +1,6 @@
 pkgbase = nettle-git
 	pkgdesc = A low-level cryptographic library (git build)
-	pkgver = 4.0.r46.g81cc9f92
+	pkgver = 4.0.r76.gefa1b6b3
 	pkgrel = 1
 	url = https://www.lysator.liu.se/~nisse/nettle/
 	arch = x86_64
@@ -8,11 +8,11 @@ pkgbase = nettle-git
 	makedepends = git
 	depends = glibc
 	depends = gmp
-	provides = nettle=4.0.r46.g81cc9f92
+	provides = nettle=4.0.r76.gefa1b6b3
 	provides = libhogweed.so
 	provides = libnettle.so
 	conflicts = nettle
-	source = nettle::git+https://git.lysator.liu.se/nettle/nettle.git
+	source = nettle::git+https://git.lysator.liu.se/nettle/nettle.git#commit=efa1b6b311196f3e66984ce0f0ef84106fe6e273
 	b2sums = SKIP
 
 pkgname = nettle-git

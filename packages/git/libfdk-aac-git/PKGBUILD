@@ -2,7 +2,7 @@
 # AUR reference: libfdk-aac-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libfdk-aac-git
 _pkgname=fdk-aac
-pkgver=2.0.3.r146.g2ef9a14
+pkgver=3.0.0.r1.gc41c3c7
 pkgrel=1
 pkgdesc="Modified library of Fraunhofer AAC decoder and encoder (git build)"
 arch=('x86_64')
@@ -15,7 +15,7 @@ conflicts=('libfdk-aac')
 options=('staticlibs')
 # AUR reference pulls git.code.sf.net/p/opencore-amr/fdk-aac; per house policy we
 # track the upstream VCS github.com/mstorsjo/fdk-aac (canonical mirror, same tree)
-source=("git+https://github.com/mstorsjo/fdk-aac.git")
+source=("git+https://github.com/mstorsjo/fdk-aac.git#commit=c41c3c7516ea8d0d78a53b96b30bed3a29745cc6")
 sha256sums=('SKIP')
 
 pkgver() {

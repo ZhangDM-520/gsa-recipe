@@ -1,6 +1,6 @@
 pkgbase = at-spi2-core-git
 	pkgdesc = Protocol definitions and daemon for D-Bus at-spi (git build)
-	pkgver = 2.62.0.1.r4.g675ad4f1
+	pkgver = 2.62.0.1.r10.gb3234285
 	pkgrel = 1
 	url = https://gitlab.gnome.org/GNOME/at-spi2-core
 	arch = x86_64
@@ -20,16 +20,16 @@ pkgbase = at-spi2-core-git
 	depends = systemd
 	depends = xorg-xprop
 	optdepends = dbus-broker: Alternative bus implementation
-	provides = at-spi2-core=2.62.0.1.r4.g675ad4f1
-	provides = at-spi2-atk=2.62.0.1.r4.g675ad4f1
-	provides = atk=2.62.0.1.r4.g675ad4f1
+	provides = at-spi2-core=2.62.0.1.r10.gb3234285
+	provides = at-spi2-atk=2.62.0.1.r10.gb3234285
+	provides = atk=2.62.0.1.r10.gb3234285
 	provides = libatk-1.0.so
 	provides = libatk-bridge-2.0.so
 	provides = libatspi.so
 	conflicts = at-spi2-core
 	conflicts = at-spi2-atk
 	conflicts = atk
-	source = git+https://gitlab.gnome.org/GNOME/at-spi2-core.git
+	source = git+https://gitlab.gnome.org/GNOME/at-spi2-core.git#commit=b32342851a2474c8d02e1ceda488989bfe0081fd
 	b2sums = SKIP
 
 pkgname = at-spi2-core-git

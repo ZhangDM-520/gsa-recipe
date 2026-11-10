@@ -14,7 +14,7 @@
 
 pkgname=libssh2-git
 _pkgname=libssh2
-pkgver=1.11.1.r111.g723b7017
+pkgver=1.11.1.r1137.g6125bfe5
 pkgrel=1
 pkgdesc="A library implementing the SSH2 protocol as defined by Internet Drafts (git build)"
 arch=('x86_64')
@@ -28,7 +28,7 @@ conflicts=('libssh2')
 # no pinned tag to verify — fingerprint kept for documentation only, taken
 # from the stock Arch PKGBUILD (upstream-published release signer).
 validpgpkeys=('27EDEAF22F3ABCEB50DB9A125CC908FDB71E12C2')   # Daniel Stenberg
-source=("git+https://github.com/libssh2/${_pkgname}.git")
+source=("git+https://github.com/libssh2/${_pkgname}.git#commit=6125bfe552b3a8c7340c2fb3b82cdf65b0e16f9d")
 sha256sums=('SKIP')
 
 pkgver() {

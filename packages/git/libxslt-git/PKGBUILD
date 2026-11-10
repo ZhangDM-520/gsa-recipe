@@ -5,7 +5,7 @@
 # Contributor: John Proctor <jproctor@prium.net>
 
 pkgname=libxslt-git
-pkgver=1.1.45.r1.gec95343
+pkgver=1.1.45.r3.gd4ca6edc
 pkgrel=1
 pkgdesc="XML stylesheet transformation library (git build)"
 arch=('x86_64')
@@ -20,7 +20,7 @@ provides=("libxslt=$pkgver" 'libexslt.so' 'libxslt.so')
 # is conflicted, NOT provided (classb sqlite-doc precedent) so no package can
 # resolve a docs dependency against a docs-less package
 conflicts=('libxslt' 'libxslt-docs')
-source=('git+https://gitlab.gnome.org/GNOME/libxslt.git')
+source=('git+https://gitlab.gnome.org/GNOME/libxslt.git#commit=d4ca6edc9b85534c586260db61068083798ca8ed')
 b2sums=('SKIP')
 
 pkgver() {

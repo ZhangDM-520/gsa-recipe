@@ -21,7 +21,8 @@ makedepends=(cmake
              ninja)
 groups=(qt6)
 _pkgfn=${pkgname/6-/}
-source=(git+https://code.qt.io/qt/$_pkgfn#branch=dev)
+_snapshot_ref=dev
+source=(git+https://code.qt.io/qt/$_pkgfn#commit=8bc4d0cbda0479f9a7e49240231fb4a45372a7fa)
 sha256sums=('SKIP')
 
 build() {

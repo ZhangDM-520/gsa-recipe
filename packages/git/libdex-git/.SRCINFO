@@ -1,6 +1,6 @@
 pkgbase = libdex-git
 	pkgdesc = A library supporting Deferred Execution (git build)
-	pkgver = 1.2.0.r13.gdd075ea
+	pkgver = 1.2.0.r37.g146e82f
 	pkgrel = 1
 	url = https://gitlab.gnome.org/GNOME/libdex
 	arch = x86_64
@@ -12,10 +12,10 @@ pkgbase = libdex-git
 	depends = glibc
 	depends = libatomic
 	depends = liburing
-	provides = libdex=1.2.0.r13.gdd075ea
+	provides = libdex=1.2.0.r37.g146e82f
 	provides = libdex-1.so
 	conflicts = libdex
-	source = git+https://gitlab.gnome.org/GNOME/libdex
+	source = git+https://gitlab.gnome.org/GNOME/libdex#commit=146e82fccabe56966ba330225e865b94549ba10e
 	b2sums = SKIP
 
 pkgname = libdex-git

@@ -1,6 +1,6 @@
 pkgbase = libwmf-git
 	pkgdesc = A library for reading vector images in Microsoft's native Windows Metafile Format (git build)
-	pkgver = 0.2.16.r3.g63f93ca
+	pkgver = 0.2.17.r11.g86dc6b1
 	pkgrel = 1
 	url = https://github.com/caolanm/libwmf
 	arch = x86_64
@@ -17,12 +17,12 @@ pkgbase = libwmf-git
 	depends = libpng
 	depends = libx11
 	depends = zlib
-	provides = libwmf=0.2.16.r3.g63f93ca
+	provides = libwmf=0.2.17.r11.g86dc6b1
 	provides = libwmf-0.2.so
 	provides = libwmflite-0.2.so
 	conflicts = libwmf
 	options = staticlibs
-	source = git+https://github.com/caolanm/libwmf.git
+	source = git+https://github.com/caolanm/libwmf.git#commit=86dc6b163b0146acd20a768b4a9f10881824015f
 	b2sums = SKIP
 
 pkgname = libwmf-git

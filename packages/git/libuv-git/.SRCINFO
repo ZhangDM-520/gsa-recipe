@@ -1,6 +1,6 @@
 pkgbase = libuv-git
 	pkgdesc = A multi-platform support library with a focus on asynchronous I/O (git build)
-	pkgver = 1.53.0.r24.g49b1c064
+	pkgver = 1.53.0.r59.g9e40720a0
 	pkgrel = 1
 	url = https://libuv.org/
 	arch = x86_64
@@ -11,11 +11,11 @@ pkgbase = libuv-git
 	makedepends = git
 	depends = glibc
 	depends = libnsl
-	provides = libuv=1.53.0.r24.g49b1c064
+	provides = libuv=1.53.0.r59.g9e40720a0
 	provides = libuv.so
 	conflicts = libuv
 	options = staticlibs
-	source = git+https://github.com/libuv/libuv.git
+	source = git+https://github.com/libuv/libuv.git#commit=9e40720a0cdfd99970eacc43b39fa1404c6df38d
 	b2sums = SKIP
 
 pkgname = libuv-git

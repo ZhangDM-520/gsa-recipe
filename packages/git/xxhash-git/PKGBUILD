@@ -5,7 +5,7 @@
 # Contributor: Konstantin Gizdov <kge@archlinux.org>
 
 pkgname=xxhash-git
-pkgver=0.8.4.r5.g680bf46
+pkgver=0.8.4.r91.g2ec67ca
 pkgrel=1
 pkgdesc='Extremely fast non-cryptographic hash algorithm (git build)'
 arch=('x86_64')
@@ -24,7 +24,8 @@ provides=("xxhash=$pkgver" 'libxxhash.so')
 conflicts=('xxhash')
 # upstream's default branch is 'dev' — tracked explicitly; stock pins the
 # release tag (#tag=v$pkgver) and AUR xxhash-git tracks the default branch
-source=('xxHash::git+https://github.com/Cyan4973/xxHash.git#branch=dev')
+_snapshot_ref=dev
+source=('xxHash::git+https://github.com/Cyan4973/xxHash.git#commit=2ec67caeb18ec15ae60c0853174331089acddfc0')
 b2sums=('SKIP')
 
 pkgver() {

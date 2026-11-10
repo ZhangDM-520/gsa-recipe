@@ -3,7 +3,7 @@
 # AUR libmysofa-git and stock libmysofa are REFERENCES ONLY.
 
 pkgname=libmysofa-git
-pkgver=1.3.5.r0.g648eed0347
+pkgver=1.3.5.r3.g648eed0
 pkgrel=1
 pkgdesc='C library to read HRTFs if they are stored in the AES69-2015 SOFA format (git build)'
 arch=('x86_64')
@@ -15,7 +15,7 @@ checkdepends=('nodejs')
 # soname shipped: libmysofa.so.1
 provides=("libmysofa=$pkgver" 'libmysofa.so')
 conflicts=('libmysofa')
-source=('git+https://github.com/hoene/libmysofa.git')
+source=('git+https://github.com/hoene/libmysofa.git#commit=648eed03472e6720a1ea45d1a1f86c4efb569ff9')
 b2sums=('SKIP')
 
 pkgver() {

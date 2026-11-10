@@ -1,7 +1,7 @@
 # Maintainer: carstene1ns <arch carsten-teibes de> - http://git.io/ctPKG
 
 pkgname=fluidsynth-git
-pkgver=2.6.1.r3480.ae31c514
+pkgver=2.6.2.r3534.8210cb1b
 pkgrel=1
 pkgdesc="A real-time software synthesizer based on the SoundFont 2 specifications (development version)"
 arch=('i686' 'x86_64')
@@ -16,7 +16,7 @@ makedepends=('git' 'cmake')
 optdepends=('pulseaudio: PulseAudio sound support')
 conflicts=('fluidsynth')
 provides=("fluidsynth=${pkgver%.r*}" libfluidsynth.so)
-source=(${pkgname%-*}::"git+https://github.com/FluidSynth/fluidsynth.git")
+source=(${pkgname%-*}::"git+https://github.com/FluidSynth/fluidsynth.git#commit=8210cb1bdc42718db5d68c2bc5aaea99ed434472")
 md5sums=('SKIP')
 
 pkgver() {

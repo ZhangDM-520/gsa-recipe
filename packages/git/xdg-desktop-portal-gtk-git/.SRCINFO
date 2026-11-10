@@ -17,7 +17,7 @@ pkgbase = xdg-desktop-portal-gtk-git
 	provides = xdg-desktop-portal-gtk=1.15.3+9+g5409af7
 	provides = xdg-desktop-portal-impl
 	conflicts = xdg-desktop-portal-gtk
-	source = git+https://github.com/flatpak/xdg-desktop-portal-gtk
+	source = git+https://github.com/flatpak/xdg-desktop-portal-gtk#commit=5409af76b4514e187bd2f29033fa0fadad54a5de
 	sha256sums = SKIP
 
 pkgname = xdg-desktop-portal-gtk-git

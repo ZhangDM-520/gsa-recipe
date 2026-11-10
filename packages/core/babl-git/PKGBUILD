@@ -13,7 +13,7 @@ ENABLE_DOC=${ENABLE_DOC:-1}
 
 _pkgname=babl
 pkgname="${_pkgname}-git"
-pkgver=0.1.129.r2145.87ebf96
+pkgver=0.1.129.r2147.7419e33
 pkgrel=1
 pkgdesc="Dynamic, any to any, pixel format translation library."
 arch=('x86_64')
@@ -28,7 +28,7 @@ provides=("babl=${pkgver%%.r*}"
           'libbabl-0.1.so')
 conflicts=('babl')
 options=(!libtool)
-source=(git+https://gitlab.gnome.org/GNOME/babl)
+source=(git+https://gitlab.gnome.org/GNOME/babl#commit=7419e33cb155d732b31e17e295df4bdbc661d2a4)
 md5sums=('SKIP')
 
 pkgver() {

@@ -13,7 +13,7 @@ pkgbase = acl-git
 	provides = libacl.so
 	conflicts = acl
 	options = staticlibs
-	source = git+https://git.savannah.gnu.org/git/acl.git
+	source = git+https://git.savannah.gnu.org/git/acl.git#commit=918b37ccd558a27ac78949ad81b0a774ed132ea2
 	b2sums = SKIP
 
 pkgname = acl-git

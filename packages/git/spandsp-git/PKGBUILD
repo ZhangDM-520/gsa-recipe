@@ -28,7 +28,7 @@ provides=("spandsp=$pkgver" 'libspandsp.so')
 # entry; stock's spandsp-docs split dropped (docs build removed below) and
 # conflicted, not provided (classb sqlite-doc precedent)
 conflicts=('spandsp' 'spandsp-docs')
-source=('spandsp::git+https://github.com/freeswitch/spandsp.git')
+source=('spandsp::git+https://github.com/freeswitch/spandsp.git#commit=8f1e1646bdec99eac5fd2cd92c35563f736b9b89')
 b2sums=('SKIP')
 
 pkgver() {

@@ -5,7 +5,7 @@
 # https git hangs; no other upstream-published transport) — kept as-is.
 
 pkgname=libmicrohttpd-git
-pkgver=1.0.10.r0.g7922bbd7a9
+pkgver=1.0.10.r0.g7922bbd7
 pkgrel=1
 pkgdesc="A small C library that makes it easy to run an HTTP server as part of another application (git build)"
 arch=('x86_64')
@@ -17,7 +17,7 @@ checkdepends=('curl')
 # soname shipped: libmicrohttpd.so.12
 provides=("libmicrohttpd=$pkgver" 'libmicrohttpd.so')
 conflicts=('libmicrohttpd')
-source=("git://git.gnunet.org/libmicrohttpd.git")
+source=("git://git.gnunet.org/libmicrohttpd.git#commit=7922bbd7a9561fc3f8ebd6f5cecdc288dcd4457f")
 b2sums=('SKIP')
 
 pkgver() {

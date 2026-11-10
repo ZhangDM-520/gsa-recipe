@@ -25,7 +25,7 @@ pkgbase = qt6-quick3d
 	depends = qt6-shadertools
 	depends = zlib
 	optdepends = assimp: assimp import plugin
-	source = git+https://code.qt.io/qt/qtquick3d#branch=dev
+	source = git+https://code.qt.io/qt/qtquick3d#commit=da959e75ceafcc500c6c9fa9bedf6182af36f113
 	source = qtquick3d-srb-variant-adapt.patch
 	sha256sums = SKIP
 	sha256sums = dcd44cb80f121d0187eeb85dd560b9dce8304177819e08e5ed3cc09d853d627d

@@ -17,7 +17,7 @@ pkgbase = qt6-graphs
 	depends = qt6-base
 	depends = qt6-declarative
 	depends = qt6-quick3d
-	source = git+https://code.qt.io/qt/qtgraphs#branch=dev
+	source = git+https://code.qt.io/qt/qtgraphs#commit=297f9bf5c2de498773b85d806974229805a043cc
 	sha256sums = SKIP
 
 pkgname = qt6-graphs

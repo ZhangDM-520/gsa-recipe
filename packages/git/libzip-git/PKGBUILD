@@ -3,7 +3,7 @@
 # Contributor: Maxime Gauduin (stock libzip)
 
 pkgname=libzip-git
-pkgver=1.11.4.r170.g0548793
+pkgver=1.12.1.r78.gd58e543f
 pkgrel=1
 pkgdesc="C library for reading, creating, and modifying zip archives (git build)"
 arch=('x86_64')
@@ -17,7 +17,7 @@ provides=("libzip=$pkgver" 'libzip.so')
 # bare libzip.so: pacman 7.1 auto-derives libzip.so=4-64 (soname libzip.so.4
 # on the 1.11.x line)
 conflicts=('libzip')
-source=('git+https://github.com/nih-at/libzip.git')
+source=('git+https://github.com/nih-at/libzip.git#commit=d58e543f55f0a001a37b386bf3749bbae06916e8')
 b2sums=('SKIP')
 
 pkgver() {

@@ -16,7 +16,7 @@ pkgbase = lilv-git
 	makedepends = sratom
 	makedepends = swig
 	makedepends = zix
-	source = lilv::git+https://gitlab.com/lv2/lilv.git
+	source = lilv::git+https://gitlab.com/lv2/lilv.git#commit=4b8f30055fa5cb4134a2eb45fc1555bc04289314
 	b2sums = SKIP
 
 pkgname = lilv-git

@@ -1,7 +1,7 @@
 # Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>
 
 pkgname=jemalloc-git
-pkgver=5.4.0.r38.g250120f2
+pkgver=5.4.0.r84.gfc22b8bb
 pkgrel=1
 pkgdesc="General purpose malloc implementation"
 arch=('i686' 'x86_64')
@@ -12,7 +12,7 @@ makedepends=('git')  # docbook-xsl dropped 2026-09-04: man pages ship pregenerat
 optdepends=('perl: for running jeprof')
 provides=("jemalloc=$pkgver" 'libjemalloc.so')
 conflicts=('jemalloc')
-source=("git+https://github.com/jemalloc/jemalloc.git")
+source=("git+https://github.com/jemalloc/jemalloc.git#commit=fc22b8bbc478999520ff0ea7653d2ab4a0270462")
 sha256sums=('SKIP')
 
 

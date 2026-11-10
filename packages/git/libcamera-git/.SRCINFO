@@ -1,6 +1,6 @@
 pkgbase = libcamera-git
 	pkgdesc = A complex camera support library for Linux, Android, and ChromeOS (git build)
-	pkgver = 0.7.2.r165.ga92285e9c
+	pkgver = 0.8.0.r2.gbe7e83e9
 	pkgrel = 1
 	url = https://libcamera.org/
 	arch = x86_64
@@ -31,13 +31,13 @@ pkgbase = libcamera-git
 	depends = libyuv
 	depends = sh
 	depends = systemd-libs
-	provides = libcamera=0.7.2.r165.ga92285e9c
-	provides = libcamera-ipa=0.7.2.r165.ga92285e9c
+	provides = libcamera=0.8.0.r2.gbe7e83e9
+	provides = libcamera-ipa=0.8.0.r2.gbe7e83e9
 	provides = libcamera.so
 	provides = libcamera-base.so
 	conflicts = libcamera
 	conflicts = libcamera-ipa
-	source = git+https://gitlab.freedesktop.org/camera/libcamera.git
+	source = git+https://gitlab.freedesktop.org/camera/libcamera.git#commit=be7e83e91348250c015aad6d6f59f1468555bae8
 	b2sums = SKIP
 
 pkgname = libcamera-git

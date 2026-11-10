@@ -7,7 +7,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=xorg-xwayland-git
-pkgver=24.1.14.r1232.g0780950be
+pkgver=24.1.14.r1243.gf258a85da
 pkgrel=1
 arch=('x86_64')
 license=(
@@ -44,7 +44,7 @@ makedepends=('meson' 'xorgproto' 'xtrans' 'libxkbfile' 'dbus'
              'piglit-git' 'weston'
              'libx11' 'libxext' 'libxi' 'libxt' 'libxtst' 'libxmu' 'libxaw'
              'xorg-bdftopcf' 'xorg-mkfontdir' 'xorg-xdpyinfo' 'xorg-xset')
-source=("xserver::git+https://gitlab.freedesktop.org/xorg/xserver.git"
+source=("xserver::git+https://gitlab.freedesktop.org/xorg/xserver.git#commit=f258a85da2d3031165b8bb159b3915cb8557d1dd"
         # Training input for the PGO phase (phase 2): the X Test Suite the
         # piglit xts-render profile runs. Pinned deliberately — it shapes
         # codegen through the profile, so it moves on purpose, never with

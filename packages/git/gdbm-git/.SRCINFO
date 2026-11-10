@@ -15,7 +15,7 @@ pkgbase = gdbm-git
 	provides = libgdbm_compat.so
 	conflicts = gdbm
 	options = staticlibs
-	source = git+https://git.gnu.org.ua/gdbm.git
+	source = git+https://git.gnu.org.ua/gdbm.git#commit=fb46d987d613e4d56981d30f2b9f34288ef42858
 	b2sums = SKIP
 
 pkgname = gdbm-git

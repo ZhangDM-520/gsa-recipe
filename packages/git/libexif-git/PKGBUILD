@@ -2,7 +2,7 @@
 # AUR reference: libexif-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libexif-git
 _pkgname=libexif
-pkgver=0.6.26.r0.g1ce27bb
+pkgver=0.6.26.r34.g11fe112
 pkgrel=1
 pkgdesc="A library for parsing, editing and saving EXIF data (git build)"
 arch=('x86_64')
@@ -14,7 +14,7 @@ makedepends=('git' 'gettext')
 provides=("libexif=$pkgver" 'libexif.so')
 conflicts=('libexif')
 options=('staticlibs')
-source=("git+https://github.com/libexif/libexif.git")
+source=("git+https://github.com/libexif/libexif.git#commit=11fe112094c9ca53fb85865e6b65002b266a86cb")
 sha256sums=('SKIP')
 
 pkgver() {

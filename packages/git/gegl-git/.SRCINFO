@@ -1,6 +1,6 @@
 pkgbase = gegl-git
 	pkgdesc = Graph based image processing framework
-	pkgver = 0.4.73.r11493.5a15f6d2b
+	pkgver = 0.4.73.r11512.b500a75d4
 	pkgrel = 1
 	url = https://www.gegl.org
 	arch = i686
@@ -54,7 +54,7 @@ pkgbase = gegl-git
 	provides = libgegl-sc-0.4.so
 	conflicts = gegl
 	options = !libtool
-	source = git+https://gitlab.gnome.org/GNOME/gegl.git
+	source = git+https://gitlab.gnome.org/GNOME/gegl.git#commit=b500a75d43dd9b385e6e996330ad3107821be368
 	sha512sums = SKIP
 
 pkgname = gegl-git

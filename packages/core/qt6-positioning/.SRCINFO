@@ -21,7 +21,7 @@ pkgbase = qt6-positioning
 	depends = qt6-declarative
 	depends = qt6-serialport
 	optdepends = geoclue: geoclue2 plugin
-	source = git+https://code.qt.io/qt/qtpositioning#branch=dev
+	source = git+https://code.qt.io/qt/qtpositioning#commit=a0f9f249dbff76c66560531cb9021c91986ea597
 	sha256sums = SKIP
 
 pkgname = qt6-positioning

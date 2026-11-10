@@ -1,6 +1,6 @@
 pkgbase = kmod-git
 	pkgdesc = Linux kernel module management tools and library
-	pkgver = v34+335+g65ac890
+	pkgver = v34+381+g5d3ff37
 	pkgrel = 1
 	url = https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git
 	arch = x86_64
@@ -15,11 +15,11 @@ pkgbase = kmod-git
 	depends = zstd
 	provides = module-init-tools=3.16
 	provides = libkmod.so
-	provides = kmod=v34+335+g65ac890
+	provides = kmod=v34+381+g5d3ff37
 	conflicts = module-init-tools
 	conflicts = kmod
 	replaces = module-init-tools
-	source = git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git
+	source = git+https://git.kernel.org/pub/scm/utils/kernel/kmod/kmod.git#commit=5d3ff37d86ab1fb905cff261d24e91acb1bbfb85
 	source = depmod-search.conf
 	source = depmod.hook
 	source = depmod.script

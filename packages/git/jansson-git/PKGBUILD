@@ -13,7 +13,7 @@ depends=('glibc')
 makedepends=('git')
 provides=("jansson=$pkgver" 'libjansson.so')
 conflicts=('jansson')
-source=("git+https://github.com/akheron/${_pkgname}.git")
+source=("git+https://github.com/akheron/${_pkgname}.git#commit=851a2145e3256f2e67e5dfe24b0e456bf198b741")
 b2sums=('SKIP')
 
 pkgver() {

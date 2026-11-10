@@ -12,7 +12,7 @@ pkgbase = fcitx5-qt-git
 	makedepends = qt6-wayland
 	makedepends = ninja
 	depends = fcitx5-git
-	source = git+https://github.com/fcitx/fcitx5-qt.git
+	source = git+https://github.com/fcitx/fcitx5-qt.git#commit=0285a5d18367d8f3af80dab7e4819d5555982340
 	sha512sums = SKIP
 
 pkgname = fcitx5-qt5-git

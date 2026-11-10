@@ -6,7 +6,7 @@
 # AUR libpciaccess-git and stock libpciaccess are REFERENCES ONLY.
 
 pkgname=libpciaccess-git
-pkgver=0.19.r0.g38e6f15f83
+pkgver=0.19.r1.ge33aa5f
 pkgrel=1
 pkgdesc='X11 PCI access library (git build)'
 arch=('x86_64')
@@ -17,7 +17,7 @@ makedepends=('git' 'meson' 'xorg-util-macros')
 # soname shipped: libpciaccess.so.0
 provides=("libpciaccess=$pkgver" 'libpciaccess.so')
 conflicts=('libpciaccess')
-source=('git+https://gitlab.freedesktop.org/xorg/lib/libpciaccess.git')
+source=('git+https://gitlab.freedesktop.org/xorg/lib/libpciaccess.git#commit=e33aa5fd28f63b9842e36c1a8a954577eec042e3')
 b2sums=('SKIP')
 
 pkgver() {

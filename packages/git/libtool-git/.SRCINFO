@@ -1,6 +1,6 @@
 pkgbase = libtool-git
 	pkgdesc = A generic library support script (git build)
-	pkgver = 2.6.2.r4.g4f47d556
+	pkgver = 2.6.2.r6.g181de9ef
 	pkgrel = 1
 	url = https://www.gnu.org/software/libtool
 	arch = x86_64
@@ -12,14 +12,14 @@ pkgbase = libtool-git
 	depends = sh
 	depends = tar
 	depends = glibc
-	provides = libtool=2.6.2.r4.g4f47d556
-	provides = libltdl=2.6.2.r4.g4f47d556
-	provides = libtool-multilib=2.6.2.r4.g4f47d556
+	provides = libtool=2.6.2.r6.g181de9ef
+	provides = libltdl=2.6.2.r6.g181de9ef
+	provides = libtool-multilib=2.6.2.r6.g181de9ef
 	provides = libltdl.so
 	conflicts = libtool
 	conflicts = libltdl
 	conflicts = libtool-multilib
-	source = git+https://git.savannah.gnu.org/git/libtool.git
+	source = git+https://git.savannah.gnu.org/git/libtool.git#commit=181de9efcf38425a4d04561134615343dc893fcb
 	source = git+https://git.savannah.gnu.org/git/gnulib.git
 	source = gnulib-bootstrap::git+https://github.com/gnulib-modules/bootstrap.git
 	b2sums = SKIP

@@ -1,6 +1,6 @@
 pkgbase = jemalloc-git
 	pkgdesc = General purpose malloc implementation
-	pkgver = 5.4.0.r38.g250120f2
+	pkgver = 5.4.0.r84.gfc22b8bb
 	pkgrel = 1
 	url = https://jemalloc.net/
 	arch = i686
@@ -10,10 +10,10 @@ pkgbase = jemalloc-git
 	depends = glibc
 	depends = sh
 	optdepends = perl: for running jeprof
-	provides = jemalloc=5.4.0.r38.g250120f2
+	provides = jemalloc=5.4.0.r84.gfc22b8bb
 	provides = libjemalloc.so
 	conflicts = jemalloc
-	source = git+https://github.com/jemalloc/jemalloc.git
+	source = git+https://github.com/jemalloc/jemalloc.git#commit=fc22b8bbc478999520ff0ea7653d2ab4a0270462
 	sha256sums = SKIP
 
 pkgname = jemalloc-git

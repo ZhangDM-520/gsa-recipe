@@ -10,7 +10,7 @@ pkgname=(
   openal-git
   openal-examples-git
 )
-pkgver=1.25.2.r263.g96c394c82
+pkgver=1.25.2.r337.g2fc99332b
 pkgrel=1
 pkgdesc="Cross-platform 3D audio library, software implementation (git build)"
 arch=('x86_64')
@@ -32,7 +32,7 @@ makedepends=(
   qt6-base
   sdl3
 )
-source=('openal-soft::git+https://github.com/kcat/openal-soft.git')
+source=('openal-soft::git+https://github.com/kcat/openal-soft.git#commit=2fc99332b9be52a62c8d7525ce444c70c48e530a')
 b2sums=('SKIP')
 
 pkgver() {

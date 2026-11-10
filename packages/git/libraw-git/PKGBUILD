@@ -9,7 +9,7 @@
 
 pkgname=libraw-git
 _pkgname=LibRaw
-pkgver=0.22.1.r60.g823f25da
+pkgver=0.22.3.r122.ga9a14b19
 pkgrel=1
 pkgdesc="A library for reading RAW files obtained from digital photo cameras (git build)"
 arch=('x86_64')
@@ -19,7 +19,7 @@ depends=('glibc' 'lcms2' 'libgcc' 'libgomp' 'libjpeg-turbo' 'libstdc++' 'zlib')
 makedepends=('git')
 provides=("libraw=$pkgver" 'libraw.so' 'libraw_r.so')
 conflicts=('libraw')
-source=("git+https://github.com/LibRaw/${_pkgname}.git")
+source=("git+https://github.com/LibRaw/${_pkgname}.git#commit=a9a14b1970d188c25dade81f8326ff00a6e33649")
 sha256sums=('SKIP')
 
 pkgver() {

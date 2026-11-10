@@ -8,7 +8,7 @@
 
 pkgname=libnghttp2-git
 _pkgname=libnghttp2
-pkgver=1.70.0.r0.g7a6d122aac
+pkgver=1.71.0.r84.g7ac4557d
 pkgrel=1
 pkgdesc='Framing layer of HTTP/2 is implemented as a reusable C library (git build)'
 arch=('x86_64')
@@ -19,7 +19,7 @@ makedepends=('git')
 # soname shipped: libnghttp2.so.14
 provides=("libnghttp2=$pkgver" 'libnghttp2.so')
 conflicts=('libnghttp2' 'nghttp2<1.20.0-2')
-source=('git+https://github.com/nghttp2/nghttp2.git'
+source=('git+https://github.com/nghttp2/nghttp2.git#commit=7ac4557d7da987c837b3c4d47a41dd71baacdba9'
         'git+https://github.com/ngtcp2/munit.git'
         'git+https://github.com/mruby/mruby.git'
         'git+https://github.com/tatsuhiro-t/neverbleed.git')

@@ -1,6 +1,6 @@
 pkgbase = liblc3-git
 	pkgdesc = Low Complexity Communication Codec (LC3) library and tools (git build)
-	pkgver = 1.1.3.r0.g8e1e722cda
+	pkgver = 1.1.3.r11.gf9c127f
 	pkgrel = 1
 	url = https://github.com/google/liblc3
 	arch = x86_64
@@ -10,10 +10,10 @@ pkgbase = liblc3-git
 	makedepends = python
 	depends = glibc
 	optdepends = python: Python bindings
-	provides = liblc3=1.1.3.r0.g8e1e722cda
+	provides = liblc3=1.1.3.r11.gf9c127f
 	provides = liblc3.so
 	conflicts = liblc3
-	source = git+https://github.com/google/liblc3.git
+	source = git+https://github.com/google/liblc3.git#commit=f9c127fd35975a0494b9e187589501ee984dc4b6
 	b2sums = SKIP
 
 pkgname = liblc3-git

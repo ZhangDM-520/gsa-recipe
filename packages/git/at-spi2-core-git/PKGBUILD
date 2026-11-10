@@ -6,7 +6,7 @@
 # The AUR package of the same name was used as a reference only.
 
 pkgname=at-spi2-core-git
-pkgver=2.62.0.1.r4.g675ad4f1
+pkgver=2.62.0.1.r10.gb3234285
 pkgrel=1
 pkgdesc="Protocol definitions and daemon for D-Bus at-spi (git build)"
 url="https://gitlab.gnome.org/GNOME/at-spi2-core"
@@ -49,7 +49,7 @@ conflicts=(
   at-spi2-atk
   atk
 )
-source=("git+https://gitlab.gnome.org/GNOME/at-spi2-core.git")
+source=("git+https://gitlab.gnome.org/GNOME/at-spi2-core.git#commit=b32342851a2474c8d02e1ceda488989bfe0081fd")
 b2sums=('SKIP')
 
 pkgver() {

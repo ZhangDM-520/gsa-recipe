@@ -26,7 +26,8 @@ makedepends=(cmake
 optdepends=('geoclue: geoclue2 plugin')
 groups=(qt6)
 _pkgfn=${pkgname/6-/}
-source=(git+https://code.qt.io/qt/$_pkgfn#branch=dev)
+_snapshot_ref=dev
+source=(git+https://code.qt.io/qt/$_pkgfn#commit=a0f9f249dbff76c66560531cb9021c91986ea597)
 sha256sums=('SKIP')
 
 build() {

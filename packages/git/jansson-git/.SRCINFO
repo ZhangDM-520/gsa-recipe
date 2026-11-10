@@ -10,7 +10,7 @@ pkgbase = jansson-git
 	provides = jansson=2.15.1.r5.g851a214
 	provides = libjansson.so
 	conflicts = jansson
-	source = git+https://github.com/akheron/jansson.git
+	source = git+https://github.com/akheron/jansson.git#commit=851a2145e3256f2e67e5dfe24b0e456bf198b741
 	b2sums = SKIP
 
 pkgname = jansson-git

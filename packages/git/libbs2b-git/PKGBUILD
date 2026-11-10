@@ -17,7 +17,7 @@ provides=("libbs2b=$pkgver" 'libbs2b.so')
 conflicts=('libbs2b')
 # NOTE: upstream has no release tags — pkgver is rev-count based (like seatd-git)
 # and therefore vercmps below stock 3.1.0 despite being newer code.
-source=("git+https://github.com/alexmarsev/${_pkgname}.git")
+source=("git+https://github.com/alexmarsev/${_pkgname}.git#commit=5ca2d59888df047f1e4b028e3a2fd5be8b5a7277")
 b2sums=('SKIP')
 
 pkgver() {

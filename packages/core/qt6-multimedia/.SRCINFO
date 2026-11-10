@@ -27,7 +27,7 @@ pkgbase = qt6-multimedia
 	depends = libstdc++
 	depends = pipewire
 	depends = qt6-base
-	source = git+https://code.qt.io/qt/qtmultimedia#branch=dev
+	source = git+https://code.qt.io/qt/qtmultimedia#commit=768f25e829f5ecbac1cf963f6b66dd9938473567
 	sha256sums = SKIP
 
 pkgname = qt6-multimedia

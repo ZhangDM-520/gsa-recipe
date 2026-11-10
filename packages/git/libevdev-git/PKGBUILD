@@ -2,7 +2,7 @@
 # AUR reference: libevdev-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libevdev-git
 _pkgname=libevdev
-pkgver=1.13.7.r0.gdb0d427
+pkgver=1.14.0.r1.g2ebc077
 pkgrel=1
 pkgdesc="Wrapper library for evdev devices (git build)"
 arch=('x86_64')
@@ -14,7 +14,7 @@ makedepends=('git')
 provides=("libevdev=$pkgver" 'libevdev.so')
 conflicts=('libevdev')
 options=('staticlibs')
-source=("git+https://gitlab.freedesktop.org/libevdev/libevdev.git")
+source=("git+https://gitlab.freedesktop.org/libevdev/libevdev.git#commit=2ebc0779b2860a7463c0bc26c6ecf913e065022d")
 sha256sums=('SKIP')
 
 pkgver() {

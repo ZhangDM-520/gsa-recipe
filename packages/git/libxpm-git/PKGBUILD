@@ -4,7 +4,7 @@
 # Contributor: Jan de Groot <jgc@archlinux.org>
 
 pkgname=libxpm-git
-pkgver=3.5.19.r3.g58eb875
+pkgver=3.5.20.r0.g34f15ba
 pkgrel=1
 pkgdesc="X11 pixmap library (git build)"
 arch=('x86_64')
@@ -20,7 +20,7 @@ conflicts=('libxpm')
 # Fourdan); master-tracking cannot pin a tag and makepkg's verify_git_signature
 # would run `git verify-commit HEAD` on unsigned commits — tracked unsigned,
 # no --skippgpcheck anywhere
-source=('git+https://gitlab.freedesktop.org/xorg/lib/libxpm.git')
+source=('git+https://gitlab.freedesktop.org/xorg/lib/libxpm.git#commit=34f15baa50a14e1bb8e33ed42d8f252a06446fd8')
 b2sums=('SKIP')
 
 pkgver() {
