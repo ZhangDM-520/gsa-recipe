@@ -34,7 +34,6 @@ build() {
   # host-derived. Same for CXXFLAGS.
   CFLAGS=${CFLAGS/-Ofast/-O3}
   CXXFLAGS=${CXXFLAGS/-Ofast/-O3}
-  CFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
 
   ./configure --prefix=/usr \
     --disable-static  \

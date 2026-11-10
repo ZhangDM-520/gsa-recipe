@@ -80,7 +80,7 @@ build() {
   # codegen interact badly (instrumented LTO is fragile — qt6-declarative's
   # measured choice). The first host -flto* token is saved and comes back in
   # phase 2 / the fallback — the recipe never spells LTO flags itself, host
-  # makepkg.conf owns the policy.
+  # the engine's makepkg config owns the policy.
   local _lto_flag="" _gen_cflags="" _gen_cxxflags="" _gen_ldflags="" _f
   for _f in ${CFLAGS}; do
     case $_f in

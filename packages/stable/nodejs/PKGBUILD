@@ -104,8 +104,6 @@ build() {
   # Same for CXXFLAGS.
   CFLAGS=${CFLAGS/-Ofast/-O3}
   CXXFLAGS=${CXXFLAGS/-Ofast/-O3}
-  CFLAGS+=" -fipa-pta -fstack-reuse=all -fira-hoist-pressure -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all -fira-hoist-pressure -fprefetch-loop-arrays" # flag-audit 2026-11-01
 
   # House style: mold linker when available
   local _mold=""

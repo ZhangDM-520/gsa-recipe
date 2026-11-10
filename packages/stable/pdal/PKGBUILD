@@ -64,7 +64,7 @@ build() {
   # No PGO phase (documented exception): no self-contained training
   # workload is authored and measured for this recipe yet (a readers.faux
   # pipeline is the candidate, but it is unproven without a real build);
-  # upstream's suite is fixture-driven and trimmed below. Host makepkg.conf
+  # upstream's suite is fixture-driven and trimmed below. The engine's makepkg config
   # owns the optimization policy (its CFLAGS and OPTIONS=(lto) LTOFLAGS ride
   # the CMake flags untouched); the recipe spells no ISA or LTO flags.
   local cmake_options=(
@@ -78,8 +78,6 @@ build() {
     # behind BUILD_DOCS, which stays at its OFF default)
     -DWITH_TESTS=OFF
   )
-  CFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
   cmake -B build -S PDAL-$pkgver-src -G Ninja \
     -DCMAKE_INSTALL_PREFIX=/usr \
     "${cmake_options[@]}"

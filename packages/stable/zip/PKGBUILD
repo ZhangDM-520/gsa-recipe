@@ -31,7 +31,6 @@ options=('!makeflags')
 
 prepare() {
 	cd "${srcdir}/${pkgname}${_pkgver}"
-	CFLAGS+=" -fprefetch-loop-arrays" # flag-audit 2026-11-01
 	sed -e "/^CFLAGS_NOOPT =/s/\$/ $CPPFLAGS $CFLAGS/" -i unix/Makefile
 	sed -e 's/CC=gcc/CC="gcc -std=gnu89"/' -i unix/Makefile
 	sed -e "s/^LFLAGS1=''/LFLAGS1=$LDFLAGS/" -i unix/configure

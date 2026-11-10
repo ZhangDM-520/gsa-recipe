@@ -95,7 +95,7 @@ b2sums=('21e35a6318321155df27a2c55a4ca6b98f9a724ff7c5cb68866428ba6675aa017f21de1
 # round-trip trainer (the vtk precedent) is possible in principle but would
 # profile only a thin uniform slice of the 200+ driver modules and was
 # deferred as a documented follow-up. The optimisation stack is therefore the
-# host's makepkg.conf defaults (incl. its LTO flags) + the mold guard below +
+# the engine's makepkg config defaults (incl. its LTO flags) + the mold guard below +
 # stock's -DENABLE_IPO=ON; no -fprofile-generate phase runs, so lib/pgo.sh's
 # install gate does not apply to this recipe.
 
@@ -106,10 +106,8 @@ build() {
   command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
   export LDFLAGS+=" ${_mold}"
 
-  # Flag policy: host makepkg.conf owns optimisation (never hard-code ISA
+  # Flag policy: the engine's makepkg config owns optimisation (never hard-code ISA
   # flags); -DENABLE_IPO=ON is stock's own IPO choice and is kept as-is.
-  CFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
   cmake -B build -S $pkgbase-$pkgver \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_CXX_STANDARD=20 \

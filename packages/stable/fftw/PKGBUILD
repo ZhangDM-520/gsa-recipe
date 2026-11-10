@@ -100,11 +100,10 @@ build() {
   sed -e 's|\(IMPORTED_LOCATION_NONE\).*|\1 "/usr/lib/libfftw3.so.3"|' -i build/FFTW3LibraryDepends.cmake
 
   export F77='gfortran'
-  # House policy: optimization level & ISA come from the host makepkg.conf, so
+  # House policy: optimization level & ISA come from the engine's makepkg config, so
   # no hard-coded -O3/-march/-mtune here. -ffast-math is kept because FFTW's
   # generated code paths assume it (load-bearing, not an ISA/level choice).
   CFLAGS+=" -ffast-math"
-  CFLAGS+=" -fipa-pta" # flag-audit 2026-11-01
 
   for _name in "${_build_types[@]}"; do
     (

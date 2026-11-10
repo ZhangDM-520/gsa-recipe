@@ -32,7 +32,7 @@ _srcenv() {
 	export CARGO_PROFILE_RELEASE_LTO=true
 	export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 	# CARGO_PROFILE_RELEASE_OPT_LEVEL dropped (house: optimization is owned by
-	# the environment/makepkg.conf — cargo's release default already applies)
+	# the engine's RUSTFLAGS — cargo's release default already applies)
 	CFLAGS+=' -ffat-lto-objects'
 	# House style: mold linker when available (runtime-guarded, no output effect).
 	command -v mold >/dev/null 2>&1 && RUSTFLAGS+=' -C link-arg=-fuse-ld=mold'

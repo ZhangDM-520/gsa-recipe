@@ -56,7 +56,7 @@ build() {
   # trimming standard"): the SDK ships no test suite at all — samples/ is
   # SteamVR-integration code that needs VR hardware and a runtime install —
   # so there is no self-contained training workload to instrument against.
-  # Plain build; host makepkg.conf owns optimization and LTO.
+  # Plain build; the engine's makepkg config owns optimization and LTO.
   cmake -B build -S ${pkgname}-${pkgver} \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DBUILD_SHARED=1 \

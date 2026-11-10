@@ -62,7 +62,7 @@ prepare() {
 build() {
   cd Python-${pkgver}
 
-  # House policy: makepkg.conf owns the opt level — stock "PGO should be done
+  # House policy: the engine's makepkg config owns the opt level — stock "PGO should be done
   # with -O3" CFLAGS substitution dropped (no hard-coded -O3/-march/-mtune).
   # -ffat-lto-objects kept (load-bearing for the LTO build, not an ISA/level
   # choice); the --enable-optimizations PGO suite is kept.
@@ -143,7 +143,7 @@ package_python() {
   sed -i 's/^all:.*$/all: build_all/' Makefile
 
   # trim: stock "PGO should be done with -O3" CFLAGS substitution (house
-  # policy: makepkg.conf owns the opt level) — see build()
+  # policy: the engine's makepkg config owns the opt level) — see build()
 
   make DESTDIR="${pkgdir}" EXTRA_CFLAGS="$CFLAGS" install
 

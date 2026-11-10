@@ -37,10 +37,11 @@ co-installation layout. Its adjacent `-O3` is an example, not a requirement.
 The official [GCC x86 options](https://gcc.gnu.org/onlinedocs/gcc-16.1.0/gcc/x86-Options.html)
 document that `-march` selects instructions and `-march=native` selects those
 available on the build CPU; that can make binaries unusable on other CPUs.
-For this project, start with host `makepkg.conf` and do not add recipe-specific
-`-O3`, `-march`, or `-mtune` flags, as required by
-[`CONTRIBUTING.md`](../CONTRIBUTING.md#optimization-and-trimming-standard)
-and [`docs/portability.md`](portability.md#cpu-optimization).
+For this project, the engine ships the baseline (`/etc/gsa/gcc-makepkg.conf`,
+`-march=native`), so do not add recipe-specific `-O3`, `-march`, or `-mtune`
+flags, as required by
+[`CONTRIBUTING.md`](../CONTRIBUTING.md#optimization-and-trimming-standard);
+the engine's `docs/portability.md` §CPU optimization states the policy.
 
 ### Performance choices
 

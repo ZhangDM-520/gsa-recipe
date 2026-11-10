@@ -60,7 +60,7 @@ prepare() {
 build() {
   export INPUT_VERSION="$pkgver"
 
-  # Layer 1: the Qt GUI (CMake/Ninja). Host makepkg.conf flags govern
+  # Layer 1: the Qt GUI (CMake/Ninja). The engine's makepkg config flags govern
   # (CMAKE_BUILD_TYPE=None — no recipe-side -O*/-march); mold arrives
   # through LDFLAGS like everything else.
   cmake -B build -S throne -G Ninja -W no-dev \

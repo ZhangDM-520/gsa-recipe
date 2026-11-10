@@ -70,10 +70,10 @@ build() {
   unset RUSTC_WRAPPER
 
   # Start from the RUSTFLAGS provided by the environment (e.g. CachyOS's
-  # /etc/makepkg.conf.d/rust.conf already sets "-C opt-level=3 -C target-cpu=native").
+  # the engine's RUSTFLAGS already sets "-C opt-level=3 -C target-cpu=native").
   local _rustflags="${RUSTFLAGS:-}"
 
-  # ISA fallback for systems whose makepkg.conf does not tune the target.
+  # ISA fallback for systems whose engine config does not tune the target.
   if ! grep -q 'target-cpu' <<<"${_rustflags}"; then
     _rustflags+=" -C target-cpu=native"
   fi

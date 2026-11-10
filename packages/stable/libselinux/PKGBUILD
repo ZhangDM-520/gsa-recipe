@@ -58,7 +58,6 @@ build() {
   # https://github.com/SELinuxProject/selinux/commit/e0da140d82c0ebebf1060ce87d0f11276c7fc59a
   export USE_PCRE2=y
 
-  export CFLAGS="${CFLAGS} -fno-semantic-interposition"
   # House style: mold linker when available
   local _mold=""
   command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"

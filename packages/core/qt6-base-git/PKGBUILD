@@ -39,8 +39,6 @@ build() {
     export LDFLAGS+=" -fuse-ld=mold"
   fi
 
-  CFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
   cmake -B build -S qtbase -G Ninja \
     -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=Release \

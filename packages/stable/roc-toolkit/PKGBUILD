@@ -60,7 +60,7 @@ build() {
     # prefers clang (supported_compilers order) and then consumes the host
     # GCC-flavored CFLAGS verbatim — clang rejects -fdevirtualize-at-ltrans
     # (and -flto=auto) and every conftest dies. The host default is cc=gcc;
-    # pin it so the recipe matches makepkg.conf's flags.
+    # pin it so the recipe matches the engine's flags.
     --compiler=gcc
   )
 

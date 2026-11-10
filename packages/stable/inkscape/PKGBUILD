@@ -182,8 +182,6 @@ build() {
     -S $pkgname
   )
 
-  CFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
   cmake "${cmake_options[@]}"
   cmake --build build
 }

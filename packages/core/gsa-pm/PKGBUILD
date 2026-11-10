@@ -37,6 +37,11 @@ depends=('gcc-libs' 'glibc')
 makedepends=('git' 'rust')
 # !debug: the release profile carries no debug info (house style: mold-git).
 options=('!debug')
+# /etc/gsa is the engine's own configuration baseline (contract §B.11). The two
+# per-compiler bodies are GENERATED at package time from the binary being
+# shipped, so the installed flag text can never drift from the engine that
+# reads it; the gsa.conf template is a commented key roster, not a policy.
+backup=('etc/gsa/gsa.conf' 'etc/gsa/gcc-makepkg.conf' 'etc/gsa/clang-makepkg.conf')
 # The VCS source is this very repository (self-tracking, see the header):
 # plain house -git form, floating on the default branch. The explicit alias
 # pins the checkout directory name to the repo name, so every cd below is
@@ -128,6 +133,16 @@ package() {
   install -Dm755 tools/abi-need-check.sh "$pkgdir/usr/bin/gsa-abi-need-check"
   install -Dm644 tools/abi-need-check.hook \
     "$pkgdir/usr/share/libalpm/hooks/10-gsa-abi-need-check.hook"
+
+  # The configuration baseline (contract §B.11). `--print-conf` is the seam
+  # that makes these two files the shipped binary's OWN text: a hand-copied
+  # flag list is the drift this generation removes (one source of truth, no
+  # second spelling to rot). Pacman's backup= keeps an operator's edit as a
+  # .pacnew on the next upgrade.
+  install -Dm644 "$startdir/gsa.conf" "$pkgdir/etc/gsa/gsa.conf"
+  ./target/release/gsa --print-conf gcc >"$pkgdir/etc/gsa/gcc-makepkg.conf"
+  ./target/release/gsa --print-conf clang >"$pkgdir/etc/gsa/clang-makepkg.conf"
+  chmod 644 "$pkgdir/etc/gsa/gcc-makepkg.conf" "$pkgdir/etc/gsa/clang-makepkg.conf"
 }
 
 # vim:set ts=2 sw=2 et:

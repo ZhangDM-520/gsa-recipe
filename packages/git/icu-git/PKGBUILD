@@ -36,8 +36,6 @@ build() {
   export \
     CC=gcc \
     CXX=g++
-  CFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all -fprefetch-loop-arrays" # flag-audit 2026-11-01
   ./configure \
     --prefix="/usr" \
     --sbindir="/usr/bin" \

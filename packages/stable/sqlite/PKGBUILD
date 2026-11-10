@@ -49,8 +49,6 @@ build() {
   # -ffast-math); the rest of CFLAGS stays host-derived. Same for CXXFLAGS.
   CFLAGS=${CFLAGS/-Ofast/-O3}
   CXXFLAGS=${CXXFLAGS/-Ofast/-O3}
-  CFLAGS+=" -fipa-pta -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fprefetch-loop-arrays" # flag-audit 2026-11-01
 
   export CPPFLAGS="$CPPFLAGS \
         -DSQLITE_ENABLE_COLUMN_METADATA=1 \

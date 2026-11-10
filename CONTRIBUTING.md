@@ -40,7 +40,7 @@ belong in `docs/JOURNAL.md`; `AGENTS.md` §6 holds a live decision.
    any other shape, and the record is the only place that binds an ID to a
    path.
 5. Record group membership (`groups`, a comma list from the group roster —
-   `gsa -Sg` prints it) and any local build-order edges (`edges`) in the same
+   `gsa -Qg` prints it) and any local build-order edges (`edges`) in the same
    record, and only after verifying the relationship against the package
    metadata and a build-order reason. Coupled-batch tags
    (`abi=must`/`abi=should`) belong in the same record's `tags` field — see
@@ -107,14 +107,40 @@ tar -xOf <archive>.pkg.tar.zst .PKGINFO | grep provides
 
 ## Optimization and trimming standard
 
-Use the host's `makepkg.conf` as the default optimization policy. Do not
-append hard-coded `-O3`, `-march`, `-mtune`, or other host-specific ISA flags
-to a recipe; documented per-package exceptions live in the recipe
-repository's `AGENTS.md` §4 (the optimization playbook) —
-the current list: `zen-browser-pgo`'s `--enable-optimize=-O3` (PGO-trained
-Mozilla build). Use host-derived native settings only when they are already
-provided by the build environment; an explicit target such as
-`GSA_TARGET_CPU` must be intentional and documented.
+The **engine owns the optimization policy**, not the host's `makepkg.conf` and
+not the recipe. Every lane is handed a generated `makepkg --config` composite
+whose compiler line lives in `/etc/gsa/<family>-makepkg.conf` (the build
+user's `~/.config/gsa/` clone overrides it); `makepkg.conf` is never sourced
+(engine contract §B.11, `docs/portability.md`).
+
+Rules that follow from that:
+
+- **Never append a baseline flag** — no `-O3`, `-march`, `-mtune`, `-pipe`,
+  `-fno-plt`, `-fipa-pta`, `-fprefetch-loop-arrays`, `-fira-hoist-pressure`,
+  `-fstack-reuse`, `-fuse-ld=mold`, LTO/RELRO flags. The bodies ship the whole
+  set, and a second spelling is a drift waiting to happen. (133 recipes carried
+  these appends; they were stripped 2026-11-10.)
+- **Append only a package-specific delta**, with the reason in a comment —
+  `fftw`'s `-ffast-math` (its code paths assume it), `libjxl`'s `-DNDEBUG`,
+  `subversion`'s `-fno-tree-vectorize` (the GCC-snapshot miscompile wall),
+  `krb5-git`'s `-fno-strict-aliasing`. "It might be faster" is not a reason.
+- **Removing a shipped flag is a substitution**, never a re-assignment:
+  `CFLAGS=${CFLAGS/-fno-math-errno/}` (the idiom `xorg-server` already uses to
+  drop `-fno-plt` and `-Wl,-z,now`). `CFLAGS="-O2"` discards the rest of the
+  line and is refused in review.
+- **Name the compiler when the delta is compiler-specific.** `-fipa-pta`
+  breaks a clang lane; the GCC-only spelling belongs in a recipe that resolves
+  to gcc (a `toolchain=gcc`/`toolchain=clang` topology tag, or a PKGBUILD
+  driver marker such as `CC=clang`). The engine REFUSES an ambiguous family
+  (`toolchain-ambiguous`) rather than guessing.
+- **No native target.** `-march`/`-mtune`/`-C target-cpu` are the engine's;
+  `GSA_TARGET_CPU` stays the recipe-selection input the Rust snapshot recipe
+  reads, and an explicit target in a recipe must be intentional and documented.
+
+Documented per-package exceptions live in `AGENTS.md` §4 (the optimization
+playbook) — the current list: `zen-browser-pgo`'s `--enable-optimize=-O3` (the
+PGO-trained Mozilla build) and `gcc-snapshot`'s `STAGE*_CFLAGS=-O2` (a
+bootstrap must stay unoptimized).
 
 Trim packaging to the maintained target:
 

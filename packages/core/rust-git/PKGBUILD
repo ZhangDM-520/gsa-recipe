@@ -123,7 +123,7 @@ prepare() {
   # KEEP lto = "fat" from the dist profile — do NOT sed it to "off"; fat LTO +
   # codegen-units=1 is the whole point of a self-built compiler.
   # x.py overrides env RUSTFLAGS. Inject an explicit target only when the
-  # caller requests one; the default remains the host's makepkg configuration.
+  # caller requests one; the default remains the engine's makepkg configuration.
   if [[ -n "$_target_cpu" ]]; then
     sed -i "/^\[rust\]/a rustflags = [\"-C\", \"target-cpu=$_target_cpu\"]" bootstrap.toml
   fi
@@ -152,8 +152,8 @@ build() {
   export LIBSSH2_SYS_USE_PKG_CONFIG=1
   export RUST_BACKTRACE=1
   
-  # Preserve the caller's architecture and optimization policy. makepkg.conf
-  # supplies the normal CFLAGS/CXXFLAGS; only add a harmless pipeline flag.
+  # Preserve the caller's architecture and optimization policy. The engine's
+  # config supplies the normal CFLAGS/CXXFLAGS; only add a harmless pipeline flag.
   export CFLAGS="${CFLAGS:+$CFLAGS }-pipe"
   export CXXFLAGS="${CXXFLAGS:+$CXXFLAGS }-pipe"
 

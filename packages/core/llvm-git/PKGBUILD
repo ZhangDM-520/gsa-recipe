@@ -80,8 +80,6 @@ build() {
     # crashing pass for this build only; drop the flag once the snapshot
     # compiler's VRP survives this TU.
     export CXXFLAGS+=" -fno-tree-vrp"
-    CFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
-    CXXFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
     # NOTE: MODULE targets (LLVMgold plugin) use CMAKE_MODULE_LINKER_FLAGS;
     # without mold they fall back to bfd, which rejects --color-diagnostics.
     # NOTE: LLVM_ENABLE_LTO=ON (not Full) — GCC's cc1 rejects '-flto=full'.

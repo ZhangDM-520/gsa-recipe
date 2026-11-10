@@ -31,8 +31,7 @@ build() {
     export LDFLAGS+=" ${_mold}"
 
     # OPTIM='': upstream hard-codes OPTIM=-O3 — neutralised (a removal, not an
-    # appended flag) so makepkg.conf owns the opt level
-    CFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
+    # appended flag) so the engine's makepkg config owns the opt level
     make -C "${pkgname}-${pkgver}" -j"${GSA_BUILD_JOBS:-$(nproc)}" prefix='/usr' OPTIM='' release
 }
 

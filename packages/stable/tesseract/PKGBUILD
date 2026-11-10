@@ -47,8 +47,6 @@ build() {
   if command -v mold >/dev/null 2>&1; then
     export LDFLAGS+=" -fuse-ld=mold"
   fi
-  CFLAGS+=" -fipa-pta -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fprefetch-loop-arrays" # flag-audit 2026-11-01
   [ -x configure ] || ./autogen.sh
   [ -f Makefile ] || ./configure --prefix=/usr
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"

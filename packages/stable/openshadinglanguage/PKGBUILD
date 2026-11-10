@@ -46,8 +46,6 @@ build() {
   cd OpenShadingLanguage-$pkgver
 
   # house: pin the system interpreter (uv/pyenv shims lead PATH; JOURNAL 2026-10-10)
-  CFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fipa-pta -fstack-reuse=all" # flag-audit 2026-11-01
   cmake \
     -B build \
     -DPython_EXECUTABLE=/usr/bin/python \

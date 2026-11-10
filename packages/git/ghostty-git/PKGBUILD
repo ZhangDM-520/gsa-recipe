@@ -110,7 +110,7 @@ build() {
   #   * -Doptimize=ReleaseFast — upstream's own distribution mode
   #     (PACKAGING.md: terminals are performance-sensitive; ReleaseSafe is
   #     "currently too slow").
-  #   * -Dcpu=native — the Zig twin of makepkg.conf's host-derived
+  #   * -Dcpu=native — the Zig twin of the engine's host-derived
   #     -march=native. Deliberate and documented per the optimization
   #     policy: this set is built for one machine. Arch's package uses
   #     -Dcpu=baseline for distro portability; we do not need that.

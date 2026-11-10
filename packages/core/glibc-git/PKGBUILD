@@ -107,13 +107,15 @@ build() {
 
   CFLAGS=${CFLAGS/-Wp,-D_FORTIFY_SOURCE=3/}
 
-  # The host makepkg.conf's -Ofast implies -ffast-math, which defines
+  # -Ofast implies -ffast-math, which defines
   # __FINITE_MATH_ONLY__=1: glibc's include/math.h then skips
   # math-use-builtins.h and master's e_hypot.c uses USE_FMAX_BUILTIN
   # undeclared (2026-10-30 build wall). glibc is not fast-math-safe by
   # design. Drop the LEVEL to -O3 (policy 2026-10-31: prefer -O3 over -O2
   # when -Ofast breaks a package; -O3 carries no -ffast-math), everything
-  # else in the host's flags is kept (the lib32 pass inherits this CFLAGS).
+  # else in the flags is kept (the lib32 pass inherits this CFLAGS).
+  # The engine ships -O3, so this is now a guard: it fires only when a site
+  # /etc/gsa/gcc-makepkg.conf reintroduces -Ofast.
   CFLAGS=${CFLAGS/-Ofast/-O3}
 
   # mold cannot build this package correctly: its link map defeats the

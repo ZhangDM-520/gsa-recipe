@@ -77,7 +77,7 @@ build() {
   cd $_gitname
   export RUSTUP_TOOLCHAIN=stable
   export CARGO_TARGET_DIR=target
-  # optimize standards: LTO for the Rust workspace (target-cpu comes from makepkg.conf rust.conf RUSTFLAGS)
+  # optimize standards: LTO for the Rust workspace (target-cpu comes from the engine's RUSTFLAGS)
   export CARGO_PROFILE_RELEASE_LTO=thin
   cargo build \
      --release \

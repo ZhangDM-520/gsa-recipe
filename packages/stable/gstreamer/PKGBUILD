@@ -313,8 +313,6 @@ build() {
     export LDFLAGS+=" -fuse-ld=mold"
   fi
 
-  CFLAGS+=" -fprefetch-loop-arrays -fstack-reuse=all" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fprefetch-loop-arrays -fstack-reuse=all" # flag-audit 2026-11-01
   # Cargo sub-build: Use debug and LTO
   export CARGO_PROFILE_RELEASE_DEBUG=2 CARGO_PROFILE_RELEASE_STRIP=false
   export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1

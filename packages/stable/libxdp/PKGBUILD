@@ -25,7 +25,7 @@ build() {
   cd "${pkgname}-${pkgver}"
 
   # xdp-tools embeds its BPF blobs via `gcc -r -Wl,--format=binary`, a
-  # GNU-ld-only feature — mold refuses `-b binary`. The host makepkg.conf
+  # GNU-ld-only feature — mold refuses `-b binary`. The engine's makepkg config
   # pins -fuse-ld=mold in LDFLAGS (and the house guard below would re-add
   # it), so strip it for this build; bfd links everything here.
   export LDFLAGS="${LDFLAGS//-fuse-ld=mold/}"

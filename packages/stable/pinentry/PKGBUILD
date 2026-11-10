@@ -34,8 +34,8 @@ validpgpkeys=(
 
 build() {
   cd "${pkgname}-${pkgver}"
-  # Stock replaced the environment CXXFLAGS; append instead so makepkg.conf
-  # keeps owning the optimization level (house rule).
+  # Stock replaced the environment CXXFLAGS; append instead so the engine's
+  # makepkg config keeps owning the optimization level (house rule).
   CXXFLAGS="${CXXFLAGS} -std=c++17"
   # House style: mold linker when available (runtime-guarded, no output effect).
   local _mold=""

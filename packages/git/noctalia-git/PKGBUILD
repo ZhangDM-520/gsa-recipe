@@ -222,7 +222,7 @@ build() {
   # buildtype=plain, so apply them explicitly here.
   CFLAGS+=" -ffunction-sections -fdata-sections"
   CXXFLAGS+=" -ffunction-sections -fdata-sections"
-  LDFLAGS+=" -Wl,--gc-sections"   # -Wl,--as-needed already in makepkg.conf
+  LDFLAGS+=" -Wl,--gc-sections"   # -Wl,--as-needed already in the engine LDFLAGS
 
   # mold is noticeably faster at linking the large LTO binary. Runtime check so
   # the PKGBUILD still works without it (mold-git does not provide 'mold').

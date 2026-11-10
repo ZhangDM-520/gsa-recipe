@@ -589,7 +589,7 @@ build() {
   # (instrumented LTO is fragile — qt6-declarative's measured choice) and
   # comes back for phase 2 / the fallback as the first -flto* token makepkg's
   # LTOFLAGS left in the environment; the recipe never spells LTO flags
-  # itself — host makepkg.conf owns the policy. The profile dir lives OUTSIDE
+  # itself — the engine's makepkg config owns the policy. The profile dir lives OUTSIDE
   # the build dir so a build-dir clean can never eat the profile (mesa
   # precedent).
   local _pgo_dir="${srcdir}/vtk-pgo-profile"

@@ -507,42 +507,57 @@ rule 63, **62** is superseded by engine rule 73.
     a configured directory and make does not track `CFLAGS`, so a warm tree
     yields a MIXED-flag build. Wipe meson's configured `build/` and force the
     rebuild even when a later run reports Succeeded.
-75. **`SRCDEST` has exactly one authority** *(renumbered from the second 64)* —
-    the build user's `~/.makepkg.conf`. Never export it in a shell: `sudo`
-    carries the export, the cache bounces, and stale mirrors cause ancient
-    checkouts and patch conflicts. Probe with `env | grep SRCDEST` (empty) and
-    one `~/.makepkg.conf` cache; a stale shell uses `env -u SRCDEST`. Engine
-    side: gentoo-style-arch AGENTS.md rule 73 owns the resolution ladder.
+75. **`SRCDEST` has exactly one authority** *(renumbered from the second 64;
+    owner moved 2026-11-10)* — the engine's `srcdest` key in
+    `/etc/gsa/gsa.conf` (default `~/.gsa-src`). The environment rung and both
+    `makepkg.conf` rungs are retired with the config rework, so neither
+    `~/.makepkg.conf` nor an exported `SRCDEST` decides anything. Never export
+    it in a shell: `sudo` carries the export into the build and the cache
+    bounces. Probe with `env | grep SRCDEST` (empty) and one store; a stale
+    shell uses `env -u SRCDEST`. Engine side: gentoo-style-arch AGENTS.md
+    rule 73 owns the resolution ladder, contract §B.11 the key.
 
 ## 4 · Optimization playbook
 
 
-- **mold linker**: `-fuse-ld=mold` in LDFLAGS/QMAKE_LFLAGS/meson linker args;
-  mold-git carries the versioned provide `mold=${pkgver}`
+- **mold linker**: `-fuse-ld=mold` ships in BOTH engine LDFLAGS bodies
+  (2026-11-10), so a normal autotools/cmake/meson build needs nothing in the
+  recipe; keep an explicit `-fuse-ld=mold` only where the build ignores
+  `LDFLAGS` (QMAKE_LFLAGS, meson linker args) or where a PGO phase re-assigns
+  LDFLAGS from `${_ldflags_orig} ${_mold}`. mold-git carries the versioned
+  provide `mold=${pkgver}`
   (`provides=("$_reponame=$pkgver")` in `packages/core/mold-git/PKGBUILD`), so
   a `mold` makedepends resolves to it; the runtime `command -v mold` guard
-  idiom is retired (optional belt). (last reviewed 2026-10-28)
-- **CachyOS makepkg.conf** gives -O3/-march=native implicitly; meson packages
-  use `arch-meson` (buildtype=release — upstream `if buildtype=='release'`
-  blocks DO apply) — the rule stands; the known raw-`meson setup` deviations
-  (dbus-broker-git, flatpak-git, mesa-git, pixman-git with
+  idiom is retired (optional belt). (last reviewed 2026-11-10)
+- **The engine ships the optimization flags** (2026-11-10 rework): the compiler
+  line is `-march=native -mtune=native -O3` plus the per-family passes, in
+  `/etc/gsa/{gcc,clang}-makepkg.conf`, and every lane gets it as a generated
+  `makepkg --config` composite. `makepkg.conf` (host or user) is NEVER sourced
+  — do not write a recipe that assumes one, and do not append a baseline flag.
+  Meson packages still use `arch-meson` (buildtype=release — upstream
+  `if buildtype=='release'` blocks DO apply); the known raw-`meson setup`
+  deviations (dbus-broker-git, flatpak-git, mesa-git, pixman-git with
   `--buildtype=plain`, zbar) are tracked exceptions, converted to
-  `arch-meson` only with build evidence, dated. Rust: append
-  `-C target-cpu=native` ONLY if RUSTFLAGS lacks 'target-cpu'. ISA tuning is
-  host-derived or explicitly configured. (last reviewed 2026-10-28)
-- **Universal host config vs per-recipe tuning (2026-11-01 empirical gate)**:
-  the universality pass (host config must serve gcc AND clang) REJECTED from
-  the universal config: `-fstack-reuse=all` (clang hard-rejects), `-fivopts`
-  (clang "not supported" → error under -Werror), `-fipa-pta` (clang
-  hard-rejects), `-fmerge-all-constants` (semantic risk). The universal
-  config carries: `-fstrict-aliasing` (explicit; default at -O2+),
-  `-funroll-loops`, `-falign-functions=32 -falign-loops=32` (Zen5 32-byte
-  fetch guidance). Compiler-specific tuning is restored per recipe where the
-  compiler matches — the 2026-11-03 T1→T2→T3 appends (`# flag-audit
-  2026-11-01` markers in the affected recipes; JOURNAL 2026-11-03). Graphite
-  (`-fgraphite-identity -floop-nest-to-graphite`) stays deferred (GCC
-  snapshot loop-vectorizer miscompile class, JOURNAL 2026-10-21).
-  (last reviewed: 2026-11-03)
+  `arch-meson` only with build evidence, dated. Rust: `RUSTFLAGS` ships
+  UNIVERSAL (`-C opt-level=3 -C target-cpu=native`) and the composite exports
+  it, so a recipe appends `-C target-cpu=native` only if it replaces
+  `RUSTFLAGS` outright (PGO phases). ISA tuning is the engine's or explicitly
+  configured. (last reviewed 2026-11-10)
+- **Per-family tuning belongs to the engine, never to a recipe append
+  (superseded 2026-11-10).** The 2026-11-01 "universal host config" gate
+  rejected `-fstack-reuse=all`, `-fivopts`, `-fipa-pta` and
+  `-fmerge-all-constants` from the ONE universal config (clang rejects three of
+  them) and restored the GCC-only passes per recipe as the `# flag-audit
+  2026-11-01` appends. Two shipped configs exist now, so the workaround is
+  retired with its cause: `-fipa-pta` and `-fprefetch-loop-arrays` live in the
+  gcc body, `-fira-hoist-pressure`/`-fstack-reuse=all` are gcc defaults and are
+  shipped by neither body, and the 200 append lines across 133 recipes were
+  deleted (2026-11-10). A recipe keeps only a delta whose reason is in the
+  file, or a substitution when it must drop a shipped flag
+  (`CFLAGS=${CFLAGS/-fno-math-errno/}`). Graphite
+  (`-fgraphite-identity -floop-nest-to-graphite`) stays deferred (GCC snapshot
+  loop-vectorizer miscompile class, JOURNAL 2026-10-21). (last reviewed
+  2026-11-10)
 - **LTO**: meson-controlled `-Db_lto=true` (mesa +allow-broken-lto,
   libadwaita, util-linux, systemd, dbus-broker, noctalia); PGO phase-1 always
   `-Db_lto=false` → flip true in phase 2 (glib2, gtk3, gtk4, wayland, cairo,

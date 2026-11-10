@@ -10,7 +10,7 @@
 # lookup (JOURNAL same date). AUR libmypaint-git and stock libmypaint are
 # REFERENCES ONLY.
 # The AUR reference is stale and policy-violating: it force-sets
-# -Ofast/-march=native/-mtune=native (dropped — makepkg.conf owns opt level)
+# -Ofast/-march=native/-mtune=native (dropped — the engine's makepkg config owns opt level)
 # and omits --enable-gegl; stock builds the GEGL renderer, kept here so the git
 # build supersedes the full stock feature set.
 # ABI NOTE: the v1 line keeps the stock sonames (libmypaint.so.0 /
@@ -55,7 +55,6 @@ build() {
     export LDFLAGS+=" -fuse-ld=mold"
   fi
 
-  CFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
   ./configure \
     --prefix=/usr \
     --enable-gegl

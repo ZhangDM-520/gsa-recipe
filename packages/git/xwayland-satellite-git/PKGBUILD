@@ -60,7 +60,7 @@ build() {
 	# Disable sccache
 	unset RUSTC_WRAPPER
 
-	# Append to RUSTFLAGS, don't clobber makepkg.conf's CachyOS defaults
+	# Append to RUSTFLAGS, don't clobber the engine's native default
 	local _extra_rustflags="--remap-path-prefix=$srcdir=/"
 	if ! echo "${RUSTFLAGS:-}" | grep -q 'target-cpu'; then
 		_extra_rustflags+=" -C target-cpu=native"

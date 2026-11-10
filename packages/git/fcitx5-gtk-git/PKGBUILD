@@ -36,7 +36,7 @@ build(){
 
   # gtk2 im module disabled 2026-09-07: gtk2 not installed, nothing on this
   # system needs it (option name verified against fcitx5-gtk CMakeLists.txt).
-  # makepkg.conf CFLAGS/LTO/mold apply via cmake.
+  # the engine's CFLAGS/LTO/mold apply via cmake.
   cmake -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_LIBDIR=/usr/lib \
         -DENABLE_GTK2_IM_MODULE=OFF .
   ninja

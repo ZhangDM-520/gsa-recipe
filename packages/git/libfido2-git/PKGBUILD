@@ -25,7 +25,7 @@ build() {
     export LDFLAGS+=" -fuse-ld=mold"
   fi
 
-  # CMAKE_BUILD_TYPE=None: makepkg.conf owns the opt level (no hard-coded -O3)
+  # CMAKE_BUILD_TYPE=None: the engine's makepkg config owns the opt level (no hard-coded -O3)
   cmake -B build -S "$_pkgname" \
     -DCMAKE_BUILD_TYPE=None \
     -DCMAKE_INSTALL_PREFIX=/usr \

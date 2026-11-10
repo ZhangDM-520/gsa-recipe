@@ -51,7 +51,7 @@ build() {
     cd "$srcdir/aranicy"
 
     # optimize standards: LTO for the Rust build (target-cpu comes from
-    # makepkg.conf rust.conf RUSTFLAGS)
+    # the engine's RUSTFLAGS)
     export CARGO_PROFILE_RELEASE_LTO=true
     export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 

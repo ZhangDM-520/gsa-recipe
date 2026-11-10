@@ -24,7 +24,7 @@ optdepends=('dnsmasq: lxc-net.service'
 	    'lua-filesystem: lxc-top'
 	    'lua-alt-getopt: lxc-top')
 license=('LGPL-2.1-or-later')
-# trim: stock options=('emptydirs') — a no-op under the house makepkg.conf
+# trim: stock options=('emptydirs') — a no-op under the engine's config
 # OPTIONS (emptydirs is already default-on), so not load-bearing
 backup=('etc/lxc/default.conf'
 	'etc/default/lxc')

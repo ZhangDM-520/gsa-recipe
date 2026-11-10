@@ -42,7 +42,6 @@ build() {
   if command -v mold >/dev/null 2>&1; then
     export LDFLAGS+=" -fuse-ld=mold"
   fi
-  CFLAGS+=" -fipa-pta"  # flag-audit 2026-11-01
   cmake ../${pkgname%-*} -DCMAKE_INSTALL_PREFIX=/usr \
                          -DCMAKE_BUILD_TYPE=Release \
                          -Denable-ladspa=ON \

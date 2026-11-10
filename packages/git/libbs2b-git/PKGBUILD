@@ -41,8 +41,7 @@ build() {
 
   cd "$_pkgname"
   # stock's formatsecurity.diff fix is already merged upstream (verified at r75);
-  # stock's libtool -Wl,-O1 sed is dropped (opt level belongs to makepkg.conf)
-  CFLAGS+=" -fstack-reuse=all" # flag-audit 2026-11-01
+  # stock's libtool -Wl,-O1 sed is dropped (opt level belongs to the engine's makepkg config)
   ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
   make -j "$_jobs"
 }

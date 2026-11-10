@@ -81,13 +81,11 @@ build() {
   local _mold=""
   command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
   export LDFLAGS+=" ${_mold}"
-  CFLAGS+=" -fprefetch-loop-arrays" # flag-audit 2026-11-01
-  CXXFLAGS+=" -fprefetch-loop-arrays" # flag-audit 2026-11-01
 
   # No PGO phase (documented exception): libLAS has no self-contained
   # training workload measured on this tree — its suite is Boost.Test
   # binaries over test/data fixtures and has never run in a house build, so
-  # there is nothing proven to train with. Host makepkg.conf owns the
+  # there is nothing proven to train with. The engine's makepkg config owns the
   # optimization policy (its CFLAGS and OPTIONS=(lto) LTOFLAGS ride the
   # CMake flags untouched); the recipe spells no ISA or LTO flags of its own.
   local cmake_options=(

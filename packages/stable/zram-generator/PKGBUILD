@@ -15,7 +15,7 @@ sha256sums=('1433dddf34fec21f81c07e4c1431f35a2742a258c13a45a6be22aaa13c65d3d4')
 
 build() {
   cd zram-generator
-  # optimize standards: LTO for the Rust build (target-cpu comes from makepkg.conf rust.conf RUSTFLAGS)
+  # optimize standards: LTO for the Rust build (target-cpu comes from the engine's RUSTFLAGS)
   export CARGO_PROFILE_RELEASE_LTO=thin
   make CARGOFLAGS="--target-dir=target" build man
 }
