@@ -223,11 +223,18 @@ build() {
     timeout -k 30 1200 env TMPDIR="${srcdir}/pgo-work" \
       meson test -C build --no-rebuild --print-errorlogs || true
 
+    # Floor per the house discipline: at or below it the profile is too thin
+    # to trust, so the recipe ships a plain build — never a half-trained one,
+    # and never a failed build (the abort this replaced made any toolchain
+    # that emits fewer counters a build breaker).
+    local pgo_min_gcda=200
     local _gcda_count
     _gcda_count="$(find build -name '*.gcda' | wc -l)"
-    if ((_gcda_count < 200)); then
-      echo "PGO workload produced only ${_gcda_count} gcda files — profile incomplete, aborting." >&2
-      return 1
+    if ((_gcda_count <= pgo_min_gcda)); then
+      echo "PGO: ${_gcda_count} gcda files is at or below the floor ${pgo_min_gcda} — falling back to a plain build" >&2
+      meson configure build -Db_pgo=off
+      meson compile -C build
+      return 0
     fi
     echo "PGO workload collected ${_gcda_count} gcda files."
 

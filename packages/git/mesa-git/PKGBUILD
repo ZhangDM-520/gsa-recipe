@@ -327,11 +327,14 @@ build () {
         local _cflags_orig="${CFLAGS}"
         local _cxxflags_orig="${CXXFLAGS}"
 
-        # Phase 1: Instrumented build with PGO generation
+        # Phase 1: Instrumented build with PGO generation. LTO is switched
+        # OFF for this pass: `-fprofile-generate` plus fat LTO in one link
+        # keeps the counters behind the LTO pass, so the profile is empty and
+        # the phase-2 rebuild has nothing to use.
         CFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
         CXXFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
 
-        meson setup --buildtype=plain mesa _build "${meson_options[@]}"
+        meson setup --buildtype=plain mesa _build "${meson_options[@]}" -D b_lto=false
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build
 
@@ -402,6 +405,10 @@ build () {
             echo "  -> NOTE: building with LTO only (no -fprofile-use)."
         fi
 
+        # A reused `_build` keeps phase 1's configured flags — meson does not
+        # re-read the environment's CFLAGS — so the profile-use pass would
+        # link instrumented objects and ship instrumentation.
+        rm -rf _build
         meson setup --buildtype=plain mesa _build "${meson_options[@]}"
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build

@@ -76,10 +76,14 @@ build() {
   local _cxxflags_orig="${CXXFLAGS}"
   local _ldflags_orig="${LDFLAGS}"
 
-  # phase 1: instrumented build
+  # phase 1: instrumented build. LTO is stripped for THIS pass only: makepkg's
+  # `lto` option puts `-flto=auto` in CFLAGS, and fat LTO moves the counters
+  # behind the LTO pass, so the profile comes back thin and phase 2's
+  # coverage-mismatch warnings replace real profile data. Phase 2 restores
+  # `_cflags_orig` (LTO included) before adding `-fprofile-use`.
   if ${_pgo}; then
-    export CFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-update=atomic"
-    export CXXFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-update=atomic"
+    export CFLAGS="${CFLAGS//-flto=auto/} -fprofile-generate=${_pgo_profile_dir} -fprofile-update=atomic"
+    export CXXFLAGS="${CXXFLAGS//-flto=auto/} -fprofile-generate=${_pgo_profile_dir} -fprofile-update=atomic"
     export LDFLAGS+=" -fprofile-generate=${_pgo_profile_dir}"
   fi
 

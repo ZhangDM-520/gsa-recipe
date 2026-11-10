@@ -50,8 +50,8 @@ build() {
         -Dbuild_wizard=NO \
         -Dbuild_search=NO \
         -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fprofile-generate" \
-        -DCMAKE_C_FLAGS="$CFLAGS -fprofile-generate" \
-        -DCMAKE_CXX_FLAGS="$CXXFLAGS -fprofile-generate" \
+        -DCMAKE_C_FLAGS="${CFLAGS//-flto=auto/} -fprofile-generate" \
+        -DCMAKE_CXX_FLAGS="${CXXFLAGS//-flto=auto/} -fprofile-generate" \
         "../$pkgname"
     make
 
@@ -80,6 +80,8 @@ EOF
 
     # Phase 2: Use profile data. Append to the baseline flags — a wholesale
     # CMAKE_*_FLAGS assignment here silently dropped CFLAGS/CXXFLAGS/LDFLAGS.
+    # The baseline is restored here (LTO included): phase 1 stripped `-flto`
+    # because fat LTO moves the counters behind the LTO pass.
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
         -Dbuild_wizard=NO \
         -Dbuild_search=NO \
