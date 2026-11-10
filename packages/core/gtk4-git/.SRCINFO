@@ -79,21 +79,6 @@ pkgname = gtk4-git
 	provides = libgtk-4.so
 	conflicts = gtk4
 
-pkgname = gtk4-demos-git
-	pkgdesc = GObject-based multi-platform GUI toolkit (demo applications)
-	depends = cairo
-	depends = dconf
-	depends = gdk-pixbuf2
-	depends = graphene
-	depends = gtk4
-	depends = harfbuzz
-	depends = hicolor-icon-theme
-	depends = libepoxy
-	depends = librsvg
-	depends = pango
-	provides = gtk4-demos=1:4.25.r94
-	conflicts = gtk4-demos
-
 pkgname = gtk-update-icon-cache-git
 	pkgdesc = GTK icon cache updater
 	depends = gdk-pixbuf2

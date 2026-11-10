@@ -134,7 +134,6 @@ pkgname = systemd
 	optdepends = qrencode: show QR codes
 	optdepends = quota-tools: kernel-level quota management
 	optdepends = systemd-sysvcompat: symlink package to provide sysvinit binaries
-	optdepends = systemd-ukify: combine kernel and initrd into a signed Unified Kernel Image
 	optdepends = tpm2-tss: unlocking LUKS2 volumes with TPM2
 	provides = nss-myhostname=262
 	provides = systemd-tools=262
@@ -191,14 +190,3 @@ pkgname = systemd-sysvcompat
 	pkgdesc = sysvinit compat for systemd
 	depends = systemd=262
 	conflicts = sysvinit
-
-pkgname = systemd-ukify
-	pkgdesc = Combine kernel and initrd into a signed Unified Kernel Image
-	depends = systemd=262
-	depends = binutils
-	depends = python-cryptography
-	depends = python
-	depends = python-pefile
-	optdepends = python-pillow: Show the size of splash image
-	optdepends = sbsigntools: Sign the embedded kernel
-	provides = ukify

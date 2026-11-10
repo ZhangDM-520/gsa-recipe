@@ -6,7 +6,6 @@ pkgname=(
 
   libportal-gtk3
   libportal-gtk4
-  libportal-qt5
   libportal-qt6
 )
 pkgver=0.11.0
@@ -30,9 +29,6 @@ makedepends=(
   gtk4
   libstdc++
   meson
-  qt5-base
-  qt5-tools
-  qt5-x11extras
   qt6-base
   qt6-tools
   vala
@@ -79,7 +75,6 @@ package_libportal() {
   optdepends=(
     'libportal-gtk3: GTK 3 backend'
     'libportal-gtk4: GTK 4 backend'
-    'libportal-qt5: Qt 5 backend'
     'libportal-qt6: Qt 6 backend'
     'xdg-desktop-portal: Portal service'
   )
@@ -94,7 +89,7 @@ package_libportal() {
   cd "$pkgdir"
 
   local x
-  for x in gtk3 gtk4 qt5 qt6; do
+  for x in gtk3 gtk4 qt6; do
     _pick $x usr/include/libportal-$x
     _pick $x usr/lib{,/pkgconfig}/libportal-$x.*
 
@@ -125,19 +120,6 @@ package_libportal-gtk4() {
   provides=(libportal-gtk4.so)
 
   mv gtk4/* "$pkgdir"
-}
-
-package_libportal-qt5() {
-  pkgdesc+=" - Qt 5 backend"
-  depends+=(
-    "libportal=$pkgver-$pkgrel"
-    libstdc++
-    qt5-base
-    qt5-x11extras
-  )
-  provides=(libportal-qt5.so)
-
-  mv qt5/* "$pkgdir"
 }
 
 package_libportal-qt6() {

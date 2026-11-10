@@ -126,6 +126,7 @@ build() {
 
   local meson_options=(
     -D broadway-backend=false
+    -D demos=false
     -D cloudproviders=disabled
     -D colord=enabled
     -D documentation=false
@@ -229,12 +230,6 @@ END
 
   cd "$pkgdir"
 
-  _pick demo usr/bin/gtk4-{demo,demo-application,node-editor,print-editor,widget-factory}
-  _pick demo usr/share/applications/org.gtk.{Demo4,PrintEditor4,WidgetFactory4,gtk4.NodeEditor}.desktop
-  _pick demo usr/share/glib-2.0/schemas/org.gtk.Demo4.gschema.xml
-  _pick demo usr/share/icons/hicolor/*/apps/org.gtk.{Demo4,PrintEditor4,WidgetFactory4,gtk4.NodeEditor}[-.]*
-  _pick demo usr/share/metainfo/org.gtk.{Demo4,PrintEditor4,WidgetFactory4,gtk4.NodeEditor}.appdata.xml
-
   # _pick docs removed 2026-09-04: documentation=false → usr/share/doc never populated
 
   # Built by GTK 4, shared with GTK 3
@@ -242,32 +237,8 @@ END
   # man page pick removed 2026-09-04 (man-pages=false)
 
   # Fatal shared gate (lib/pgo.sh) — last statement on purpose: nothing may be
-  # added to $pkgdir after the payload is verified. The demo/guic splits are
-  # gated by their own package functions on their own $pkgdir.
-  verify_no_profile_instrumentation "$pkgdir"
-}
-
-_package_gtk4-demos() {
-  pkgdesc+=" (demo applications)"
-  depends=(
-    cairo
-    dconf
-    gdk-pixbuf2
-    graphene
-    gtk4
-    harfbuzz
-    hicolor-icon-theme
-    libepoxy
-    librsvg
-    pango
-  )
-  provides=("gtk4-demos=1:${pkgver%%.g*}")
-  conflicts=('gtk4-demos')
-
-  mv demo/* "$pkgdir"
-
-  # Fatal shared gate (lib/pgo.sh) — this split ships binaries (gtk4-demo,
-  # widget-factory, ...) and is gated on its own payload, after the move.
+  # added to $pkgdir after the payload is verified. The guic split is gated
+  # by its own package function on its own $pkgdir.
   verify_no_profile_instrumentation "$pkgdir"
 }
 
@@ -303,7 +274,6 @@ _package_gtk-update-icon-cache() {
 _pkgtype="${pkgbase#$_pkgname}"
 pkgname=(
   "gtk4${_pkgtype:-}"
-  "gtk4-demos${_pkgtype:-}"
   #"gtk4-docs${_pkgtype:-}"
   "gtk-update-icon-cache${_pkgtype:-}"
 )

@@ -126,7 +126,3 @@ pkgname = nm-cloud-setup
 	depends = libgcc
 	depends = libnm
 	depends = networkmanager
-
-pkgname = networkmanager-docs
-	pkgdesc = Network connection manager and user applications (API documentation)
-	depends = 

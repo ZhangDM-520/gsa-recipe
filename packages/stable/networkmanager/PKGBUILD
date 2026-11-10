@@ -10,7 +10,6 @@ pkgname=(
   networkmanager
   libnm
   nm-cloud-setup
-  networkmanager-docs
 )
 pkgver=1.58.1
 pkgrel=2
@@ -206,8 +205,6 @@ END
 
   shopt -s globstar
 
-  _pick docs usr/share/gtk-doc
-
   _pick libnm usr/include/libnm
   _pick libnm usr/lib/girepository-1.0/NM-*
   _pick libnm usr/lib/libnm.*
@@ -256,13 +253,6 @@ package_nm-cloud-setup() {
   )
 
   mv cloud/* "$pkgdir"
-}
-
-package_networkmanager-docs() {
-  pkgdesc+=" (API documentation)"
-  depends=()
-
-  mv docs/* "$pkgdir"
 }
 
 # vim:set sw=2 sts=-1 et:

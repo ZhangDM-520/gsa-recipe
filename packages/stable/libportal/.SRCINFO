@@ -16,9 +16,6 @@ pkgbase = libportal
 	makedepends = gtk4
 	makedepends = libstdc++
 	makedepends = meson
-	makedepends = qt5-base
-	makedepends = qt5-tools
-	makedepends = qt5-x11extras
 	makedepends = qt6-base
 	makedepends = qt6-tools
 	makedepends = vala
@@ -37,7 +34,6 @@ pkgname = libportal
 	depends = libgio-2.0.so
 	optdepends = libportal-gtk3: GTK 3 backend
 	optdepends = libportal-gtk4: GTK 4 backend
-	optdepends = libportal-qt5: Qt 5 backend
 	optdepends = libportal-qt6: Qt 6 backend
 	optdepends = xdg-desktop-portal: Portal service
 	provides = libportal.so
@@ -62,17 +58,6 @@ pkgname = libportal-gtk4
 	depends = gtk4
 	depends = libgtk-4.so
 	provides = libportal-gtk4.so
-
-pkgname = libportal-qt5
-	pkgdesc = GIO-style async APIs for most Flatpak portals - Qt 5 backend
-	depends = glib2
-	depends = glibc
-	depends = libgcc
-	depends = libportal=0.11.0-1.1
-	depends = libstdc++
-	depends = qt5-base
-	depends = qt5-x11extras
-	provides = libportal-qt5.so
 
 pkgname = libportal-qt6
 	pkgdesc = GIO-style async APIs for most Flatpak portals - Qt 6 backend
