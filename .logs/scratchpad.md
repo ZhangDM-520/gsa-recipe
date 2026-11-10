@@ -2,10 +2,11 @@
 
 **Idle.** No active task.
 
-Last actions (both committed, not pushed):
-- `.logs/action-2026-11-10-yay-git-mute.md` — new `packages/git/yay-git`
-  (app) with `yay-quiet-aur-notices.patch`; built, installed
-  (`13.1.0.r0.g0938a75e-2`), `yay -Qu` now clean.
-- `.logs/action-2026-11-10-copilot-instructions-brief.md` — brief improved.
+Last action: `.logs/action-2026-11-11-openssl-4.1.0-and-libcuda.md`
+(the tree follows core's OpenSSL 4.1.0, the `libcuda.so` exception row, the
+`pacman` core promotion the yay-git edge owed, and the `gsa-pm` metadata
+regeneration).
 
-Next: push `main` (2 commits ahead of `origin/main`). Battery 27/27.
+Next: `sudo gsa -S gsa-pm` deploys the new ABI gate from the engine checkout;
+the openssl 4.1.0 consumer wave (577 packages) rides the owner's scheduled
+clean full rebuild.

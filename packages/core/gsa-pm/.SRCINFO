@@ -10,6 +10,9 @@ pkgbase = gsa-pm
 	depends = gcc-libs
 	depends = glibc
 	options = !debug
+	backup = etc/gsa/gsa.conf
+	backup = etc/gsa/gcc-makepkg.conf
+	backup = etc/gsa/clang-makepkg.conf
 	source = gentoo-style-arch::git+https://github.com/ZhangDM-520/gentoo-style-arch
 	sha256sums = SKIP
 
