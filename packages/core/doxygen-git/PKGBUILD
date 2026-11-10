@@ -49,7 +49,7 @@ build() {
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
         -Dbuild_wizard=NO \
         -Dbuild_search=NO \
-        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fuse-ld=mold -fprofile-generate" \
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fprofile-generate" \
         -DCMAKE_C_FLAGS="$CFLAGS -fprofile-generate" \
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -fprofile-generate" \
         "../$pkgname"
@@ -83,7 +83,7 @@ EOF
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr \
         -Dbuild_wizard=NO \
         -Dbuild_search=NO \
-        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fuse-ld=mold -fprofile-use" \
+        -DCMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fprofile-use" \
         -DCMAKE_C_FLAGS="$CFLAGS -fprofile-use" \
         -DCMAKE_CXX_FLAGS="$CXXFLAGS -fprofile-use" \
         "../$pkgname"

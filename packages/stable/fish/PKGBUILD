@@ -56,10 +56,6 @@ build() {
 
   export CXXFLAGS+=" ${CPPFLAGS}"
 
-  # optimize standards: mold linker when available (all three CMake linker vars)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-
   local cmake_options=(
     -B build
     -D CMAKE_INSTALL_PREFIX=/usr
@@ -68,9 +64,6 @@ build() {
     -D WITH_DOCS=OFF
     -D FISH_USE_SYSTEM_PCRE2=ON
     -D WITH_MESSAGE_LOCALIZATION=ON
-    -D CMAKE_EXE_LINKER_FLAGS="${_mold}"
-    -D CMAKE_SHARED_LINKER_FLAGS="${_mold}"
-    -D CMAKE_MODULE_LINKER_FLAGS="${_mold}"
     -W no-dev
   )
 

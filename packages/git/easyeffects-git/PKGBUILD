@@ -70,8 +70,8 @@ build() {
     -D CMAKE_INSTALL_PREFIX=/usr \
     -D CMAKE_C_FLAGS="$gen_cflags -fprofile-generate -fprofile-update=atomic" \
     -D CMAKE_CXX_FLAGS="$gen_cxxflags -fprofile-generate -fprofile-update=atomic" \
-    -D CMAKE_EXE_LINKER_FLAGS="$gen_ldflags -fuse-ld=mold -fprofile-generate" \
-    -D CMAKE_SHARED_LINKER_FLAGS="$gen_ldflags -fuse-ld=mold -fprofile-generate"
+    -D CMAKE_EXE_LINKER_FLAGS="$gen_ldflags -fprofile-generate" \
+    -D CMAKE_SHARED_LINKER_FLAGS="$gen_ldflags -fprofile-generate"
   cmake --build build
 
   local ee_bin
@@ -155,8 +155,8 @@ TRAINER
     -D CMAKE_INSTALL_PREFIX=/usr \
     -D CMAKE_C_FLAGS="$CFLAGS -fprofile-use -Wno-error=coverage-mismatch" \
     -D CMAKE_CXX_FLAGS="$CXXFLAGS -fprofile-use -Wno-error=coverage-mismatch -Wno-error=format-overflow" \
-    -D CMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fuse-ld=mold" \
-    -D CMAKE_SHARED_LINKER_FLAGS="$LDFLAGS -fuse-ld=mold"
+    -D CMAKE_EXE_LINKER_FLAGS="$LDFLAGS" \
+    -D CMAKE_SHARED_LINKER_FLAGS="$LDFLAGS"
   cmake --build build
 }
 

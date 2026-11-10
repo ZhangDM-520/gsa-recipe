@@ -52,8 +52,6 @@ build() {
         -D BASE_LLVM_VERSION=$_BASE_LLVM_VERSION \
         -D CMAKE_BUILD_TYPE=Release \
         -D CMAKE_INSTALL_PREFIX=/usr \
-        -D CMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" \
-        -D CMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold" \
         -D CMAKE_POSITION_INDEPENDENT_CODE=ON \
         -D CMAKE_SKIP_RPATH=ON \
         -D LLVM_EXTERNAL_LIT=/usr/bin/lit \

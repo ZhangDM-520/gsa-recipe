@@ -43,14 +43,11 @@ build() {
   cd gdb-$pkgver
 
   mkdir -p build && cd build
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
   # toolchain-drift wall (2026-10-24): the 20261011 gcc/libtool snapshot
   # moved the uninstalled-convenience layout and mold reports the resulting
   # archive-member misses as undefined gcore_elf_* symbols; GNU ld's rescan
   # resolves them — gdb builds with bfd despite the house mold default
-  _mold="-fuse-ld=bfd"
+  export LDFLAGS="${LDFLAGS//-fuse-ld=mold/-fuse-ld=bfd}"
   ../configure \
     --prefix=/usr \
     --disable-nls \

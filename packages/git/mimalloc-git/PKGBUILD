@@ -53,8 +53,8 @@ build() {
     -D MI_INSTALL_TOPLEVEL=ON \
     -D CMAKE_C_FLAGS="-fprofile-generate=$(pwd)/pgo-profiles -fprofile-update=atomic" \
     -D CMAKE_CXX_FLAGS="-fprofile-generate=$(pwd)/pgo-profiles -fprofile-update=atomic" \
-    -D CMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold -fprofile-generate=$(pwd)/pgo-profiles" \
-    -D CMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold -fprofile-generate=$(pwd)/pgo-profiles"
+    -D CMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fprofile-generate=$(pwd)/pgo-profiles" \
+    -D CMAKE_SHARED_LINKER_FLAGS="$LDFLAGS -fprofile-generate=$(pwd)/pgo-profiles"
 
   cmake --build build
 
@@ -76,8 +76,6 @@ build() {
       -D CMAKE_INSTALL_LIBEXECDIR=lib \
       -D MI_BUILD_OBJECT=OFF \
       -D MI_INSTALL_TOPLEVEL=ON \
-      -D CMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" \
-      -D CMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold"
     cmake --build build
     rm -rf pgo-profiles
     return 0
@@ -102,8 +100,8 @@ build() {
     -D CMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
     -D CMAKE_C_FLAGS="-fprofile-use=$(pwd)/pgo-profiles -Wno-error=coverage-mismatch -Wno-error=missing-profile" \
     -D CMAKE_CXX_FLAGS="-fprofile-use=$(pwd)/pgo-profiles -Wno-error=coverage-mismatch -Wno-error=missing-profile" \
-    -D CMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold -fprofile-use=$(pwd)/pgo-profiles" \
-    -D CMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold -fprofile-use=$(pwd)/pgo-profiles"
+    -D CMAKE_EXE_LINKER_FLAGS="$LDFLAGS -fprofile-use=$(pwd)/pgo-profiles" \
+    -D CMAKE_SHARED_LINKER_FLAGS="$LDFLAGS -fprofile-use=$(pwd)/pgo-profiles"
 
   cmake --build build
   rm -rf pgo-profiles
