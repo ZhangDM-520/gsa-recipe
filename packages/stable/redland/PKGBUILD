@@ -19,10 +19,6 @@ sha256sums=('de1847f7b59021c16bdc72abb4d8e2d9187cd6124d69156f3326dd34ee043681'
 validpgpkeys=('F879F0DEDA780198DD08DC6443EC92504F71955A') # Dave Beckett
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cd "${srcdir}/${pkgbase}-${pkgver}"
   ./configure --prefix=/usr \

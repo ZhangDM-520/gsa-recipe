@@ -46,10 +46,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   # trim: gi-docgen API docs (documentation=false; see trim note above)
   arch-meson gtksourceview build -D documentation=false
   meson compile -C build -j "${GSA_BUILD_JOBS:-$(nproc)}"

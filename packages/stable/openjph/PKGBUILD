@@ -22,11 +22,6 @@ build() {
     # doxygen makedepends and the doxygen invocation below — Class B trim
     # standard (docs/dropped split)
 
-    # House style: mold linker when available (cmake consumes LDFLAGS env)
-    local _mold=""
-    command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-    export LDFLAGS+=" ${_mold}"
-
     cmake -B build -S OpenJPH \
         -G 'Unix Makefiles' \
         -DCMAKE_BUILD_TYPE:STRING='None' \

@@ -34,9 +34,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # fat LTO objects kept from stock sdl2-compat (link-time opt, not an
   # -O3/-march/-mtune flag); CMAKE_BUILD_TYPE=None: stock convention, uses

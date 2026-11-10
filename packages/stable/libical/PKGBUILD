@@ -36,10 +36,6 @@ source=(git+https://github.com/libical/libical#tag=v$pkgver)
 sha512sums=('cc7a4bbec8edaae01cabc3aef5573ff5ca0b71d89b85d7d87facdb66f6f801d32998f9b12697867e4862aeebd1dbe46000644639ef52083b7e53a4e1794e264f')
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cmake -S $pkgname -B build \
     -DCMAKE_BUILD_TYPE=None \

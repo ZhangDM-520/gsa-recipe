@@ -115,10 +115,7 @@ build() {
   local _CXXFLAGS="${CXXFLAGS} ${CPPFLAGS} -fcommon"
   local _LDFLAGS=${LDFLAGS}
 
-  # House style: mold linker when available (consumed via --with-extra-ldflags)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  _LDFLAGS+=" ${_mold}"
+  _LDFLAGS+=""
 
   # OpenJDK's configure hard-refuses a ccache-wrapped compiler — it resolves
   # the symlink and dies even when --enable-ccache is passed ("ccache usage

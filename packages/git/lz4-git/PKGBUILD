@@ -40,7 +40,7 @@ build() {
   # Phase 1: instrumented build (LTO off for speed)
   export CFLAGS="${_cflags_orig} -fprofile-generate=$(pwd)/pgo-profiles"
   export CXXFLAGS="${CXXFLAGS} -fprofile-generate=$(pwd)/pgo-profiles"
-  export LDFLAGS="${_ldflags_orig} -fuse-ld=mold -fprofile-generate=$(pwd)/pgo-profiles"
+  export LDFLAGS="${_ldflags_orig} -fprofile-generate=$(pwd)/pgo-profiles"
   make clean 2>/dev/null || true
   make
 
@@ -60,7 +60,7 @@ build() {
     warning "No profile data generated — falling back to LTO-only build"
     export CFLAGS="${_cflags_orig} -ffat-lto-objects"
     export CXXFLAGS="${_cxxflags_orig} -ffat-lto-objects"
-    export LDFLAGS="${_ldflags_orig} -fuse-ld=mold"
+    export LDFLAGS="${_ldflags_orig}"
     make clean 2>/dev/null || true
     make
     return 0
@@ -70,7 +70,7 @@ build() {
   # Phase 3: rebuild with profile + LTO
   export CFLAGS="${_cflags_orig} -ffat-lto-objects -fprofile-use=$(pwd)/pgo-profiles"
   export CXXFLAGS="${_cxxflags_orig} -ffat-lto-objects -fprofile-use=$(pwd)/pgo-profiles"
-  export LDFLAGS="${_ldflags_orig} -fuse-ld=mold -fprofile-use=$(pwd)/pgo-profiles"
+  export LDFLAGS="${_ldflags_orig} -fprofile-use=$(pwd)/pgo-profiles"
   make clean 2>/dev/null || true
   make
   rm -rf pgo-profiles

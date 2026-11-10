@@ -65,11 +65,6 @@ build() {
 
   cd enchant
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure "${configure_options[@]}"
   sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"

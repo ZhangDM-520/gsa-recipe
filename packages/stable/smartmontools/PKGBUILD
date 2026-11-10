@@ -30,11 +30,6 @@ sha256sums=('690b83ca331378da9ea0d9d61008c4b22dde391387b9bbad7f29387f2595f76e'
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure \
     --prefix=/usr \
     --sbindir=/usr/bin \

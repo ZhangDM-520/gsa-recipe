@@ -23,9 +23,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # tests are left off: upstream pulls googletest via FetchContent at
   # configure time (no network fetches from builds) and the suite needs it

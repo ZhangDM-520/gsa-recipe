@@ -22,10 +22,6 @@ source=(git+https://github.com/zlib-ng/minizip-ng#tag=$pkgver)
 sha256sums=('3564e2aa171fb6556607d5c08c753c78e488c8e9342c166901f445f5415ed05b')
 
 build() {
-  # House style: mold linker when available (cmake consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cmake -B build -S $pkgname \
     -DCMAKE_INSTALL_PREFIX=/usr \

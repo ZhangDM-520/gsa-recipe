@@ -20,11 +20,6 @@ sha512sums=('49dfbc38350403cec072a6c976544d10e4402c2c416677acb1048537f67288f4cf5
 build() {
   cd OpenImageIO-$pkgver
 
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   local python_version=$(python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
   cmake \
     -Bbuild \

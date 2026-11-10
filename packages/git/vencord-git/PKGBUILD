@@ -80,9 +80,6 @@ build() {
   if [[ -d /usr/lib/ccache/bin ]]; then
     export PATH="/usr/lib/ccache/bin:${PATH}"
   fi
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # Standalone = platform-neutral defines ("Platform: Universal"); the six
   # desktop bundles land in dist/.

@@ -47,10 +47,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # No PGO (sanctioned per-recipe exception, CONTRIBUTING "Optimization and
   # trimming standard"): the SDK ships no test suite at all — samples/ is

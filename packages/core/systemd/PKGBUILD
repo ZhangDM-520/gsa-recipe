@@ -128,11 +128,6 @@ build() {
   # non-LTO consumers linking against them → build fat LTO objects.
   export CFLAGS+=" -ffat-lto-objects"
 
-  # Use the mold linker when available (big link-time win with LTO).
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   local _timeservers=({0..3}.arch.pool.ntp.org)
   local _nameservers=(
     # We use these public name services, ordered by their privacy policy (hopefully):

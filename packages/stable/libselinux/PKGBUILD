@@ -58,11 +58,6 @@ build() {
   # https://github.com/SELinuxProject/selinux/commit/e0da140d82c0ebebf1060ce87d0f11276c7fc59a
   export USE_PCRE2=y
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   make swigify
   make -j"${GSA_BUILD_JOBS:-$(nproc)}" all
   make -j"${GSA_BUILD_JOBS:-$(nproc)}" PYTHON=/usr/bin/python3 pywrap

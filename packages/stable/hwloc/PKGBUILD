@@ -42,10 +42,6 @@ b2sums=('ca80bd11f99af70860adcb95cc3c69292736f4eb230d990b3b8a5ed71302a6e6e7906b3
 
 build() {
   cd ${pkgname}-${pkgver}
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   ./configure \
     --prefix=/usr \
     --sbindir=/usr/bin \

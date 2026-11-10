@@ -22,11 +22,6 @@ sha512sums=('f386bb25d80e85153db4907c5adece519a86084676a39f958a4f56e53bb957cb9b1
 build() {
   cd ${pkgname}-${pkgver}
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure --prefix=/usr --sysconfdir=/etc \
     --disable-static \
     --libexecdir=/usr/lib/speech-dispatcher/ \

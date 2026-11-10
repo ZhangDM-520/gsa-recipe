@@ -58,10 +58,6 @@ prepare() {
 build() {
   cd "${srcdir}/${pkgbase}-${pkgver}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-
   local _configure_options=(
     --prefix=/usr \
     --docdir=/usr/share/doc/zsh \
@@ -95,7 +91,7 @@ build() {
     rm -rf "${_profile_dir}"
     mkdir -p "${_profile_dir}"
     export CFLAGS="${_cflags_orig} -fprofile-generate=${_profile_dir} -fprofile-update=atomic"
-    export LDFLAGS="${_ldflags_orig} -fprofile-generate=${_profile_dir} ${_mold}"
+    export LDFLAGS="${_ldflags_orig} -fprofile-generate=${_profile_dir}"
     ./configure "${_configure_options[@]}"
     make
     timeout 900 make check >/dev/null 2>&1 || true
@@ -103,8 +99,8 @@ build() {
     # Never build profile-use from an empty profile (house rule)
     if [[ -z $(find "${_profile_dir}" -name '*.gcda' -print -quit) ]]; then
       echo "PGO: no profile data collected — non-PGO fallback build" >&2
-      export CFLAGS="${_cflags_orig} ${_mold}"
-      export LDFLAGS="${_ldflags_orig} ${_mold}"
+      export CFLAGS="${_cflags_orig}"
+      export LDFLAGS="${_ldflags_orig}"
       make clean
       ./configure "${_configure_options[@]}"
       make
@@ -114,15 +110,15 @@ build() {
 
     # Phase 2: profile-use rebuild (autotools bake CFLAGS at configure time — reconfigure)
     export CFLAGS="${_cflags_orig} -fprofile-use=${_profile_dir} -fprofile-reorder-functions -Wno-error=coverage-mismatch"
-    export LDFLAGS="${_ldflags_orig} ${_mold}"
+    export LDFLAGS="${_ldflags_orig}"
     make clean
     ./configure "${_configure_options[@]}"
     make
     ./Src/zsh -c 'print ok' >/dev/null  # smoke test before packaging
     rm -rf "${_profile_dir}"
   else
-    export CFLAGS="${_cflags_orig} ${_mold}"
-    export LDFLAGS="${_ldflags_orig} ${_mold}"
+    export CFLAGS="${_cflags_orig}"
+    export LDFLAGS="${_ldflags_orig}"
     ./configure "${_configure_options[@]}"
     make
   fi

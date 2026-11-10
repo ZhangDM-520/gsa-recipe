@@ -116,11 +116,7 @@ prepare() {
 build() {
 	cd "${srcdir}/${pkgname}${_pkgver}"
 
-	# House style: mold linker when available (LDFLAGS flows into the link via
 	# LF2 below)
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 
 	# DEFINES, make, and install args from Debian
 	DEFINES='-DACORN_FTYPE_NFS -DWILD_STOP_AT_DIR -DLARGE_FILE_SUPPORT \

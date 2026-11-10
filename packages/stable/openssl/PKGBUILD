@@ -39,11 +39,7 @@ build() {
 		;;
 	esac
 
-	# House style: mold linker when available.
 	# OpenSSL's Configure consumes CFLAGS/LDFLAGS from the environment.
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 
 	./Configure --prefix=/usr --openssldir=/etc/ssl --libdir=lib \
 		shared enable-ktls enable-brotli enable-zlib enable-zstd \

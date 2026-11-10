@@ -38,10 +38,6 @@ _pick() {
 }
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   local java_major=$(java --version 2>/dev/null |grep 'openjdk'| cut -d ' ' -f2| cut -d '.' -f1)
   local meson_options=(

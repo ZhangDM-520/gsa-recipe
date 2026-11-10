@@ -57,9 +57,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   cmake -B build -S "$_pkgname" \
     -DCMAKE_INSTALL_PREFIX=/usr \

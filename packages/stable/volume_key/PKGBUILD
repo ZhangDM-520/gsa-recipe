@@ -39,11 +39,6 @@ prepare() {
 build() {
   cd $pkgname-$pkgver
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # trim: the python-volume_key split is dropped together with its _pick
   # helper/path, its split-install path, its optdepends entry and the
   # python/python-setuptools/swig makedepends (and the python3-config CFLAGS

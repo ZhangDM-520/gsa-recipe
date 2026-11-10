@@ -40,11 +40,6 @@ build() {
     -D tests=disabled
   )
 
-  # House style: mold linker when available (arch-meson consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   arch-meson libgudev build "${meson_options[@]}"
   meson compile -C build
 }

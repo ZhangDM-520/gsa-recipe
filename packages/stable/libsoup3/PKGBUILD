@@ -42,10 +42,6 @@ source=(
 b2sums=('f08a41fbf00fd087a653111e66c8bed8a64612994f568dc72453b7e03c6f02769071602b3ed26181a277c076964a648ac1738cf0b20556a57e86e4ec1a36d11d')
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   local meson_options=(
     -D autobahn=disabled
     # trim: gi-docgen API docs and unit tests — see trim note above

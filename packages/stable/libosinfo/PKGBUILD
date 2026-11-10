@@ -48,10 +48,6 @@ build() {
   # find_program in tools/meson.build dies without it (same root cause as
   # the git-git/openssl/libpwquality incidents, 2026-09-07/2026-10-19).
   export PATH="/usr/bin/core_perl:$PATH"
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   # trim: gtk-doc API docs (enable-gtk-doc=false — docs; also drops the
   # gtkdoc-scan build requirement) and the test suite (enable-tests=false —
   # tests) together with their test build; gir/vapi/tools kept

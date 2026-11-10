@@ -72,11 +72,6 @@ build() {
   # replace ttf-freefont with ttf-liberation
   export FONTFILE=/usr/share/fonts/TTF/DejaVuSans-Bold.ttf
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   make BUILDJACKAPP=no -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }
 

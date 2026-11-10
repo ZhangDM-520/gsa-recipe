@@ -25,11 +25,6 @@ sha256sums=('0a51b8f920254d8e83c34a4c3082b7d241f5d6fd65188afadf29859d5223ef78')
 build() {
   cd quota-$pkgver
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure \
     --prefix=/usr \
     --sysconfdir=/etc

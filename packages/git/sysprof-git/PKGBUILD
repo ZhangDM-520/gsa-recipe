@@ -65,10 +65,6 @@ build() {
   # Ensure static library is non-LTO compatible (stock rule)
   CFLAGS+=" -ffat-lto-objects"
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   arch-meson sysprof build
   meson compile -C build
 }

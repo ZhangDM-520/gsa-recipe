@@ -26,10 +26,6 @@ build() {
   CXXFLAGS+=' -DU_USING_ICU_NAMESPACE=1'
 
   #./configure --prefix=/usr --libdir=/usr/lib --sysconfdir=/etc
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # Tests are never run (!check) and never installed — build-only surface that
   # also hard-fails on the GCC 17 snapshot (swbuftest.cpp prints through the

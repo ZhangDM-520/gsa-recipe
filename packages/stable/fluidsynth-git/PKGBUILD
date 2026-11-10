@@ -38,10 +38,6 @@ prepare() {
 build() {
   cd build
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   cmake ../${pkgname%-*} -DCMAKE_INSTALL_PREFIX=/usr \
                          -DCMAKE_BUILD_TYPE=Release \
                          -Denable-ladspa=ON \

@@ -48,11 +48,6 @@ prepare() {
 build() {
   cd "${pkgname}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure --prefix=/usr --sbindir=/usr/bin --libexecdir=/usr/lib/tar --enable-backup-scripts
   make WERROR_CFLAGS="" -j"${GSA_BUILD_JOBS:-$(nproc)}" # -Werror is enabled by default and causes build failures
 

@@ -43,10 +43,6 @@ sha256sums=('a8dbf8b8c8ee427ff6ad1d99116502feaf59440af1adb893caf60a6576826cf4')
 
 build() {
   cd "$srcdir"/$pkgname-${pkgver}
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   [ -x configure ] || ./autogen.sh
   [ -f Makefile ] || ./configure --prefix=/usr
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"

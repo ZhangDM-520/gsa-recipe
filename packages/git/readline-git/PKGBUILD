@@ -51,10 +51,6 @@ prepare() {
 build() {
   cd readline
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   # build with -fPIC for x86_64 (FS#15634, kept from stock)
   [[ $CARCH == x86_64* ]] && CFLAGS="$CFLAGS -fPIC"
 

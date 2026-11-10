@@ -130,11 +130,7 @@ build() {
     CROSSCXXFLAGS="$CROSSCXXFLAGS ${BASH_REMATCH[1]}"
   fi
 
-  # House style: mold linker when available (unix-side link; the PE side is
   # CROSSCFLAGS/CROSSLDFLAGS and stays stock)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cd "$srcdir/$pkgname-64-build"
   ../wine/configure \

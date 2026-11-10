@@ -18,11 +18,6 @@ sha512sums=('cfb661729c7b79a2b8ad12b441fab1327814de020df987b8855e6e53b0a76065181
 build() {
   cd OpenXR-SDK-Source-release-${pkgver}
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   cmake \
     -GNinja \
     -Bbuild \

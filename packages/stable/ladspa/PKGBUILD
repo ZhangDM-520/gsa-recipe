@@ -39,11 +39,7 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available (the distribution-flags patch
   # feeds LDFLAGS through to the plugin link lines).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   make -C ${pkgname}_sdk_$pkgver/src -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

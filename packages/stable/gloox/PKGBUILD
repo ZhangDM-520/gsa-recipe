@@ -18,11 +18,6 @@ sha256sums=('591bd12c249ede0b50a1ef6b99ac0de8ef9c1ba4fd2e186f97a740215cc5966c')
 build() {
   cd "$srcdir"/gloox-$pkgver
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure --prefix=/usr
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

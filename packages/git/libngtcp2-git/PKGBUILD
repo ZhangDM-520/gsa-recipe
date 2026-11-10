@@ -47,10 +47,6 @@ pkgver() {
 build() {
   cd ngtcp2
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure \
     --prefix=/usr \
     --with-libbrotlidec \

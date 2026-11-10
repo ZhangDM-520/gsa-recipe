@@ -22,10 +22,6 @@ source=("$url/archive/v$pkgver/$_archive.tar.gz")
 sha256sums=('3a289eded586c26d06c1387de72c7bf7c809527a70d51ba6401fe61059b19626')
 
 build() {
-	# House style: mold linker when available
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 
 	cmake -B build -S "$_archive" \
 		-D CMAKE_INSTALL_PREFIX=/ \

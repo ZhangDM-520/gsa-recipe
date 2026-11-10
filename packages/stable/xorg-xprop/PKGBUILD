@@ -20,11 +20,6 @@ validpgpkeys=('4A193C06D35E7C670FA4EF0BA2FB9E081F2D130E' '3AB285232C46AE43D8E192
 build() {
   cd xprop-${pkgver}
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure --prefix=/usr
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

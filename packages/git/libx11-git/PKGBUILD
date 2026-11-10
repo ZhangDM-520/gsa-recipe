@@ -24,9 +24,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # Documented exception (glibc-git/python/jq/sqlite/nodejs/guile class,
   # JOURNAL 2026-11-01): aggressive optimization makes GCC-snapshot's

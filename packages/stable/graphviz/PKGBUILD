@@ -41,11 +41,6 @@ build() {
 	export LIBPOSTFIX=/
 	export CXXFLAGS+=' -fPIC -fpermissive'
 
-	# House style: mold linker when available
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
-
 	./configure --prefix=/usr --enable-python3=yes --disable-python --enable-lefty
         sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool # Fix overlinking
 	make

@@ -40,11 +40,6 @@ prepare() {
 build() {
   cd lua-$pkgver
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # No -j here: options=(!makeflags) — upstream lua 5.1's makefile is not
   # parallel-safe, so GSA_BUILD_JOBS is deliberately not applied to `make`.
   make MYCFLAGS="$CFLAGS -fPIC" MYLDFLAGS="$LDFLAGS" linux

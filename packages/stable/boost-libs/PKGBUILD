@@ -32,10 +32,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # House style: job count from $GSA_BUILD_JOBS
   local JOBS="-j${GSA_BUILD_JOBS:-$(nproc)}"

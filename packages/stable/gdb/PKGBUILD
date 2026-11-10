@@ -51,7 +51,6 @@ build() {
   # archive-member misses as undefined gcore_elf_* symbols; GNU ld's rescan
   # resolves them — gdb builds with bfd despite the house mold default
   _mold="-fuse-ld=bfd"
-  export LDFLAGS+=" ${_mold}"
   ../configure \
     --prefix=/usr \
     --disable-nls \

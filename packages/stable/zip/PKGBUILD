@@ -46,11 +46,7 @@ prepare() {
 build() {
 	cd "${srcdir}/${pkgname}${_pkgver}"
 
-	# House style: mold linker when available (LDFLAGS flows into the link via
 	# the LFLAGS1 configure substitution in prepare)
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 
 	make -f unix/Makefile prefix=/usr generic_gcc
 }

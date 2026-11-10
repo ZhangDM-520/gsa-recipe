@@ -224,12 +224,6 @@ build() {
   CXXFLAGS+=" -ffunction-sections -fdata-sections"
   LDFLAGS+=" -Wl,--gc-sections"   # -Wl,--as-needed already in the engine LDFLAGS
 
-  # mold is noticeably faster at linking the large LTO binary. Runtime check so
-  # the PKGBUILD still works without it (mold-git does not provide 'mold').
-  if command -v mold >/dev/null 2>&1; then
-    LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   local -a meson_flags=(
     -Db_ndebug=true
     -Dtests=disabled

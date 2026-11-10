@@ -76,11 +76,6 @@ build() {
   CFLAGS=${CFLAGS/-Ofast/-O3}
   CFLAGS+=" -ffat-lto-objects"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # Disable bundled pip & setuptools
   ./configure --prefix=/usr \
               --enable-shared \

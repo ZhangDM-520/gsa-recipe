@@ -27,10 +27,6 @@ sha256sums=('95b6c022fc1f1c7ab586d47c1594417cc311bf41ea8f5f8b5641478da7b5cf3b')
 
 build() {
 	cd "$pkgname"
-	# House style: mold linker when available
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 	# Between meson-1.10.1 and 1.11.2 the header finder stopped finding resvg.h in
 	# the place it has always been which made this package unreproducible (even
 	# accounting for the checksum change that happened at the same time thanks to

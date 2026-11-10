@@ -29,10 +29,6 @@ pkgver(){
 build(){
   rm -rf "${srcdir}"/build
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   cmake -B "${srcdir}"/build -S "${srcdir}"/Vulkan-Loader \
   -G Ninja \
   -D CMAKE_BUILD_TYPE=Release \

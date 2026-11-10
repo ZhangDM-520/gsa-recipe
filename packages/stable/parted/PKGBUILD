@@ -25,11 +25,6 @@ sha256sums=('a2b7811f47b0ddb1f7b1d0aa456f7c1270da70708ce231c2fe054c7199eafa63'
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # Do *not* add --disable-debug, it prevents building fatresize
   # https://github.com/ya-mouse/fatresize/issues/9
   ./configure \

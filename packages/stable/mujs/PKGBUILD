@@ -24,11 +24,7 @@ prepare() {
 }
 
 build() {
-    # House style: mold linker when available (the 010 patch feeds LDFLAGS to
     # every link line).
-    local _mold=""
-    command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-    export LDFLAGS+=" ${_mold}"
 
     # OPTIM='': upstream hard-codes OPTIM=-O3 — neutralised (a removal, not an
     # appended flag) so the engine's makepkg config owns the opt level

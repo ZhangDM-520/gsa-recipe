@@ -53,9 +53,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   cd libxcb
   local _config_options=(

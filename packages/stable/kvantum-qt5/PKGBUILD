@@ -30,10 +30,6 @@ sha256sums=('c407e9fb1e9e985b3af78d7535445da31f03473387b1c45b4c810883b8c27ec6')
 validpgpkeys=(19DFDF3A579BD509DBB572D8BE793007AD22DF7E) # Pedram Pourang <tsujan2000@gmail.com>
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cmake -B build5 -S Kvantum/Kvantum \
     -DCMAKE_INSTALL_PREFIX=/usr \

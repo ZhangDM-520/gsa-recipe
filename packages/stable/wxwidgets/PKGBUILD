@@ -35,10 +35,6 @@ source=(git+https://github.com/wxWidgets/wxWidgets#tag=v$pkgver)
 sha256sums=('5a4c05e0b58f0a87f24f1d42c66c73effb5e65154d40bf463dccdfaf79a54a9a')
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cmake -B build-base -S wxWidgets \
     -DCMAKE_INSTALL_PREFIX=/usr \

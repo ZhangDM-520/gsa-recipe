@@ -25,10 +25,6 @@ b2sums=('5368e7e004424bd03c5900bb535705dd8b3a03e4ad056ed28ab58e62e4bf70f81a696dc
 
 build() {
   cd ${pkgname}-${_pkgver}
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   ./configure \
     --prefix=/usr
   make V=1

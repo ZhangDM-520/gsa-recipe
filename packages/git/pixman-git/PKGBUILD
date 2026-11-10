@@ -36,7 +36,6 @@ pkgver() {
 build() {
   cd "pixman"
 
-  export LDFLAGS="$LDFLAGS -fuse-ld=mold"
 
   # Phase 1: instrumented build
   meson setup \

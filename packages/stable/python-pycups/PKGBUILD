@@ -19,11 +19,7 @@ sha256sums=('31d9cf62df7884fe430d11970a8c9278282a47a0ff6b1529c58c7d26e8eb4789'
 
 build() {
   cd ${pkgbase}-${pkgver}
-  # House style: mold linker when available (the extension link line consumes
   # LDFLAGS from the environment).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # cups 2.5 (libcups-git) installs headers under libcups2/ (cups/http.h →
   # libcups2/cups/http.h) and dropped cups-config; pyCUPS' setup.py assumes

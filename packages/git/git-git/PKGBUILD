@@ -67,11 +67,6 @@ pkgver() {
 build() {
   cd "$srcdir/$_name"
 
-  # House style: mold linker when available (consumed via _make_options LDFLAGS)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # Perl 5.42 relocated pod2man to /usr/bin/core_perl, which interactive
   # shells get via /etc/profile.d/perlbin.sh — but the makepkg context (sudo
   # secure_path) does not. Git's default target generates Git.3pm via pod2man

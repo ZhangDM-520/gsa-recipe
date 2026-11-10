@@ -58,9 +58,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # -Ofast implies -ffast-math; opus's celt/arch.h
   # refuses that combination unless FLOAT_APPROX is defined — the upstream

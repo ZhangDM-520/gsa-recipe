@@ -42,9 +42,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   local meson_options=(
     # option set follows the AUR/stock reference: classic format loaders are

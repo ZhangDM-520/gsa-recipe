@@ -26,11 +26,6 @@ validpgpkeys=('D021FF8ECF4BE09719D61A27231C4CBC60D5CAFE')
 build() {
   cd mpg123-${pkgver}
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure \
     --prefix=/usr \
     --enable-int-quality \

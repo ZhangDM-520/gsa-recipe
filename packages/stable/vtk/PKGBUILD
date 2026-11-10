@@ -580,10 +580,6 @@ build() {
   # To set tcl lib path
   local _tkver=$(echo 'puts $tcl_version' | tclsh)
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # Phase 1: instrumented build. LTO is stripped for the generate phase
   # (instrumented LTO is fragile — qt6-declarative's measured choice) and

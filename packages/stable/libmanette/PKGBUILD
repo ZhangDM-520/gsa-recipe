@@ -35,10 +35,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available (arch-meson consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # trim: gi-docgen API docs — Class B trim standard (docs)
   arch-meson $pkgname build \

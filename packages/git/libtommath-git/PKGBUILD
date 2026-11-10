@@ -32,10 +32,6 @@ pkgver() {
 build() {
   cd libtommath
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   make -f makefile.shared IGNORE_SPEED=1 -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }
 

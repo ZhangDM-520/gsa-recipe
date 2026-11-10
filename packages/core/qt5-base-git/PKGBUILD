@@ -66,10 +66,6 @@ prepare() {
 build() {
   cd kde-qtbase
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure -confirm-license -opensource -v \
     -prefix /usr \
     -docdir /usr/share/doc/qt \

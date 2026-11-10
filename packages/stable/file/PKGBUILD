@@ -36,11 +36,6 @@ build() {
   # Fix linking libmagic (vfork needs libpthread)
   CFLAGS+=" -pthread"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   local _conf_args=(
     --prefix=/usr
     --datadir=/usr/share/file

@@ -126,9 +126,6 @@ build() {
   if [[ -d /usr/lib/ccache/bin ]]; then
     export PATH="/usr/lib/ccache/bin:${PATH}"
   fi
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # shadow-cljs runs the Closure Compiler jars from its npm closure, which
   # are class-65 (Java 21+); the system default `java` may be an older

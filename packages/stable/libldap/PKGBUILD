@@ -37,10 +37,6 @@ prepare() {
 
 build() {
   cd ${pkgbase}-${pkgver}
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   autoconf
   # trim: --disable-slapd drops the server (with its backends/overlays/argon2
   # options, which configure then ignores) — the dropped openldap split's

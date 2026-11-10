@@ -15,10 +15,6 @@ source=(git+https://github.com/zint/zint#tag=$pkgver)
 sha256sums=('0bd39dbba01db925e9c50fcd282b36377b9b748a3f0ea9fbc890ccb37b448d4c')
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # trim: zint-qt split dropped (Qt6 GUI; its qt6-svg/qt6-tools makedepends go
   # with it) — hence -DZINT_QT6=OFF, so no Qt6 backend/frontend is built

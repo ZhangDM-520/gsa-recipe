@@ -47,10 +47,6 @@ sha256sums=('fa63d85e6a6403d301c81a2480b1d266c1f5048c421018548b4e0490ca1abd3d'
 validpgpkeys=(D33A3F0CA16B0ACC51A60738494C8A5FBF4DECEB) # Matthias Klumpp <matthias@tenstral.net>
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   arch-meson appstream build \
     -Dqt=true \
     -Dvapi=true \

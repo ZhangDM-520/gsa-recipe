@@ -43,10 +43,6 @@ pkgver() {
 build() {
   cd libsodium
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./autogen.sh -s
   ./configure --prefix=/usr
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"

@@ -20,11 +20,6 @@ sha512sums=('fa7a8b2d909ff754b591be2d5dffa6056bdcfc58738876cb7358e329187a30d46cf
 build() {
   cd OpenColorIO-$pkgver
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   CXXFLAGS+=" -ffat-lto-objects"
   # house: pin the system interpreter (uv/pyenv shims lead PATH; JOURNAL 2026-10-10)
   cmake \

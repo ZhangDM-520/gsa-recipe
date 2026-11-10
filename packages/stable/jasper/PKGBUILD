@@ -38,10 +38,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # trim: doxygen API docs (JAS_ENABLE_DOC=OFF, doxygen makedep dropped) —
   # Class B trim standard (docs); the jasper-doc split went with them

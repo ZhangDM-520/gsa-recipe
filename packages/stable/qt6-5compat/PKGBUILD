@@ -34,10 +34,6 @@ source=(git+https://code.qt.io/qt/$_pkgfn#tag=v$_pkgver)
 sha256sums=('a636bd930b123d012d8eed399309b854936a3c76537573311cf5a637d6ec43e5')
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   cmake -B build -S $_pkgfn -G Ninja \
     -DCMAKE_MESSAGE_LOG_LEVEL=STATUS
   cmake --build build

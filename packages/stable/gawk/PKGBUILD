@@ -21,11 +21,6 @@ b2sums=('657cc8fcf0e51e2637b456a209c676a05d37f2740522e3fde8b7ff04fbb98019baed2b3
 build() {
   cd ${pkgname}-${pkgver}
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure --prefix=/usr --libexecdir=/usr/lib --sysconfdir=/etc --without-libsigsegv
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

@@ -27,10 +27,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   cmake -B build -S $pkgname \
       -DCMAKE_INSTALL_PREFIX=/usr \

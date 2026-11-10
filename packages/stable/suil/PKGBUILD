@@ -32,10 +32,6 @@ b2sums=('d3f2ac0baf4722bbd779eb47253c326aada772c228d7a675bd16b96f8877989d4e0eb01
 validpgpkeys=('907D226E7E13FA337F014A083672782A9BF368F3') # David Robillard <d@drobilla.net>
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   local meson_options=(
     -D cocoa=disabled

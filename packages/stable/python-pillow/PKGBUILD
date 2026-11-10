@@ -52,11 +52,6 @@ b2sums=('8a5abf554176124fcb89cb392cc2701bb31be5cc324b6077d05132a4f8cba8fd2249812
 build() {
   cd "$pkgname"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   python -m build --wheel --no-isolation
 }
 

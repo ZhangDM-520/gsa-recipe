@@ -82,11 +82,6 @@ build() {
   # gcc-snapshot compatibility
   export CFLAGS+=" -Wno-error=implicit-function-declaration"
 
-  # House style: mold linker when available (arch-meson consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # mrg + maxflow aren't packaged in Arch repos; meson-git's arch-meson
   # passes --auto-features enabled which turns these 'auto' features into
   # hard configure errors. Stock gegl ships neither mrg-gegl nor

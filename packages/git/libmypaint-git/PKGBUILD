@@ -51,10 +51,6 @@ prepare() {
 build() {
   cd libmypaint
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure \
     --prefix=/usr \
     --enable-gegl

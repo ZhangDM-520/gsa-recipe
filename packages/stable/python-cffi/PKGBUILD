@@ -18,11 +18,7 @@ sha512sums=('d608a63bdae41ce93f4abee3e8f772337740c3859d50d7592943a03dea3f3007aee
 
 build() {
   cd cffi
-  # House style: mold linker when available (the extension link line consumes
   # LDFLAGS from the environment).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   python -m build -nw
 }

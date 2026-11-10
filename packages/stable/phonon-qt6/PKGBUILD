@@ -28,10 +28,6 @@ validpgpkeys=(CB9387521E1EE0127DA804843FDBB55084CC5D84  # Harald Sitter <sitter@
               E0A3EB202F8E57528E13E72FD7574483BB57B18D) # Jonathan Esk-Riddell <jr@jriddell.org>
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   cmake -B build -S $pkgbase-$pkgver \
     -DCMAKE_BUILD_TYPE=None \
     -DPHONON_BUILD_QT5=OFF

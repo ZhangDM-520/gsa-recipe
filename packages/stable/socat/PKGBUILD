@@ -27,11 +27,6 @@ b2sums=('5d62f45d0d16ac23218c288d2c31ef85fb5f78de68e8612bb6ae647c4e1af9382f80b57
 build() {
   cd "${pkgname}-${pkgver}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   ./configure \
     --prefix=/usr \
     --mandir=/usr/share/man \

@@ -59,9 +59,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   local meson_options=(
     -D dbus_policy_dir=/usr/share/dbus-1/system.d

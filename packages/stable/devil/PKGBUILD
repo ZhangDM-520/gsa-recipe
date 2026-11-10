@@ -35,11 +35,6 @@ prepare() {
 build() {
   cd "${srcdir}/DevIL/DevIL"
 
-  # House style: mold linker when available (cmake consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   rm -rf build && mkdir build
   cd build
   cmake .. \

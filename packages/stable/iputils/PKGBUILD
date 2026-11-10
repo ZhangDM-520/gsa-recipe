@@ -32,10 +32,6 @@ b2sums=('f77ff1c2a8f57095d70bc5d5b027757875d86992dd625ef7a14f79aa87b7953137b34bf
 build() {
   mkdir -p build
   cd build
-  # House style: mold linker when available (runtime-guarded, no output effect).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   arch-meson ../$pkgname 
   ninja -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

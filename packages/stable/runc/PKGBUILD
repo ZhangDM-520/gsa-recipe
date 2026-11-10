@@ -41,11 +41,6 @@ prepare() {
 build() {
   cd src/github.com/opencontainers/runc
 
-  # House style: mold linker when available (captured by CGO_LDFLAGS below)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   export GOPATH="$srcdir"
   export BUILDTAGS='seccomp apparmor'
   export CGO_CPPFLAGS="${CPPFLAGS}"

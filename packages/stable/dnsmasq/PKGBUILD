@@ -27,11 +27,6 @@ _build_copts='-DHAVE_CONNTRACK -DHAVE_DBUS -DHAVE_DNSSEC -DHAVE_LIBIDN2 -DHAVE_N
 build() {
   cd "${pkgname}-${pkgver}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # trim: translations (locales) — the stock all-i18n/install-i18n targets
   # build and ship the message catalogs, not part of the maintained target
   make \

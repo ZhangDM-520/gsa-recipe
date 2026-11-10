@@ -21,10 +21,6 @@ sha256sums=('24045199af12d93fe5fdbbbf7e386e823e4842071e9432e2b90ac108b889a923')
 
 build() {
   cd ${pkgname}1-${pkgver}
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   ./configure --prefix=/usr \
     --disable-static \
     --enable-files \

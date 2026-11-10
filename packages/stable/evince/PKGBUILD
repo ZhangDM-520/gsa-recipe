@@ -83,11 +83,6 @@ build() {
     -D user_doc=false
   )
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   arch-meson evince build "${meson_options[@]}"
   meson compile -C build
 }

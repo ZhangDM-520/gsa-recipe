@@ -67,10 +67,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   local cmake_options=(
     -B build

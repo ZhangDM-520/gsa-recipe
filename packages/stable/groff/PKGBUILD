@@ -53,10 +53,6 @@ prepare() {
 
 build() {
   cd "${pkgname}"
-  # House style: mold linker when available (runtime-guarded, no output effect).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   # --without-urw-fonts: the git tree carries no pregenerated devpdf/U-*
   # descriptions (release tarballs do), and generating them needs URW AFM
   # files no system package provides. Stock groff ships without U-* too, so

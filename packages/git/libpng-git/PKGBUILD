@@ -52,10 +52,6 @@ prepare() {
 build() {
   cd "$_pkgname"
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure \
     --prefix=/usr \
     --disable-static

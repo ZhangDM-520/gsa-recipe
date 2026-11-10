@@ -24,11 +24,6 @@ sha512sums=('722d7a65090153a9892749fc7b9513d86a75534f7ea49ad4ce18c3360c3740b0c72
 build() {
     cd "$pkgname-$pkgname-$pkgver"
 
-    # House style: mold linker when available
-    local _mold=""
-    command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-    export LDFLAGS+=" ${_mold}"
-
     cmake \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DENABLE_DOCUMENTATION=OFF \

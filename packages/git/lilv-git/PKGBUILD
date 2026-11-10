@@ -49,9 +49,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # trim: docs stage disabled with its dropped lilv-docs output (see the
   # makedepends note above) — arch-meson sets --auto-features enabled, so the

@@ -16,10 +16,6 @@ sha256sums=('2e559f0c2a592ba48e421477f58e9bf7e01062277a4a7821afb52fc9401010ae')
 
 build() {
   cd hunspell-$pkgver
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   ./configure --prefix=/usr \
     --disable-static \

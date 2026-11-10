@@ -36,11 +36,6 @@ sha256sums=('db83271f4f0bc489a75278ff4128a79e450035f0405873ec787d52ca6cbab6b4')
 build() {
   cd CoinUtils
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./configure \
     --prefix=/usr \
     --with-blas-lib='-lblas' \

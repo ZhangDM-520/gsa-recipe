@@ -28,10 +28,6 @@ b2sums=('82745bcaf18282c6aa4d36327f658191fcf61f8a3e9c822ecee1e98ae2e9c11c0654d42
 validpgpkeys=('907D226E7E13FA337F014A083672782A9BF368F3') # David Robillard <d@drobilla.net>
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # trim: docs=disabled drops the doxygen/sphinx API docs (sord-docs split)
   arch-meson $pkgname-$pkgver build -D docs=disabled

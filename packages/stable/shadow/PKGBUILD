@@ -108,11 +108,6 @@ build() {
   export CFLAGS="$CFLAGS -DEXTRA_CHECK_HOME_DIR"
   ./configure "${configure_options[@]}"
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # prevent excessive overlinking due to libtool
   sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"

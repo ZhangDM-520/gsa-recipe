@@ -25,7 +25,6 @@ pkgver() {
 build() {
   cd "jemalloc"
 
-  export LDFLAGS="$LDFLAGS -fuse-ld=mold"
   ./autogen.sh \
     --prefix="/usr" \
     CFLAGS="$CFLAGS -flto" \

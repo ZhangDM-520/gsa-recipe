@@ -91,7 +91,7 @@ build() {
   # fails -> version-script dropped -> libuuid/libblkid ship with ZERO verdefs.
   # GNU ld tolerates this; pass --undefined-version to keep the check true.
   if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold -Wl,--undefined-version"
+    export LDFLAGS+=" -Wl,--undefined-version"
   fi
 
   local _meson_options=(

@@ -313,8 +313,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available (mold-git does not provide 'mold').
-  command -v mold >/dev/null 2>&1 && export LDFLAGS+=" -fuse-ld=mold"
 
   local meson_flags=(
     -Db_ndebug=true

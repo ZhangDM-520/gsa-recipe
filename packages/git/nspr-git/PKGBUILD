@@ -60,10 +60,6 @@ prepare() {
 build() {
   cd nspr
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   local configure_options=(
     --prefix=/usr
     --libdir=/usr/lib

@@ -42,10 +42,6 @@ prepare() {
 
 build() {
   cd ${pkgname}-${pkgver}
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   # cups 2.5 moved its headers to /usr/include/libcups2 — hand the bare-CFLAGS
   # udev probe and AC_CHECK_HEADER the moved include dir (run #94 wall class)
   export CPPFLAGS+=" $(pkg-config --cflags cups)"

@@ -34,10 +34,6 @@ build() {
     # find_program in pkgfile/meson.build dies without it (same root cause
     # as the git-git/openssl/libpwquality incidents, 2026-09-07/2026-10-19).
     export PATH="/usr/bin/core_perl:$PATH"
-    # House style: mold linker when available (runtime-guarded, no output effect).
-    local _mold=""
-    command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-    export LDFLAGS+=" ${_mold}"
     arch-meson "$pkgname" build
     meson compile -C build --jobs "${GSA_BUILD_JOBS:-$(nproc)}"
 }

@@ -21,10 +21,6 @@ sha512sums=('b2781059c0e176192c3fc0d7244645020937a463311171efddb9f35fb94ee43faab
 validpgpkeys=('57551DE15B968F6341C248F68D8E31AFC32428A6') # Eric Engestrom <eric@engestrom.ch>
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   arch-meson glu-$pkgver build \
     -D default_library=shared

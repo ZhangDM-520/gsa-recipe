@@ -244,11 +244,6 @@ build() {
     --sysconfdir=/etc
   )
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   cd $pkgname
   ./configure "${configure_options[@]}"
   # The doc subtree converts its figures through ImageMagick's inkscape

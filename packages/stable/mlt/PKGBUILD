@@ -102,10 +102,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # house: pin the system interpreter (uv/pyenv shims lead PATH; JOURNAL 2026-10-10)
   cmake -B build -S $pkgname \

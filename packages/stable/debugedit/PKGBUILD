@@ -27,10 +27,6 @@ prepare() {
 
 build() {
     cd "debugedit-${pkgver}"
-    # House style: mold linker when available
-    local _mold=""
-    command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-    export LDFLAGS+=" ${_mold}"
     ./configure --prefix=/usr
     # trim: the man pages are dropped in package() — pre-empt their help2man
     # generation rules (help2man is not a host tool here) by marking the

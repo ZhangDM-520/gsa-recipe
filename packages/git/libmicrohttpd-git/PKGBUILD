@@ -28,10 +28,6 @@ pkgver() {
 build() {
   cd libmicrohttpd
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   ./bootstrap
   # stock configure flags carried over
   ./configure \

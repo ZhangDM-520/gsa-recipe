@@ -24,10 +24,6 @@ source=("git+https://gitlab.gnome.org/GNOME/shotwell.git#tag=$pkgver")
 sha256sums=('e1195715fc0f9f76b857f16e99a9fffc397e9d526225f086f86b37b22357c92a')
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   arch-meson ${pkgname} build
   meson compile -C build

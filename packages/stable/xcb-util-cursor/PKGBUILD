@@ -19,10 +19,6 @@ validpgpkeys=('3AB285232C46AE43D8E192F4DAB0F78EA6E7E2D2') # Alan Coopersmith <al
 
 build() {
   cd $pkgname-$pkgver
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   ./configure --prefix=/usr
   sed -i -e 's/ -shared / -Wl,-O1,--as-needed\0/g' libtool

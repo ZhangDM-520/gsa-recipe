@@ -30,10 +30,6 @@ prepare() {
 
 build() {
   cd $pkgbase-$pkgver
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   # trim: unit tests (cppunit), doxygen API docs and fuzz targets — only the
   # shipped tools remain (default --with-tools)
   ./configure --prefix=/usr --with-mdds=3.0 --disable-tests --without-docs --disable-fuzzers

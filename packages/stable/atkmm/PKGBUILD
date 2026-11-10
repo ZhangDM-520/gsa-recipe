@@ -41,11 +41,6 @@ build() {
     -D build-documentation=false
   )
 
-  # House style: mold linker when available (arch-meson consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   arch-meson atkmm build "${meson_options[@]}"
   meson compile -C build -j "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
 }

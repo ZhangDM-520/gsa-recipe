@@ -15,10 +15,6 @@ sha256sums=('e4cb1a0d9aebb129c9856ec75e3d98e675997e385cce4e0106ef8f68e09afaa3')
 
 build() {
   cd "$srcdir/libunibreak-libunibreak_${pkgver//./_}"
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   ./bootstrap
   ./configure --prefix=/usr
   make

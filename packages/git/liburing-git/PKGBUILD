@@ -22,7 +22,6 @@ pkgver() {
 build() {
   cd "$srcdir/$pkgname"
 
-  export LDFLAGS="$LDFLAGS -fuse-ld=mold"
   ./configure
   make CFLAGS="$CFLAGS -flto" LDFLAGS="$LDFLAGS -flto"
 }

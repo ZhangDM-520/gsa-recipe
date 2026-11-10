@@ -56,10 +56,6 @@ sha256sums=('78765f1d06584c8e9b3b4a5b58c0ebea478d42ad21f1432717b31c20def05522')
 b2sums=('616c6bad77033ecb08fbd5b5cc1fede9f270d5122c45ac1319d1db78df9f2db05e406ab25541a42e1bd13eb081836c12df7ae3805dc6be4811dd15a4be5723dd')
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # No PGO phase (documented exception): no self-contained training
   # workload is authored and measured for this recipe yet (a readers.faux

@@ -42,10 +42,6 @@ source=("git+https://gitlab.gnome.org/GNOME/gnome-calculator.git#tag=${pkgver/[a
 b2sums=('6ee593a53f77e9952cecebc6b5ef4c840c563d62a8f85c0599f67f335b29ce54bf48a883459346586b706cfb9bbd73e0e54a596814e51e2de2ad123068370f92')
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   arch-meson $pkgname build
   meson compile -C build -j "${GSA_BUILD_JOBS:-$(nproc)}"

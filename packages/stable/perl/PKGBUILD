@@ -172,11 +172,6 @@ build() {
   # reproducible build overrides are only fully effective when loaded from file
   cp ../config.over .
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   export TZ=UTC
   ./Configure -des -Dusethreads -Duseshrplib -Doptimize="${CFLAGS}" \
     -Dprefix=/usr -Dvendorprefix=/usr \

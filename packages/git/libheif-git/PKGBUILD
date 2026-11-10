@@ -26,9 +26,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # CMAKE_BUILD_TYPE=None: the engine's makepkg config owns the opt level (no hard-coded -O3).
   # AUR ref disables AOM; stock libheif depends on aom, so its decoder/encoder

@@ -48,10 +48,6 @@ build() {
     -D pcap-tests=disabled
   )
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   arch-meson libsrtp build "${meson_options[@]}"
   meson compile -C build
   # trim: doxygen HTML (`meson compile -C build doc`) — never built for the

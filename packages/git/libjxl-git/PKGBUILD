@@ -75,9 +75,6 @@ pkgver() {
 }
 
 build() {
-    if command -v mold >/dev/null 2>&1; then
-        export LDFLAGS+=" -fuse-ld=mold"
-    fi
 
     export CFLAGS+=' -DNDEBUG -ffat-lto-objects'
     export CXXFLAGS+=' -DNDEBUG -ffat-lto-objects'

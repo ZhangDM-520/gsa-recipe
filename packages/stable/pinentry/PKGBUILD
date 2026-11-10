@@ -37,10 +37,6 @@ build() {
   # Stock replaced the environment CXXFLAGS; append instead so the engine's
   # makepkg config keeps owning the optimization level (house rule).
   CXXFLAGS="${CXXFLAGS} -std=c++17"
-  # House style: mold linker when available (runtime-guarded, no output effect).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
   ./configure \
     --prefix=/usr \
     --enable-pinentry-tty \

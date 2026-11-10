@@ -100,11 +100,7 @@ b2sums=('21e35a6318321155df27a2c55a4ca6b98f9a724ff7c5cb68866428ba6675aa017f21de1
 # install gate does not apply to this recipe.
 
 build() {
-  # House style: mold linker when available (mold-git does not provide
   # `mold` for depend resolution, so this is a runtime guard)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # Flag policy: the engine's makepkg config owns optimisation (never hard-code ISA
   # flags); -DENABLE_IPO=ON is stock's own IPO choice and is kept as-is.

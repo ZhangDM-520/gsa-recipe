@@ -26,10 +26,6 @@ sha256sums=('51f74eb0f51cfa9873b85264dfdd5d46e8957ec95b88f0fb762f63d9e164c72e'
 validpgpkeys=('EAF669B31E31E1DECBD11513DDBC579DAB37FBA9') # Gavin Smith
 
 build() {
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cd $pkgname-$pkgver
   ./configure --prefix=/usr

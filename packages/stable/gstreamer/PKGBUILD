@@ -308,11 +308,6 @@ build() {
   # https://gitlab.freedesktop.org/gstreamer/gstreamer/-/issues/3197
   export GI_SCANNER_DISABLE_CACHE=1
 
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   # Cargo sub-build: Use debug and LTO
   export CARGO_PROFILE_RELEASE_DEBUG=2 CARGO_PROFILE_RELEASE_STRIP=false
   export CARGO_PROFILE_RELEASE_LTO=true CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1

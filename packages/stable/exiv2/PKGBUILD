@@ -29,10 +29,6 @@ b2sums=('419175977f3f6ad397f415a517bbfd0de877fb85b48f6ca9ad1a812759f9d567d55a7c8
 
 build() {
   cd ${pkgname}
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   # trim: sample programs and the unit test suite (the stock recipe built
   # samples only to run the tests) — Class B trim standard (tests/demos)

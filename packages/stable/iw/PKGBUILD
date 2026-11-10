@@ -16,11 +16,6 @@ sha256sums=('25cde7e1517f2b7bae36920dc8987c95ca61c5a953d0f004fe6ece17f59980c9')
 build() {
   cd "${srcdir}/${pkgname}/"
 
-  # House style: mold linker when available (runtime-guarded, no output effect).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   make -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }
 

@@ -64,10 +64,6 @@ prepare() {
 build() {
   cd pcre2
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   local configure_options=(
     --enable-jit
     --enable-pcre2-16

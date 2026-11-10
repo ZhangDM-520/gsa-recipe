@@ -58,7 +58,7 @@ build() {
   local pgo_min_gcda=0
   export CFLAGS="$CFLAGS -fprofile-generate"
   export CXXFLAGS="$CXXFLAGS -fprofile-generate ${CPPFLAGS}"
-  export LDFLAGS="$LDFLAGS -fuse-ld=mold -fprofile-generate"
+  export LDFLAGS="$LDFLAGS -fprofile-generate"
 
   ./bootstrap --prefix=/usr \
     --mandir=/share/man \

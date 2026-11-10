@@ -30,10 +30,6 @@ prepare() {
 }
 
 build() {
-  # House style: mold linker when available
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
   # -Ddoxygen-doc=disabled: the docs feature is auto and turns on whenever
   # host doxygen exists; its output was pure waste (dropped in package())
   # and the doxygen run is a build wall (run #92 class)

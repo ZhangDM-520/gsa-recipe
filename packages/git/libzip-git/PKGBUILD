@@ -28,10 +28,6 @@ pkgver() {
 build() {
   cd libzip
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   # CMAKE_BUILD_TYPE=None: stock convention — uses makepkg CFLAGS, adds no -O3
   cmake -B build -S . \
     -D CMAKE_BUILD_TYPE=None \

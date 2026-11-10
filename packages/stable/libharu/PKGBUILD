@@ -16,10 +16,6 @@ source=(${url}/archive/v${pkgver}/${pkgname}-${pkgver}.tar.gz)
 sha512sums=('c16b1770cd06ffb3d02649de2f4a9e84ca2c42d82183194e01802bf8c6745609a176185d00e37bb06cae9b3245c154cf7e267e47bd71b3b9aa572c28214fec69')
 
 build() {
-  # House style: mold linker when available (CMake reads LDFLAGS at cache init)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   cmake -B build -S ${pkgname}-${pkgver} \
     -DCMAKE_BUILD_TYPE=Release \

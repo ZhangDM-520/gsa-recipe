@@ -54,10 +54,6 @@ prepare() {
 build() {
   cd spandsp
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   # stock's --enable-doc + docbook-xsl/doxygen makedeps dropped with the
   # spandsp-docs output
   ./configure \

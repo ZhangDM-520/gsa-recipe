@@ -25,10 +25,6 @@ validpgpkeys=(D8FF44A79CC8A61EF694FA7EB883E01314DA8E84  # https://ivarch.com/pub
 
 build() {
 	cd "$_archive"
-	# House style: mold linker when available (runtime-guarded, no output effect).
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-	export LDFLAGS+=" ${_mold}"
 	./configure --prefix=/usr
 	make -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

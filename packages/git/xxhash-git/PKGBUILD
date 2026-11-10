@@ -43,10 +43,6 @@ pkgver() {
 build() {
   cd xxHash
 
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
-
   # DISPATCH=1: runtime CPU dispatch (kept from stock)
   make PREFIX=/usr DISPATCH=1 -j"${GSA_BUILD_JOBS:-$(nproc)}"
 }

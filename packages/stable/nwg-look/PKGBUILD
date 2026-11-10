@@ -16,16 +16,13 @@ sha256sums=('1c66053f559f1756b18b615987a450433117c6b6c08759debdef94b6fd906480')
 
 build() {
 	cd "${pkgname}-${pkgver}"
-	# House style: mold linker when available
-	local _mold=""
-	command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
 	go build \
 		-trimpath \
 		-buildmode=pie \
 		-mod=readonly \
 		-modcacherw \
 		-p "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}" \
-		-ldflags "-linkmode external -extldflags \"${LDFLAGS} ${_mold}\"" \
+		-ldflags "-linkmode external -extldflags \"${LDFLAGS}\"" \
 		-o bin/nwg-look \
 		.
 }

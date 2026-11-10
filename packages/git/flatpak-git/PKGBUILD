@@ -30,11 +30,6 @@ pkgver() {
 build() {
   cd flatpak
 
-  # House style: mold linker when available (mold-git doesn't satisfy makedepends)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   # api_docs (2026-10-15): upstream dropped the gtkdoc meson option for
   # gi-docgen-driven api_docs — the old -Dgtkdoc=disabled broke the build.
   meson setup \

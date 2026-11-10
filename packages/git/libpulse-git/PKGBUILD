@@ -44,9 +44,6 @@ pkgver() {
 }
 
 build() {
-  if command -v mold >/dev/null 2>&1; then
-    export LDFLAGS+=" -fuse-ld=mold"
-  fi
 
   # meson options mirror stock Arch pulseaudio (which also tracks master); the
   # stock crash-fix patch is dropped — master already carries the fix

@@ -71,11 +71,7 @@ prepare() {
 
 build() {
   cd matplotlib
-  # House style: mold linker when available (the extension link lines consume
   # LDFLAGS from the environment).
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
 
   export SETUPTOOLS_SCM_PRETEND_VERSION=${pkgver}
   python -m build --wheel --no-isolation \

@@ -69,11 +69,6 @@ build() {
     -W no-dev
   )
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   cmake "${cmake_options[@]}"
 
   cmake --build build --parallel "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"

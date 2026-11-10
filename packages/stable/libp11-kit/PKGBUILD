@@ -58,11 +58,6 @@ build() {
     -D trust_paths=/etc/ca-certificates/trust-source:/usr/share/ca-certificates/trust-source
   )
 
-  # House style: mold linker when available (arch-meson consumes LDFLAGS env)
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   arch-meson p11-kit build "${meson_options[@]}"
   meson compile -C build -j "${GSA_BUILD_JOBS:-$(nproc)}"
 }

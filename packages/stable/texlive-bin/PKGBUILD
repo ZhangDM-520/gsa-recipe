@@ -85,11 +85,6 @@ prepare() {
 build() {
   cd texlive-source
 
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-fuse-ld=mold"
-  export LDFLAGS+=" ${_mold}"
-
   mkdir -p build
   cd build
   CFLAGS=${CFLAGS/FORTIFY_SOURCE=3/FORTIFY_SOURCE=2} # https://gitlab.archlinux.org/archlinux/packaging/packages/texlive-bin/-/issues/3 
