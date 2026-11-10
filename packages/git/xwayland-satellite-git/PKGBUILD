@@ -67,11 +67,6 @@ build() {
 	fi
 	export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$_extra_rustflags"
 
-	# Use mold linker if available
-	if command -v mold >/dev/null 2>&1; then
-		export RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
-	fi
-
 	# Fat LTO + single codegen unit for best optimization
 	export CARGO_PROFILE_RELEASE_LTO=fat
 	export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1

@@ -78,8 +78,6 @@ build() {
 
   export CARGO_HOME="${srcdir}/.cargo"
   local _rustflags="${RUSTFLAGS:-}"
-  # House style (mold-git): mold is probed, never a makedepend.
-  command -v mold >/dev/null 2>&1 && _rustflags+=" -C link-arg=-fuse-ld=mold"
 
   # Probe before trusting the compiler wrapper (same idiom as the mold probe
   # above): makepkg's ccache buildenv prepends /usr/lib/ccache/bin to PATH on a

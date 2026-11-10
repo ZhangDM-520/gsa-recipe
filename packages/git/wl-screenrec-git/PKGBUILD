@@ -71,11 +71,6 @@ build() {
   fi
   export RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$_extra_rustflags"
 
-  # Use mold linker if available
-  if command -v mold >/dev/null 2>&1; then
-    export RUSTFLAGS+=" -C link-arg=-fuse-ld=mold"
-  fi
-
   # Upstream pins thin LTO in its release profile (Cargo.toml)
   export CARGO_PROFILE_RELEASE_STRIP=symbols
 

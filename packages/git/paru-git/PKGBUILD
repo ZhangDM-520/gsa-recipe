@@ -57,9 +57,7 @@ build() {
     _features+="backtrace,"
   fi
 
-  # House style (mold-git): mold is probed, never a makedepend.
   local _rustflags="${RUSTFLAGS:-}"
-  command -v mold >/dev/null 2>&1 && _rustflags+=" -C link-arg=-fuse-ld=mold"
 
   if [[ $CARCH != x86_64 ]]; then
     export CARGO_PROFILE_RELEASE_LTO=off

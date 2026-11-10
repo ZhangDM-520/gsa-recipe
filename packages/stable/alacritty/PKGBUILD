@@ -28,10 +28,7 @@ prepare() {
 
 build(){
   cd "$pkgname"
-  # House style: mold linker when available
-  local _mold=""
-  command -v mold >/dev/null 2>&1 && _mold="-C link-arg=-fuse-ld=mold"
-  CARGO_INCREMENTAL=0 RUSTFLAGS="${RUSTFLAGS} ${_mold}" \
+  CARGO_INCREMENTAL=0 \
     cargo build --release --locked --offline -j "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
 }
 

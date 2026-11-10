@@ -55,9 +55,7 @@ build() {
     export CARGO_PROFILE_RELEASE_LTO=true
     export CARGO_PROFILE_RELEASE_CODEGEN_UNITS=1
 
-    # House style (mold-git): mold is probed, never a makedepend.
     local _rustflags="${RUSTFLAGS:-}"
-    command -v mold >/dev/null 2>&1 && _rustflags+=" -C link-arg=-fuse-ld=mold"
     # Keep Rust-side $srcdir references out of the shipped binaries.
     _rustflags+=" --remap-path-prefix=${srcdir}=/"
 

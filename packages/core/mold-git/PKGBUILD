@@ -78,12 +78,6 @@ build() {
     _rustflags+=" -C target-cpu=native"
   fi
 
-  # Fast linker: huge win for fat-LTO link times (build-time only, no output
-  # effect). Probed, not declared — see makedepends above.
-  if command -v mold >/dev/null 2>&1; then
-    _rustflags+=" -C link-arg=-fuse-ld=mold"
-  fi
-
   # Prevent warning: 'Package contains reference to $srcdir'
   _rustflags+=" --remap-path-prefix=${srcdir}=/"
 

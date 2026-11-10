@@ -27,10 +27,8 @@ prepare() {
 
 build() {
   cd "${srcdir}/${pkgname}"
-  # House job budget (the builder exports GSA_BUILD_JOBS) and the house mold
-  # linker probe (runtime-guarded, no output effect).
+  # House job budget (the builder exports GSA_BUILD_JOBS).
   CARGO_BUILD_JOBS="${GSA_BUILD_JOBS:-$(nproc)}" \
-  RUSTFLAGS="${RUSTFLAGS:-}$(command -v mold >/dev/null 2>&1 && echo ' -C link-arg=-fuse-ld=mold')" \
     cargo build --release --frozen
 }
 

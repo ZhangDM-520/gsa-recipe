@@ -34,8 +34,6 @@ _srcenv() {
 	# CARGO_PROFILE_RELEASE_OPT_LEVEL dropped (house: optimization is owned by
 	# the engine's RUSTFLAGS — cargo's release default already applies)
 	CFLAGS+=' -ffat-lto-objects'
-	# House style: mold linker when available (runtime-guarded, no output effect).
-	command -v mold >/dev/null 2>&1 && RUSTFLAGS+=' -C link-arg=-fuse-ld=mold'
 	# Make sure the build fails if our system libgit2 is out
 	# of range rather than silently starting to vendor it.
 	export LIBGIT2_NO_VENDOR=1
