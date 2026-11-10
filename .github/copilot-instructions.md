@@ -22,55 +22,162 @@ here; a rule copied into a second file drifts in one of them.
 
 ## Commands
 
+All of these are `bash`; the checkout is the working directory.
+
+### Inspect (read-only, unprivileged — safe to run anywhere)
+
+```sh
+gsa --help                    # authoritative command roster; everything else is deferred
+gsa -Qg                       # group roster with member counts
+gsa -Qt                       # resolved topology records: id|path|groups|edges|tags
+gsa -Qi <ref>                 # merged info: pacman fields, side-car, recipe metadata, topology record
+gsa -Sl @git                  # ordered listing (re-validates map, graph, sort)
+gsa -Qa <ref>                 # ABI token and recorded subscriptions
+gsa -Qr                       # revdep report: unresolved DT_NEEDED, exact-pin leftovers
+gsa -Qp <archive>             # probe an archive: .PKGINFO vs its index row, hash/size
+gsa -Sw @core                 # fetch + verify sources (makepkg --verifysource); builds nothing
+gsa -Ma                       # audit lints: report-only, ALWAYS exits 0 — read it
+```
+
+`gsa -Qi` and `gsa -Qt` are the fastest way to learn what a recipe is wired to
+without opening three files. `gsa -Sw` is the cheap source/signature check:
+prefer it over a rebuild when only `source=()`/`b2sums=()` moved.
+
+### Validate a recipe change
+
+```sh
+bash -n packages/<cat>/<pkg>/PKGBUILD    # recipe parse
+GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<pkg> \
+  > packages/<cat>/<pkg>/.SRCINFO        # regenerate the COMMITTED .SRCINFO
+gsa -Ma                                  # read the report, not the exit status
+gsa -Sl                                  # listing re-validates map, graph and sort
+gsa -S --dry-run @git                    # repeat for @stable, @core
+bash tests/run-all.sh                    # whole battery
+```
+
+The `.SRCINFO` step is not optional and not a formality: the engine and the
+fixtures read the committed metadata, so a fresh `PKGBUILD` with a stale
+`.SRCINFO` is a real defect. The fixtures that own a recipe regenerate it and
+`diff` the result against the committed file (see the tail of
+`tests/onlyoffice-recipe.sh`), so a stale one fails the battery rather than
+passing review. `GIT_CONFIG_COUNT=0` is required in agent shells — see the
+shell boundary note below.
+
+Run the **whole** battery, not only the fixture whose name matches the recipe
+you touched: a map-format change was once caught by two unrelated recipe
+fixtures. Never use a real rebuild as a syntax check.
+
+### Tests
+
 ```sh
 bash tests/run-all.sh                    # whole battery, parallel by default
 bash tests/run-all.sh recipe             # substring filter (a typo exits 2)
 bash tests/run-all.sh --serial           # one at a time, for a flaky fixture
 bash tests/run-all.sh -j 4               # cap concurrency
+RUN_ALL_JOBS=2 bash tests/run-all.sh     # same cap, env spelling
 bash tests/<name>.sh                     # one fixture, standalone
 GSA_TEST_GSA_BIN=$PWD/../gentoo-style-arch/target/release/gsa bash tests/run-all.sh
-
-bash -n packages/<cat>/<pkg>/PKGBUILD    # recipe parse
-GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<pkg> \
-  > packages/<cat>/<pkg>/.SRCINFO        # regenerate the COMMITTED .SRCINFO
-
-gsa -Qg                                  # group roster and members
-gsa -Sl @git                             # ordered listing (re-validates map, graph, sort)
-gsa -Ma                                  # audit lints: report-only, ALWAYS exits 0 — read it
-gsa -S --dry-run @git                    # plan + decision rows, no mutation
-gsa -S @core                             # ABI-coupled core update
 ```
 
 The battery validates this repository **through the installed engine**, which
 is the contract's rule: it prints the binary and its owning package, and a
 `GSA_TEST_GSA_BIN` run is a pre-install deviation to be reported as such. A
-stale `/usr/bin/gsa` makes the battery test old code. Fixtures are
-non-mutating, `$TMPDIR`-scoped and must stay parallel-safe; they are discovered
-recursively, so a new one needs no runner edit. `gsa -Ma`'s exit status says
-nothing about the audit — a green run is not a clean report.
+stale `/usr/bin/gsa` makes the battery test old code:
+
+```sh
+pacman -Qo "$(command -v gsa)"    # which package owns the binary under test
+pacman -Q gsa-pm                  # its version
+```
+
+If the engine itself is stale, refresh it before trusting a green run:
+
+```sh
+sudo gsa -Sy && sudo gsa -S gsa-pm
+```
+
+### Build / install
+
+```sh
+gsa -S --dry-run @git            # plan + decision rows, no mutation
+gsa -B --leaf glib2-git          # build ONE recipe to archives; installs nothing
+gsa -S glib2-git                 # build + install it AND its consumer closure
+gsa -S @core                     # ABI-coupled core update
+sudo gsa -S @git                 # write-side verbs need root; makepkg still runs as you
+gsa -Sy                          # version sync only — leaves rewrites UNCOMMITTED
+```
 
 Never use a real rebuild as a syntax check, and never run two heavy builds at
-once (check for in-flight `makepkg` first).
+once (check for in-flight `makepkg` first; the failure mode is an OOM, not a
+queue). Build in the runtime clone or the store, never in this checkout.
+
+## Selection semantics (the part that bites)
+
+- **A selection expands to its transitive consumers.** `gsa -S mesa-git` also
+  rebuilds everything that must build after mesa-git. Rebuilding exactly what
+  you named requires `--leaf`.
+- **Selectors**: recipe id, recipe path, case-variant id (matched and
+  announced), pacman pkgname (split outputs included), a `@group` / `@user-set`,
+  a `22..38` index range over `-Sl`, or a standalone `PKGBUILD`/directory/URL.
+- **Exact lookup only** — a typo is never auto-corrected; it exits 2 with
+  nearest candidates.
+- `<id>-snapshot` is an **input alias** accepted for a recipe whose primary
+  source carries `#commit=`. The recipe keeps its `-git` id, `pkgname`s and
+  `provides=`; a floating recipe is refused.
+- `--skip` (verified-fresh claim) and `--skip-built` (any complete built set)
+  are different claims and cannot combine.
+
+Exit codes are the assertion surface (`CONTRIBUTING.md` says assert decision
+rows, never rendered prose):
+
+| code | meaning |
+| --- | --- |
+| 0 | success |
+| 1 | build failure under `--fail-fast` |
+| 2 | usage error (bad flag, unknown reference, invalid range, malformed config record, deferred spelling) |
+| 3 | refusal — the run refused to start or aborted at a fail-closed gate |
+| 4 | cone-stop run with >=1 failure (the parked cone is in the run record) |
+| 5 | deferral-only (>=1 deferred/parked row, no failure) |
+| 130 | interrupted — the full run record is emitted first |
+
+Install behaviour has a dedicated entry point: `gsa --install-decide
+<checked|force> <archive…>` prints the install rows
+(`install`/`skip`/`refuse`/`noop`/`parked`) and exits 0 plan / 1 refusal / 2
+bad usage.
 
 ## Structure and mental model
 
 - `packages/<category>/<id>/` — `PKGBUILD` is the source of truth with the
   generated `.SRCINFO` committed beside it, plus local patches, hooks, install
   files, desktop assets and upstream licence material. A generated `PKGBUILD`
-  commits its generator pair (`PKGBUILD.in` + `update.PKGBUILD`). Physical
+  commits its generator pair (`PKGBUILD.in` + `update.PKGBUILD`, kept in
+  lockstep: every manual edit is mirrored into the template). Physical
   categories (`git`, `stable`, `core`, `misc`, and the parked `deprecated`
   tier) are a filing system, **not** the build order.
-- `config/` — exactly three files. `topology.conf` is one record per package,
-  `id|path|groups|edges[|tags]`, and is the only place that binds an id to a
-  recipe path. `build-defaults.conf` holds lanes/jobs/intensity and memory
-  budgets. `abi-exclusions.conf` holds `id|reason|review-by` rows. Anything
-  else under `config/` is unreachable state and fails a fixture.
+- `config/` — exactly three files. Anything else under `config/` is
+  unreachable state and fails a fixture.
+  - `topology.conf` — one record per package, `id|path|groups|edges[|tags]`,
+    and the only place that binds an id to a recipe path. `id` is unique
+    `[A-Za-z0-9._+-]+`; `path` is relative, contains no `..`, and must hold a
+    `PKGBUILD`; `groups` is a comma list over the roster; `edges` is the
+    comma list of packages this one consumes (a record ending in a bare `|` is
+    a deliberate **no-edge** record). `tags` carries policy: `abi=must` /
+    `abi=should`, `app-cluster=<name>`, `version-sync=nvchecker`,
+    `toolchain=gcc|clang`.
+  - `build-defaults.conf` — `lanes`, `jobs`, `intensity`, the memory budgets
+    (`memory_per_job_gib`, `core_memory_per_job_gib`, `reserved_memory_gib`)
+    and `store_format` (bump only with a schema change an older engine cannot
+    parse).
+  - `abi-exclusions.conf` — `id|reason|review-by` rows; these are **documented**
+    Tier-2 exceptions the ABI guard consults, never silent gaps, and a row must
+    be reviewed before its `review-by`.
 - `lib/` — shared helpers sourced from recipes: `pgo.sh` (the one PGO payload
   gate) and `cups-config`.
 - `tools/` — host diagnostics, deliberately outside the battery: `nvcheck.sh`,
   `provides-audit.sh`, `go-modcache-check.sh`.
 - `tests/` — the fixture battery; `tests/assets/` is frozen oracle material and
   is never discovered, `tests/lib/` holds `.bash` synthesis helpers.
+- `.logs/` — the active working buffer (`scratchpad.md`, a tracked stub) and
+  untracked per-action exports.
 
 The mental model: **topology, not directory names** — identity, group
 membership and build-order edges are one declarative record, re-validated on
@@ -84,7 +191,8 @@ dual with `core`.
 
 - **One topology record per package** (ADR 0002). Adding or relocating a recipe
   means updating `config/topology.conf` in the same change; the loader rejects
-  any other record shape. Never add a second file that maps ids to paths.
+  any other record shape, and one malformed record breaks every command. Never
+  add a second file that maps ids to paths.
 - **`.SRCINFO` is committed metadata.** Regenerate it after every `PKGBUILD`
   edit and commit both; a stale `.SRCINFO` is what the engine and the fixtures
   actually read.
@@ -92,7 +200,14 @@ dual with `core`.
   default-deny `*` plus `!` negations, and the root `.gitignore`, which denies
   every new subdirectory under a recipe and negates only `LICENSES/`. Verify
   with `git check-ignore -v <asset>` — no output means it is visible. Never let
-  a recipe `.gitignore` match itself.
+  a recipe `.gitignore` match itself. A name fetched at build time goes in the
+  recipe's `FETCHED-ONLY` file instead of being committed.
+- **`b2sums` is a flat list, one entry per source**, so it can serve exactly
+  one combination of a recipe's knobs. Keep the source set knob-independent; a
+  recipe that cannot must refuse the unservable combinations **and** keep
+  `updpkgsums` runnable. Never grow it with per-knob `b2sums+=(…)` appends —
+  `updpkgsums` rewrites the whole literal on the first bump and they
+  double-count.
 - **Provides discipline.** Toolchain `-git` packages carry *versioned*
   provides (`meson=${pkgver}`), because an unversioned provide cannot satisfy a
   `>=N` makedepend and pacman silently falls back to the repo package.
@@ -113,31 +228,43 @@ dual with `core`.
   `pkgver` and the expanded source array; a GitHub release digest anchors only
   its configured repo/tag/asset, and an absent digest is fetch-only. A provider
   outage defers the package; a checksum mismatch refuses the run and restores
-  the recipe.
+  the recipe. `gsa -Qt` is the way to see which records opted in. A `-Sy`
+  rewrite is volatile: it is left uncommitted for review and destroyed by the
+  next store refresh, so commit it (and re-verify fetch-only sums with an
+  independent download) instead of re-running the sync.
 - **Optimization is the ENGINE's, not `makepkg.conf`'s.** The compiler line and
   the per-family passes live in `/etc/gsa/{gcc,clang}-makepkg.conf` and are
   injected as a generated `makepkg --config`; the host and user `makepkg.conf`
   are never sourced. No baseline flag in a recipe (`-O3`, `-march`, `-mtune`,
   `-pipe`, `-fno-plt`, `-fipa-pta`, `-fuse-ld=mold`, …); a package delta needs
   its reason in the file, and dropping a shipped flag is a substitution
-  (`CFLAGS=${CFLAGS/-fno-math-errno/}`). Per-package exceptions are documented
-  one at a time in `AGENTS.md` §4. Trims follow the AMD target and must name
-  what they no longer cover. Trim dead packaging paths together, and keep
-  whatever trains PGO or protects a maintained capability.
+  (`CFLAGS=${CFLAGS/-fno-math-errno/}`, never a re-assignment). Name the
+  compiler when the delta is compiler-specific (`toolchain=` tag or a
+  `CC=clang` driver marker); the engine refuses an ambiguous family. Per-package
+  exceptions are documented one at a time in `AGENTS.md` §4. Trims follow the
+  AMD target, must name what they no longer cover, and trim dead packaging
+  paths together; keep whatever trains PGO or protects a maintained capability.
 - **PGO recipes call the shared gate** (`lib/pgo.sh`) as the last statement of
   their package function — never copy its implementation. The engine's
   fail-closed payload check at the install seam does not make the call
-  optional.
+  optional. The training threshold is a **per-recipe `local`**
+  (`pgo_min_gcda`, `pgo_min_profraw`, `pgo_min_samples`), deliberately not a
+  `lib/pgo.sh` knob; below it the recipe falls back to a plain build. Changing
+  a threshold is a behavioural change and belongs in a journal entry.
 - **Verification is never weakened.** Never `--skippgpcheck`, never drop
   `?signed`, never trust a fingerprint that cannot be confirmed against
   published maintainer material. Checksums, signatures and the PGO/ABI gates
-  are fail-closed; a green run that skipped the check is not a green run.
-- **Assert on decision rows, not prose.** `gsa --install-decide <checked|force>
-  <archive…>` prints the install rows and exits 0 plan / 1 refusal / 2 bad
-  usage.
-- **Build in the runtime clone or the store, never in this checkout.** A run
-  started here once left 24 GB of checkout and packaging state inside the
-  published tree. Engine logs live under the state root, outside the clone.
+  are fail-closed; a green run that skipped the check is not a green run. A
+  `b2sums` count error names nothing useful — add a parse-time guard naming
+  both counts and the knob values, exempt `GENINTEG=1`, and prefer
+  `makepkg --verifysource` as the cheap red/green.
+- **Recipe code never writes engine state.** The recipe store resolves from
+  `GSA_RECIPES_DIR` > `recipe_dir` > the build user's
+  `~/.local/share/gsa/recipes` and is never `--state-dir`; never write
+  `/var/lib/gsa` from a recipe.
+- **Recipe text is public surface.** A comment explains the code, the kernel
+  option or the trim — never the machine it was written on. Versions, thread
+  counts, bootloader lines and incident narratives go in `docs/JOURNAL.md`.
 - **Shell boundary.** The login shell is fish, but agent tool calls run in
   bash: hand any command to the user as `bash -c '…'`. Prefix makepkg and
   bare-repo git work with `GIT_CONFIG_COUNT=0` — agent shells inject
@@ -147,6 +274,79 @@ dual with `core`.
   consent. Do not commit sources, archives, signatures, build trees or logs.
   Trailers:
   `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
+
+## Fixture authoring
+
+A new fixture needs no runner edit — `tests/run-all.sh` discovers
+`**/*.sh` recursively, excluding `tests/assets/` (frozen oracle) and
+`tests/lib/`.
+
+- **Non-negotiable properties**: non-mutating, `$TMPDIR`-scoped, and safe to
+  run **concurrently** — the parallel default rests on it, so a fixture that
+  breaks it is a fixture bug, not a reason to drop `-j`. The runner gives each
+  fixture its own `GSA_BUILD_DIR="$work/build-cache/<fixture>"`; never share a
+  build cache between fixtures.
+- **Helpers are `.bash`, not `.sh`**, so discovery can never match them.
+  Source them from a fixture rather than copying:
+
+  ```sh
+  source "$(dirname "${BASH_SOURCE[0]}")/lib/fixture-lib.bash"
+  ```
+
+  `tests/lib/fixture-lib.bash` builds the workspace skeleton and writes the
+  trivial byte-identical stubs; anything oracle-shaped (a fake `pacman`, a
+  ticking `makepkg`, a signal logger) stays inline in the fixture that gives
+  it meaning. Stub knobs are named `GSA_FAKE_*`; the builder's own inputs keep
+  their names.
+- Fixtures stub `sudo`/`pacman`/`date` through `PATH` and assert on the
+  builder's own output and the decision rows — never on rendered prose.
+- A new PGO family earns a fixture when its profile-leak shape is new; the
+  existing C-autotools and Go families needed no `lib/pgo.sh` change.
+
+## Working conventions for a Copilot session
+
+The repository mandates a three-layer memory discipline (`AGENTS.md` §0, §7);
+follow it or the next session starts blind:
+
+- `.logs/scratchpad.md` — the **active buffer**, a tracked stub. Put dense tool
+  output and intermediate state here, not in the conversation, and reset it to
+  the stub after each action.
+- `.logs/action-<ISO-date>-<task>.md` — the per-action export, never tracked.
+  Anything that outgrows one journal line lives here.
+- `docs/JOURNAL.md` — exactly **one dense line per action**: symptom → root
+  cause → fix → validation → durable rule, naming the affected recipe ids and
+  the command that proved it. A bare "fixed X" is not an entry.
+- `docs/CURRENT.md` — the live stack snapshot. **Overwrite, never append**, and
+  it is owned by another session lane: never edit it from a rebuild-campaign
+  lane.
+- Finished queue items in `AGENTS.md` §6 are **deleted**, never ticked.
+- A living doc teaches how to *check* a fact (`gsa -Sl`, `pacman -Q`), never the
+  shape of a retired era; retired spellings survive only in the engine
+  contract's migration table.
+
+## Common tasks
+
+**Add a recipe** — the order matters, and one change does all of it:
+
+1. Create `packages/<category>/<id>/PKGBUILD`; put local assets beside it and
+   add the `!` negations plus the root `.gitignore` negation.
+2. Add exactly one `config/topology.conf` record
+   (`id|path|groups|edges[|tags]`); derive `groups` from `gsa -Qg`, and add an
+   edge only with a build-order reason.
+3. Regenerate the committed `.SRCINFO`.
+4. `bash -n` the recipe, `gsa -Sl`, `gsa -Ma` (read it), then
+   `gsa -S --dry-run @<group>`.
+
+**Bump a version-synced recipe** — check the record carries
+`version-sync=nvchecker` and the recipe has its `.nvchecker.toml`; run
+`gsa -Sy`, review the uncommitted rewrite with `git diff`, verify fetch-only
+sums independently, then commit the rewrite (the store refresh destroys it
+otherwise). Bump `pkgrel` only *after* the first post-sync build.
+
+**Investigate a break** — `gsa -Qi <ref>` for the wiring, `gsa -Qa <ref>` for
+the ABI token, `gsa -Qr` for unresolved `DT_NEEDED` and exact-pin leftovers,
+`gsa -Qp <archive>` for a hash/size disagreement, `gsa -Ml` for the per-package
+build log. `ldd` on the shipped ELF is still the ground truth for a soname gap.
 
 ## Where the truth lives
 
