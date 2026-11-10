@@ -35,7 +35,7 @@ b2sums=('f4d7ecd1f497a8baaef6537d13dbf8257a711d997710ea9e975dda44a835b94e0cd5239
 build() {
   cd zbar-$pkgver
 
-  meson setup build \
+  meson setup --buildtype=plain build \
     --prefix=/usr \
     --wrap-mode=nofallback \
     -Dgtk=gtk3 \

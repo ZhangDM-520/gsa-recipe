@@ -331,7 +331,7 @@ build () {
         CFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
         CXXFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
 
-        meson setup mesa _build "${meson_options[@]}"
+        meson setup --buildtype=plain mesa _build "${meson_options[@]}"
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build
 
@@ -402,7 +402,7 @@ build () {
             echo "  -> NOTE: building with LTO only (no -fprofile-use)."
         fi
 
-        meson setup mesa _build "${meson_options[@]}"
+        meson setup --buildtype=plain mesa _build "${meson_options[@]}"
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build
 
@@ -411,7 +411,7 @@ build () {
         rm -rf "${_pgo_profile_dir}"
     else
         echo "==> Building without PGO..."
-        meson setup mesa _build "${meson_options[@]}"
+        meson setup --buildtype=plain mesa _build "${meson_options[@]}"
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build
     fi
