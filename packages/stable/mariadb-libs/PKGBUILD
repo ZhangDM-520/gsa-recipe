@@ -79,7 +79,7 @@ build() {
   local _cmake_options=(
     # build options
     -DCOMPILATION_COMMENT="Arch Linux"
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo
+    -DCMAKE_BUILD_TYPE=None
     #-DCMAKE_BUILD_TYPE=Debug
     #-DMYSQL_MAINTAINER_MODE=WARN
     -Wno-dev

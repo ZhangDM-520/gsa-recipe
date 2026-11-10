@@ -47,7 +47,7 @@ build() {
 
 	cd "$_archive"
 	local cmake_flags=(
-		CMAKE_BUILD_TYPE=RelWithDebInfo
+		CMAKE_BUILD_TYPE=None
 		CMAKE_INSTALL_PREFIX=/usr
 		ENABLE_CLI=ON
 		ENABLE_DAEMON=ON
