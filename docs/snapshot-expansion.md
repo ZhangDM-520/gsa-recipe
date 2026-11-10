@@ -145,7 +145,7 @@ is a walled build, which is local to the recipe.
 
 | wave | contents | why this order |
 | --- | --- | --- |
-| **W0 — engine alias first** | `gsa` accepts `<id>-snapshot` for a pinned `<id>`, with the guard and its fixture; the `-snapshot` wording lands in `AGENTS.md` §4 | the visible half of the feature must exist before recipes start claiming it, and a wrong alias must fail loudly |
+| **W0 — engine alias first** | `gsa` accepts `<id>-snapshot` for a pinned `<id>`, with the guard and its fixture; the `-snapshot` wording lands in `AGENTS.md` §4 | the visible half of the feature must exist before recipes start claiming it, and a wrong alias must fail loudly — **landed 2026-11-09**, pinned by the engine's `tests/project.sh` §9 |
 | **W1 — leaves (64)** | fan-out ≤ 4 | cheapest end-to-end validation of the idiom |
 | **W2 — mid (59)** | fan-out 5–30, by subsystem: codecs, X/graphics, system libraries | adjacency keeps each batch's verification inside one subsystem |
 | **W3 — build tools (5)** | `ninja-git`, `cmake-git`, `meson-git`, `zlib-ng-compat-git`, `glib2-git` | makedepends for nearly everything; each gets its own pass |
@@ -157,14 +157,15 @@ and the wave's recipes installed at their pinned version.
 
 ## 4 · Engine work
 
-1. **W0 — the snapshot alias.** Target resolution accepts `<id>-snapshot` when
+1. **W0 — the snapshot alias (landed 2026-11-09).** Target resolution accepts `<id>-snapshot` when
    `<id>`'s primary VCS source is `#commit=`-pinned, and refuses otherwise with
    rc 2 naming the reason ("`foo-git` is not a snapshot: it tracks
    `<ref>`"). Derived from the source ref, so **no new topology vocabulary** and
    no per-recipe opt-in: a pin *is* the snapshot. Real ids never change, and the
    run record, listings and plan keep printing the true id — a record must not
    misname the package it installed. Nearest-candidate hints already cover the
-   typo path.
+   typo path. Code: `gsa-cli`'s `select::resolve_snapshot_alias`; pinned by
+   `tests/project.sh` §9 (resolve, the four refusals, the real-id precedence).
 2. **W5 — the `-Sy` provider.** A version-sync provider kind that resolves the
    Monday-boundary commit for a recipe's own git URL (`_snapshot_ref` when
    present, else the default ref) and rewrites `#commit=` **and** `pkgver` in
@@ -201,3 +202,63 @@ HEAD>.g<short>`) was bundled with the 2026-11-01 decision because a rename would
 have absorbed the version-shape change for free. With the rename withdrawn it
 would be a bare version move for 91 recipes, so it is **deferred**: the
 inversion risk above is tracked per wave instead. Revisit if a pin inverts.
+
+## 8 · W1 status (2026-11-09)
+
+**Pinned: 64/64 — and that is the whole of W1 so far.** Every fan-out ≤ 4
+tracker carries `#commit=` at the last commit at or before Monday 2026-11-09
+00:00 UTC; 12 of them are branch-pinned and record `_snapshot_ref=<branch>` in
+the PKGBUILD (invisible to makepkg, read by the future `-Sy` provider).
+`.SRCINFO` regenerated for all 64 through `makepkg --printsrcinfo`;
+`tests/srcinfo-freshness.sh` is clean over the whole tree (665 recipes) and the
+recipe battery is 27/27.
+
+**Queued: the weekend full rebuild.** The owner runs a full rebuild this
+weekend or the next (2026-11-09 decision); W1's build + install and W2–W4's
+pins ride it, and the whole programme is VERIFIED afterwards rather than
+per-wave in this session — so no wave is called done until that pass reports.
+
+**Build and install are deliberately NOT part of this pass** (owner,
+2026-11-09: "do not do real build test"). Two consequences to keep in mind:
+
+- A pin is a recipe-file change only. Until a wave is built and installed, the
+  installed packages still carry the previous versions — an advance, not a
+  downgrade, for every recipe here.
+- Any archive built earlier today predates the `--fetch` re-anchoring that
+  moved the pins from the mirror's stale HEAD to the true Monday boundary.
+  Treat those archives as stale; the wave's build must run again against the
+  current pins whenever the owner starts it.
+
+### Rules learned while applying the pins
+
+- **Never resolve a branch name bare in a mirror.** A mirror can carry a TAG
+  with the branch's name (`refs/tags/master` beside `refs/heads/master`); git
+  then resolves the ambiguous name to the tag. `autofdo-git` was pinned to a
+  2024 tag commit this way and its build died on `unknown target
+  create_llvm_prof`. Resolve fully qualified, in order:
+  `refs/remotes/origin/<ref>`, `refs/heads/<ref>`, then the bare name.
+- **A build run whose workspace is this git tree rewrites `pkgver=` in place.**
+  Running `gsa -B` in the checkout bumped 30 out-of-wave PKGBUILDs through the
+  fetch-side `pkgver()` rewrite and left their `.SRCINFO` stale (they were
+  restored). Build from the canonical store, or from a copy of the tree.
+- **A pinned provider whose `provides=` embeds `$pkgver` drags its consumer
+  cone** — `-B --leaf` does not suppress the ABI wave (`libcolord-git` alone
+  expanded to ~150 packages, measured). The wave is computed from subscription
+  records under the real state root, so a build-only pass in a COPY of the tree
+  with a scratch `GSA_STATE_DIR` sees no wave:
+
+  ```sh
+  cp -a ~/Projects/gsa-recipe /tmp/gsa-pin-build   # a copy: builds rewrite pkgver in place
+  cd /tmp/gsa-pin-build
+  GSA_STATE_DIR=/tmp/gsa-pin-state sudo -n --preserve-env=GSA_STATE_DIR \
+    gsa -B --leaf $(cat wave-ids)                   # archives land in the real build dir
+  ```
+
+  Installing then goes through the real state (`gsa -U <archive paths>`, since
+  a scratch state has no binpkg rows), and a provider whose version moved
+  installs **with** its consumer cone, never solo.
+- Two environment blocks seen during the discarded build pass, worth knowing
+  before the real one: `libidn2-git`'s `./bootstrap` fetches gnulib from a
+  doubled-`https.` savannah URL that answers HTTP 500, and `libmypaint-git`
+  wants `gegl` via pkg-config while the installed `gegl-git` ships only
+  `gegl-0.4.pc`.

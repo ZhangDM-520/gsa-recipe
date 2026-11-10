@@ -1,8 +1,8 @@
 # AGENTS.md — memory management & entry point
 
-`AGENTS.md` (this file) is the global memory — overview, long-term rules,
-pitfalls, queued work; `docs/JOURNAL.md` is the historical log, one dense line
-per action; `.logs/scratchpad.md` is the active buffer (a tracked stub,
+`AGENTS.md` (this file) is the global memory — overview, long-term rules, one
+line per pitfall MECHANISM, queued work; `docs/JOURNAL.md` is the historical
+log (incidents, dates, measurements), one dense line per action; `.logs/scratchpad.md` is the active buffer (a tracked stub,
 reset after every action) and `.logs/action-<ISO>-<task>.md` the per-action
 exports, never tracked. A
 finished queue item is **deleted**, never ticked.
@@ -133,7 +133,7 @@ OpenShadingLanguage -> blender.
 | `docs/maintainer-guide.md` | The recipe-maintenance manual: groups, recipe registration, version-synced external releases, the `app` group, coupled-stack updates, the journal-entry format. |
 | `docs/package-policy.md` | What a recipe directory may hold versus what is fetched at build time; the generator pair, the `.SRCINFO` contract. |
 | `docs/source-sharing.md` | The shared-source mirror contract (`gsa -Mm`) and what qualifies as a valid canonical mirror. |
-| `docs/snapshot-expansion.md` | The `-git` → `-snapshot` programme: reconciled state, exclusions, waves, engine work |
+| `docs/snapshot-expansion.md` | The Monday-boundary snapshot-pin programme: reconciled state, exclusions, waves, engine work (names stay `-git`; `<id>-snapshot` is a `gsa` frontend alias) |
 | `docs/CURRENT.md` | The umbriel stack live snapshot — overwrite, never append; owned by a parallel session lane, so never edit it from a rebuild-campaign lane. |
 | `docs/adr/0001-pgo-shared-gate.md` | Why PGO verification is one shared module with per-recipe calls and fatal semantics; read before touching `lib/pgo.sh` or any `package*` tail. |
 | `docs/adr/0002-topology-one-record.md` | Why one topology record per package replaced four syntaxes; read before adding, merging, or splitting records. |
@@ -491,7 +491,13 @@ rule 63, **62** is superseded by engine rule 73.
     before Monday 00:00 UTC via `#commit=`/`_commit`, with `pkgver` moved in the
     same change. Never free-track. Advance all pins together on the Monday
     cadence; `gcc-snapshot`'s AUR snapshot-tarball + `version-synced` route
-    stays retired.
+    stays retired. The scope widens to every moving-ref tracker in
+    `@core`/`@build-tools` (`docs/snapshot-expansion.md`), and **a pin is the
+    only requirement for the snapshot name**: `gsa` accepts `<id>-snapshot` as
+    an INPUT alias for a recipe whose primary source carries `#commit=`, while
+    the recipe keeps its `-git` id, `pkgname`s and `provides=` — never rename a
+    recipe to `-snapshot` to make the alias work, and never add topology
+    vocabulary for it.
 65. **A parallel writer turns measurement into noise** — when two identical
     runs disagree, suspect the inputs: `sha256sum` plus
     `ls --time-style=full-iso` before theorizing, and record content hashes in
@@ -674,104 +680,259 @@ rule 63, **62** is superseded by engine rule 73.
 
 ## 5 · Pitfalls
 
-- **Trimming one package's copy of a dual-owned file deletes it for every owner** (2026-10-22): ghostty's terminfo is also shipped by `ncurses-git`; expect the upgrade loss and schedule the surviving owner's reinstall.
-- **A snapshot toolchain miscompiles a tolerant word scan into aligned `vmovdqa64` loads** (2026-10-21): svn SIGSEGVs; the fix is a per-recipe `-fno-tree-vectorize` (`-mno-avx512*` is NOT a fix). Probe with a page-boundary translation unit.
-- **A VCS-source husk left by a failed makepkg fetch is self-perpetuating** (2026-10-20): texlive tlpkg; `prepare()` must detect the husk, wipe `$srcdir`, `$SRCDEST` and the legacy path, then re-fetch the pinned revision.
-- **A mandatory validation fetch inside a cached build needs a bounded step-level retry** (2026-10-20): vscodium's `@electron/get`; generate the npm retry shim in `build()` for transient signatures only. The vscodium instance retired with its recipe, so a new instance earns its own fixture rather than inheriting a dead pin.
-- **`pod2man` and `prove` live in `/usr/bin/core_perl`, absent from makepkg's `secure_path`** (2026-10-19): export `PATH="/usr/bin/core_perl:$PATH"` in the phase that runs the Perl rule (git-git template). The agent-lane half is engine-side.
-- **A pinned third-party rendering is not pinnable content** (2026-10-19): a GitHub `.patch` re-renders its preamble. Vendor the verified patch body in the recipe and anchor its hash; commit → push → `gsa -Sy` → resume is the engine-side ordering.
-- **A git-format patch with an all-zero `index` old SHA is read as a new-file diff** (2026-10-18): nss-git; drop the `index` line or use real hashes in the tracked patch.
-- **A `clone -s` worktree dies when its shared `SRCDEST` mirror is rebuilt under it** (2026-10-15): scx-scheds-git; there is no recipe lever — remediate with `rm -rf src/<repo>` (or `--cleanbuild`), detect via `git show-ref`.
-- **A `-git` toolchain growing new target names breaks a consumer's detection logic** (2026-10-11): 0ad's bundled mozjs, and upstreams rename licence files — patch through `patches/patch.sh` and re-check file references (`COPYING`→`LICENSE`) against the tree.
-- **A bundled consumer broken by a house `-git` API removal gets a consumer patch** (2026-10-11): firebird-tommath's `gb_UnpackedTarball_set_patchlevel`; genbuild patches carry per-tarball levels, and `source=`/`sha256sums=` align by position.
-- **cups 2.5 moved headers to `/usr/include/libcups2`** (2026-10-11): feed cflags through the variable the build reads — `CFLAGS`/`CXXFLAGS` for qmake consumers, `CPPFLAGS` for autoconf — and declare `libcups` when linking `-lcups`.
-- **A `USE_SYSTEM_<X>=ON` flag is a dependency declaration** (2026-10-11, transmission): audit every `USE_SYSTEM_` flag against `makedepends`, never against `depends`.
-- **A PGO fallback must rebuild, and a PGO trainer must link the library it trains** (2026-10-11, qt6-multimedia): `rm -rf build` and rebuild clean in the fallback; add `-L "$srcdir/build/lib"` to the trainer link.
-- **A compat shim keyed on a version macro is only as good as the macro's promise** (2026-10-11): gate aliases on `CUPS_VERSION_MINOR < 5` in paired consumer patches; scan compat blocks, not just call sites.
-- **`target not found` means the name left the repos** (2026-10-11): solve the feature the way current packaging does — remove output, optprovides, `package_*` and makedeps together, and disable the dead build path explicitly.
-- **Bundled-Chromium code against system libs breaks two ways** (2026-10-11, qt6-webengine): gn `.rsp` files embed the build path; keep a short `_build_dir` and patch the consumer, never the `abi=must` provider.
-- **A monorepo swap provider needs a versioned name provide for EVERY stock output** (2026-10-11, pyside6-git/kguiaddons): a missing provide becomes a pacman file conflict; also pin `Python_EXECUTABLE` to system python.
-- **A bridge patch on a floating-HEAD recipe needs its drop condition in the header and a `prepare()` assertion** (2026-10-11): when upstream lands the fix, `git log -S <API symbol>` and delete the patch — never re-roll it.
-- **A packaging loop's branches must each create their own destination** (2026-10-11): `install -D` hides a missing parent; `install -d` before `cp -a` in the licence loop (six KDE 6.30 `LICENSES/` recipes shared the shape).
-- **A recipe whose build hard-freezes the host is retired** (2026-10-11): three deterministic freezes = quarantine (qemu); delete recipe and topology record, and require a bounded rehearsal (`--jobs 2`, single lane) plus kernel forensics to re-add.
-- **A swapped-in `-git` provider must ship the API generation its consumers use** (2026-10-10, libmypaint): versioned provides hide a generation mismatch — retarget the provider to the maintenance line consumers probe.
-- **Python-embedding recipes must pin the system interpreter** (2026-10-10): `FindPython` follows `PATH` into uv/pyenv shims; set `-DPython_EXECUTABLE=/usr/bin/python` (and `Python3_EXECUTABLE`), and watch snapshot-version sentinels and flattened SWIG genexes.
-- **A version-sync bump of a tag-pinned recipe invalidates every version-pinned patch and checksum** (2026-10-10, mlt): re-validate each `prepare()` patch against the new tag, adopt the tag sum, and prefer upstream's guarded fix.
-- **A compat shim answering for a retired API turns an optional probe into a false positive** (2026-10-10, suil): gate with `get_option('x').allowed() and …dep.found()`; never uninstall the shim and never add it to makedepends.
-- **A recipe asset satisfying an external tool probe must be wired by the recipe** (2026-10-10, bettbox rustup shim): `install -Dm755` the shim under the probed name, prepend it on `PATH` in `build()`, and pin it in `source=()`.
-- **A doc-tool feature that is `auto`/default-on runs whenever the tool is installed** (2026-10-09, libusb, v4l-utils): disable it at the build system's seam and drop the tool from makedepends; `pkgrel=N.N` twin marks are machine-written.
-- **An upstream that moves a header dir *and* deletes legacy compat `#define`s walls a consumer twice** (2026-10-09, hplip): export `CPPFLAGS+=" $(pkg-config --cflags cups)"`, map tokens mechanically, and patch the patched tree.
-- **A feature flag requesting compiled foreign-target code must be checked against the toolchain roster** (2026-10-09, handbrake): house LLVM builds `X86;AMDGPU;BPF` with no NVPTX and `cuda` is purged — read the flag's expansion, drop the flag and the dead makedep.
-- **An upstream `-git` API rename with a stale version number breaks every version-gated shim** (2026-10-09, cups/gtk3): probe the installed headers and red/green one ninja object before writing the consumer patch.
-- **A `_pick` split pins upstream install paths, and the first missing path is never the only drift** (2026-10-09, cups-git): enumerate the whole shipped tree against the list; remove `var/run` explicitly — `filesystem` owns it.
-- **A `$W` twin sync must cover `config/`** (2026-10-09): the `config/topology.conf` copy is recipe-side; the `--leaf` unmet-house-prereq half is engine-side.
-- **A snapshot compiler is allowed to be the wall** (2026-10-09, opencv): reproduce the ICE with a standalone probe and fix the compiler recipe (make the verifier's asserts no-ops in `prepare()`), not the consumer.
-- **`$srcdir` persists across makepkg runs, so recipe-side state creation must be idempotent** (2026-10-07, sqlite): `rm -rf` before recreating staging dirs; validate packaging-layout fixes against a POLLUTED work dir.
-- **A Stock→house swap must reproduce the stock pkg-config NAMES, not just the soname** (2026-10-07, bzip2-git): verify `pkg-config --exists <name>` for every pc name stock shipped; a `Require`d pc file is ABI-adjacent.
-- **Never pin a tcl-versioned install path in `package()`** (2026-10-07, sqlite/graphviz): tcl 9's `TCL_LIBRARY` is `zipfs:/…`; derive from `tclConfig.sh`/`TCL_PACKAGE_PATH` or match a `tcl*/` glob.
-- **A dead `makedepends` is not harmless** (2026-10-10, pinentry via `libwmf-git`'s gtk2): trim makedeps the build never consults; the house direction is gtk2-free with `gtk2-compat` as the stand-in.
-- **Pin optional features explicitly; never trust `auto` detection** (2026-10-10, libcanberra): ambient probes make package content a function of installed state — spell every component `--enable-`/`--disable-`.
-- **Never run concurrent inkscape/ImageMagick SVG conversions** (2026-10-10, gnupg): GApplication single-instance registration races under `make -j`; serialize with `make -C doc -j1` or drop the delegate.
-- **Version-sync rows are adopted into canonical on review** (2026-10-10): adopt the `pkgrel` in the recipe; the sync that writes it is engine-side.
-- **A `[[ -f ]] && cmd` guard as a function's last command fails the function when absent** (2026-10-06, mpg123): 16 recipes carried it; guards at a function tail use `if … fi`, which returns 0 either way — same family as the PGO gate.
-- **Mold cannot build the glibc recipe** (2026-10-03, glibc-git): append `-fuse-ld=bfd` last in `build()` — a map-parsing recipe owns the producer's format — and keep `--fuzz=0` patches.
-- **A VCS `pkgver()` that parses upstream build metadata is a silent-drift hazard** (2026-09-30, noctalia-git): an empty version and zero errors; prefer an upstream version FILE and check a rebuilt archive's name.
-- **openexr ≥ 3.5 resolves zstd via `find_dependency(zstd CONFIG)`** (2026-09-29, krita-git): `zstd-git`'s `package()` ships a hand-written `/usr/lib/cmake/zstd/` config — keep it.
-- **shtab ≥ 1.6 outgrew upstream's hard-coded shell list** (2026-09-28): trash-cli's `check()` fails on upstream brittleness — keep the full suite with a documented skew; never delete tests to make `check()` green.
-- **A `checkdepends`-only dep that upstream CONFIGURES against walls `build()`** (2026-10-06, bzip2-git): the boundary against the entry above — delete a suite only when its configure requirement makes `build()` impossible.
-- **`cargo test` integration suites mis-resolve binaries on the rust-git toolchain** (2026-09-28): irrelevant to packaging (`BUILDENV=(!check)`); do not chase a scratch `cargo test` failure as a recipe bug.
-- **An expired maintainer key whose signature predates the expiry verifies, with a warning** (2026-09-28, file 5.48): keep `#signed`/`validpgpkeys`, never `--skippgpcheck`; record the expiry and the re-key contingency.
-- **A run can create the skew its own preflight just cleared** (2026-09-25, rust-git): the `rust-git` edge for any cargo/rustc-invoking recipe is `config/topology.conf` data; the preflight probe is engine-side.
-- **DESTDIR survives a failed `build()` and the next install will not forgive it** (2026-09-25, rust-src): wipe `dest-rust`/`dest-src` at the top of `build()`; dangling symlinks break `cp` and leak `.old` backups.
-- **Upstream renames make implicit install sets unstable** (2026-09-25, x.py `src`→`rust-src`): invoke the component's install step explicitly; a `tools` rename means refreshing the `source=` checksum.
-- **lld does not run GCC's LTO plugin; mold and bfd do** (2026-09-25, rust-git `!lto`): a recipe linking C/C++ through rustc/ld.lld must carry `!lto`. Rust-side fat LTO is unrelated and stays.
-- **A comment in a tracked file is public surface** (2026-09-19, linux-cachyos): host-specific debugging facts are excluded; a claim grounded in the machine is not a recipe fact.
-- **An unclean shutdown zeroes freshly written files** (2026-09-19, bettbox's `go mod tidy`): XFS log recovery preserves size and mtime; the red signal is `go mod verify`, the repair `go clean -modcache`.
-- **Freeze forensics: pstore is the channel, not the journal** (2026-09-19, kernel recipe knobs): use `_capture_chain=yes` and config-only `WQ_WATCHDOG`/`PSTORE_CONSOLE`; re-arm the recipe under `/root/freeze-diag-backup-20260920/`.
-- **A version bump must regenerate `.SRCINFO`** (2026-09-19): the committed `.SRCINFO` is recipe data; the freshness check is a fixture (`tests/srcinfo-freshness.sh`).
-- **The kernel patch set is version-scoped, and `updpkgsums` prefers a cached local copy** (2026-09-19): `_patchsource` is `${_major}`-scoped; startdir IS `SRCDEST`, so refresh tracked patches by hand and `patch --dry-run` them.
-- **A `b2sums` literal serves one knob combination, and makepkg's error names nothing** (2026-09-19): add a parse-time guard naming both counts and knob values, exempt `GENINTEG=1` so `updpkgsums` can run, and never append per-knob.
-- **A `scripts/config` write is not evidence, and `!SYM` ≠ `SYM=n`** (2026-09-19): only a post-`make prepare` `.config` counts; `verify-config.sh` asserts an expectation list per knob.
-- **Soname provides — the full mechanism** (undated): declare BARE `libfoo.so`, let makepkg auto-version from the packaged ELF soname, and verify in `.PKGINFO`.
-- **Meson options** (undated): `--auto-features enabled` makes a missing auto fatal; `Unknown option` means upstream renamed it; know `feature` versus `string` types.
-- **Docs-only makedep removals have blast radius** (undated): autogen.sh, `.require(tool.found())` chains and hard `install`s abort, and makepkg silently reinstalls a residual makedep.
-- **LLVM coupling has two failure modes** (undated): TARGET-SET skew bricks rustc (diff `readelf -W --dyn-syms` sets); VERSION-NODE skew needs every `libLLVM` consumer rebuilt per major.
-- **Mold false-negatives `has_link_argument(-Wl,--version-script=…)`** (undated): zero verdefs result; fix with `LDFLAGS+=-fuse-ld=mold -Wl,--undefined-version` and re-verify `readelf -V | grep -c VER_` after any linker flip.
-- **makepkg's LTO-strip hook hollows slim-LTO static archives** (undated, qt5-base-git): force `-ffat-lto-objects`; verify with `ar p … && gcc-nm <real file>` — stdin silently returns nothing.
-- **makepkg packaging traps** (undated): a stale `$srcdir/<dir>` with a parent mirror `.git`; split staging under `$srcdir`; `_pick` dirs AND globs; package()-scoped provides override globals.
-- **glog/gflags double registration** (undated): two flag-definition files (system static init plus a vendored copy); find the puller with `readelf -d`/ldd and prefer `WITH_SYSTEM_*` CMake options.
-- **IgnorePkg closure drifted 32 names short** (undated): the names come from this recipe set; registration is engine-side and dynamic since 2026-10-05.
-- **Qt `pkgver()`** (undated): MUST grep `QT_REPO_MODULE_VERSION` from `.cmake.conf`; git describe is unusable on dev branches; qt6-speech needs Multimedia first.
-- **PGO operational** (undated): call `verify_no_profile_instrumentation "$pkgdir"` as the LAST statement of every `package*` function (a split recipe gates each `$pkgdir`); it is fatal by design — never soften it with `|| return 1`. The archive payload gate is the engine-side backstop.
-- **Sandbox paths have a length budget** (2026-09-23, noctalia PGO training): the 108-byte `sun_path` needs sockets in a short `mktemp -d`; tear the training tree down as a group and unset `WAYLAND_DISPLAY`.
-- **meson's `b_pgo` enum has no `none`** (2026-09-23, nightly fallback): use `-Db_pgo=off`; bump `pkgrel` AFTER the first post-sync build and regenerate `.SRCINFO` last.
-- **An upstream-track bump must re-pin version-spelled sums; a benchmark swap must check root-path requirements** (2026-09-23, zen): anchor against GitHub's server-side asset digest; Speedometer 3 needs a root path — deletion-only patch, no relative entry.
-- **A systemd bump that drops a hook input is guarded in the mkinitcpio recipe** (2026-10-09): `0002-guard-missing-systemd-tpm2-setup.patch` guards seven absent names (0001 covers NvPCR); bump `pkgrel`. Never re-enable systemd's bootloader integration and never delete host files.
-- **A GHC package-set way flip fails vanilla compiles with a misleading "files missing in 'base'"** (2026-10-21, pandoc-cli): compile the way base was built — `cabal.project` stanza, a `ghc` shim for custom Setup, and no mold for prebuilt haskell `.so`.
-- **A cabal from-source constraint can be satisfied vacuously** (2026-10-21, pandoc-cli): `--constraint='any.text-icu source'` matched nothing while `citeproc`'s `icu` flag was FALSE; force the flag and check the harvest.
-- **`makepkg --printsrcinfo` evaluates function-local assignments with only top-level vars in scope** (2026-10-22, vtk): computed `provides+=` in `package()` extracts empty or `.so` — keep soname lists STATIC (opencv precedent).
-- **A downstream version floor rejects git-snapshot version strings** (2026-10-22, vtk's FindFFMPEG): patch the probe to a measured-correct parse and verify the arithmetic with `cmake -P` before a two-hour build.
-- **A soname pin must name the provide surface the provider declares** (2026-10-22, liblas/pdal): `libxerces-c.so` matches nothing — the measured soname is `libxerces-c-3.3.so`; verify every depend name with `pacman -T`.
-- **patch-CREATED files persist across makepkg re-extraction and wall a later build** (2026-10-22, vtk): `prepare()` must wipe the source root, re-extract, then patch whenever a patch creates files.
-- **ICU 76+ headers need C++17 and a plain `set(CMAKE_CXX_STANDARD 14)` cannot be overridden** (2026-10-22, xerces-c): raise the standard at the declaration site in `prepare()`; red/green with `g++ -std=c++14` versus `-std=c++17`.
-- **`stock+.1` pkgrel deltas collide with broken vendor stamps** (2026-10-22): xerces-c 4.1 and openvr 2.1 exactly matched installed CachyOS builds; the delta must strictly beat `pacman -Qi`.
-- **A bare `cmake --build build` ignores `GSA_BUILD_JOBS`** (2026-10-22, vtk memory wall): ninja then runs `ncpu+2` — pass `--parallel "${GSA_BUILD_JOBS:-$(nproc)}"`; `CMAKE_BUILD_PARALLEL_LEVEL=N` is the no-code cap.
-- **`provides` is hand-maintained and drifts when a dependency newly enables a module** (2026-10-22, opencv sfm): run `tools/provides-audit.sh` on built archives; the fix is a provides entry plus a pkgrel bump — a same-version skip keeps the old metadata.
-- **A nested aggregate's NSDMIs are unavailable in a default argument inside the enclosing class** (2026-10-24, snapshot vs stock GCC): experimental toolchains prove nothing; use an inline overload whose BODY constructs the default and validate with mingw g++.
-- **makepkg source-cache mechanics — `$srcdir` persists and source forms vary** (2026-10-24): scanners must handle `url`, `git+url`, `name::git+url` and `git://…` and strip fragments; a config-changing retry wipes the workspace.
-- **Toolchain drift moves libtool's uninstalled-convenience layout (`_libs` versus `.libs`)** (2026-10-24): `ln -s .libs <lib>/_libs` per bundled subdir; a link error surviving the layout fix is stale-tree residue.
-- **`SIGNATURE NOT FOUND` on a `?signed` git source is usually the environment** (2026-10-28): the fix is the agent/CI environment (rule 2); the recipe rule is never to touch `?signed`/`validpgpkeys` on that message.
-- **`provides=` must be assigned AFTER `pkgver=`** (2026-10-28, gimp-git): `"name=${pkgver}"` expands empty above the `pkgver=` line and makepkg rejects the parse (rc 12); `conflicts=` has no order constraint.
-- **A "silent exit N" from a build tool means its reporter swallowed the failure text** (2026-10-29, vscodium tsgo): `ENOSPC` is filtered out by `/error \w+:/`; wrap the binary with a tee and read the raw capture.
-- **A recipe FLAG edit needs a clean build tree** (2026-10-31, opus-git, glibc-git): meson `setup` no-ops on a warm dir and make ignores `CFLAGS` — wipe the build tree and force the rebuild (rule 70).
-- **`git apply -3 --check` exits 0 even when the patch conflicts** (2026-11-02, umbriel-git drift repair): validate a repaired patch stack by CONTENT on a fresh clone; a format-patch mailbox can mis-merge regions.
-- **A record's topology edges must cover consumed TOOL providers too** (2026-11-02): the `edges` declaration is `config/topology.conf` data; the continuation-wave exclusion of a doomed leaf is engine-side.
-- **A completed build dir is not free disk, and user-local interpreters shadow system python** (2026-11-02/03): `FindPython3` following a stale `~/.local/bin/python3.11` is a recipe-build hazard; the prune is engine-side.
-- **Digests have lengths (sha256=64, sha512=128) and reused autotools trees lie via stamps** (2026-11-03): a `cut`-preview hash fails validation mysteriously — `makepkg --verifysource` is the cheap red/green; `prepare()` self-heals.
-- **A new libc sized-free entry point is invisible to malloc interposers** (2026-11-03, blender/zen/electron): `free_sized@GLIBC_2.43` crossed with tbbmalloc_proxy/mozjemalloc/Chromium shims aborts at load; audit `readelf -Ws | grep UND`.
+One line per MECHANISM: the claim, then the tell or the fix. Dates, measurements
+and incident narratives belong in `docs/JOURNAL.md`; an entry that only restates
+a numbered rule belongs there instead. The engine-side half of a mechanism lives
+in the engine repository's `AGENTS.md`.
+
+### Recipe files, patches and sources
+
+- **A tracked comment is public surface**: a claim grounded in this machine is
+  not a recipe fact.
+- **Everything derived from the recipe must be REGENERATED, in order**: a
+  version bump owes `.SRCINFO` (`tests/srcinfo-freshness.sh` is the gate),
+  `provides=` must sit AFTER `pkgver=` (`"name=${pkgver}"` above it expands
+  empty and makepkg rejects the parse, rc 12), and `--printsrcinfo` resolves
+  only top-level vars — a computed `provides+=` inside `package()` extracts
+  empty or `.so`, so soname lists stay STATIC. A version-sync `pkgrel` row is
+  adopted into the recipe on review: the writing is engine-side.
+- **A `b2sums` literal serves one knob combination and makepkg's error names
+  nothing**: add a parse-time guard naming both counts and the knob values,
+  exempt `GENINTEG=1` so `updpkgsums` can run, never append per knob. Digests
+  have lengths (sha256=64, sha512=128); `makepkg --verifysource` is the cheap
+  red/green, and a reused autotools tree lies through its stamps.
+- **A patch is only as pinnable as its source, and three shapes are traps**: a
+  pinned GitHub `.patch` re-renders its preamble (vendor the verified body and
+  anchor its hash), an all-zero `index` old SHA reads as a new-file diff (drop
+  the line or use real hashes), and `git apply -3 --check` exits 0 even on a
+  conflict (validate by CONTENT on a fresh clone).
+- **Patches and sums are version-scoped, in more places than one**: a
+  version-sync bump of a tag-pinned recipe invalidates every version-pinned
+  patch and checksum (re-validate, adopt the tag's sum); the kernel patch set is
+  `${_major}`-scoped and `updpkgsums` prefers a cached local copy because
+  `startdir` IS `SRCDEST`; and `scripts/config` writes are not evidence —
+  `!SYM` ≠ `SYM=n`, so assert a post-`make prepare` `.config` per knob.
+- **A bridge patch on a floating-HEAD recipe needs its drop condition in the
+  header and a `prepare()` assertion**: when upstream lands the fix,
+  `git log -S <API symbol>` and delete the patch — never re-roll it.
+- **An upgrade that moves version-spelled sums re-pins them against the
+  publisher's own digest**: anchor server-side asset digests, and check a
+  benchmark swap's root-path requirement (a deletion-only patch cannot carry a
+  relative entry).
+- **Implicit install sets drift**: `_pick` lists pin upstream paths, so
+  enumerate the whole shipped tree against them (`var/run` belongs to
+  `filesystem`), and invoke a component's install step explicitly — an upstream
+  rename (`x.py` `src` → `rust-src`) breaks the implicit set and the checksum.
+- **A `source=()` scanner must accept every spelling**: `url`, `git+url`,
+  `name::git+url` and bare `git://…`, with fragments stripped.
+- **`SIGNATURE NOT FOUND` on a `?signed` git source is usually the environment**
+  (engine rule 2): the recipe rule is never to touch `?signed`/`validpgpkeys` on
+  that message.
+- **An expired maintainer key whose signature predates the expiry verifies,
+  with a warning**: keep `#signed`/`validpgpkeys`, never `--skippgpcheck`;
+  record the expiry and the re-key contingency.
+- **A `pkgver()` that parses upstream build metadata is a silent-drift hazard**
+  (empty version, zero errors): prefer an upstream version FILE and check a
+  rebuilt archive's name. Qt is the exception with a rule — grep
+  `QT_REPO_MODULE_VERSION` from `.cmake.conf`, since git describe is unusable on
+  its dev branches.
+
+### Swap providers, provides and sonames
+
+- **A Stock→house swap must reproduce the whole stock surface**: every stock
+  pkg-config NAME (`pkg-config --exists`; a `Require`d pc file is ABI-adjacent),
+  a versioned provide for EVERY stock output (a missing one is a pacman file
+  conflict), and the API generation its consumers probe — a versioned provide
+  hides a generation mismatch, so retarget to the maintenance line they use.
+- **Soname provides are bare names and must match the measured soname**: declare
+  `libfoo.so` and let makepkg auto-version it from the packaged ELF soname
+  (verify in `.PKGINFO`); a depend name like `libxerces-c.so` matches nothing
+  when the measured soname is `libxerces-c-3.3.so` — check every name with
+  `pacman -T`.
+- **`provides` is hand-maintained and drifts when a dependency newly enables a
+  module**: run `tools/provides-audit.sh` on built archives; the fix is a
+  provides entry plus a `pkgrel` bump (a same-version skip keeps old metadata).
+- **A `stock+.1` pkgrel delta collides with a broken vendor stamp**: the delta
+  must strictly beat `pacman -Qi`, not merely differ.
+- **Python-embedding recipes must pin the system interpreter**: `FindPython`/
+  `FindPython3` follow `PATH` into uv/pyenv/user-local shims — set
+  `-DPython_EXECUTABLE=/usr/bin/python` (and `Python3_EXECUTABLE`), and watch
+  snapshot-version sentinels and flattened SWIG genexes.
+- **Trimming one package's copy of a dual-owned file deletes it for every
+  owner** (ghostty's terminfo is also `ncurses-git`'s): expect the loss and
+  schedule the surviving owner's reinstall.
+- **Never pin a tcl-versioned install path in `package()`**: tcl 9's
+  `TCL_LIBRARY` is `zipfs:/…` — derive from `tclConfig.sh`/`TCL_PACKAGE_PATH` or
+  match a `tcl*/` glob.
+- **A packaging loop's branches must each create their own destination**:
+  `install -D` hides a missing parent — `install -d` before `cp -a` in a licence
+  loop.
+- **`DESTDIR` survives a failed `build()`, and the next install will not forgive
+  it**: wipe `dest-*` at the top of `build()`; dangling symlinks break `cp` and
+  leak `.old` backups.
+
+### Build systems and toolchains
+
+- **House toolchains move under the consumer's detection logic**: a `-git`
+  toolchain that grows or drops target names breaks it (house LLVM builds
+  `X86;AMDGPU;BPF`, no NVPTX — read a foreign-target flag's expansion and drop
+  it with its dead makedep), and an API rename with a stale version number
+  breaks every version-gated shim. Probe the installed headers and red/green one
+  object before writing a consumer patch.
+- **LLVM coupling has two failure modes**: TARGET-SET skew bricks rustc (diff
+  `readelf -W --dyn-syms` sets); VERSION-NODE skew needs every `libLLVM`
+  consumer rebuilt per major.
+- **lld runs no GCC LTO plugin, and makepkg's LTO-strip hook hollows slim-LTO
+  static archives**: a recipe linking C/C++ through rustc/`ld.lld` carries
+  `!lto`, and static archives force `-ffat-lto-objects` — verify with
+  `ar p … && gcc-nm <real file>` (stdin silently returns nothing).
+- **Mold cannot build glibc and false-negatives
+  `has_link_argument(-Wl,--version-script=…)`**: append `-fuse-ld=bfd` last in
+  glibc's `build()`; fix a version-script probe with `LDFLAGS+=-fuse-ld=mold
+  -Wl,--undefined-version` and re-verify `readelf -V | grep -c VER_` after any
+  linker flip.
+- **Meson options are typed and `auto` is not neutral**: `--auto-features
+  enabled` makes a missing auto fatal, `Unknown option` means upstream renamed
+  it, `b_pgo` has no `none` (use `-Db_pgo=off`), and a `feature` is not a
+  `string`. Spell every optional component `--enable-`/`--disable-`: ambient
+  probes make package content a function of installed state, and a doc tool that
+  is default-on runs whenever it is installed.
+- **A dead `makedepends` is not harmless, and a docs-only removal has blast
+  radius**: `autogen.sh`, `.require(tool.found())` chains and hard `install`s
+  abort, and makepkg silently reinstalls a residual makedep — trim the makedep
+  and the dead path together.
+- **A `USE_SYSTEM_<X>=ON` flag is a dependency declaration**: audit it against
+  `makedepends`, never against `depends`.
+- **A bare `cmake --build build` ignores `GSA_BUILD_JOBS`**: ninja then runs
+  `ncpu+2` — pass `--parallel "${GSA_BUILD_JOBS:-$(nproc)}"`
+  (`CMAKE_BUILD_PARALLEL_LEVEL=N` is the no-code cap).
+- **A compat shim is only as good as the macro's promise**: a shim answering a
+  retired API turns an optional probe into a false positive and an API rename
+  with a stale version breaks every gate. Gate on a version comparison plus
+  `dep.found()`, scan compat blocks rather than call sites.
+- **cups 2.5 moved headers to `/usr/include/libcups2`**: feed flags through the
+  variable the build reads (`CFLAGS`/`CXXFLAGS` for qmake, `CPPFLAGS` for
+  autoconf), export `CPPFLAGS+=" $(pkg-config --cflags cups)"` when upstream
+  also deleted its legacy `#define`s, and declare `libcups` when linking.
+- **ICU 76+ headers need C++17, and `set(CMAKE_CXX_STANDARD 14)` cannot be
+  overridden**: raise the standard at the declaration site in `prepare()`;
+  red/green with `g++ -std=c++14` versus `-std=c++17`.
+- **`openexr` ≥ 3.5 resolves zstd via `find_dependency(zstd CONFIG)`**: keep
+  `zstd-git`'s hand-written `/usr/lib/cmake/zstd/` config.
+- **Toolchain drift moves libtool's uninstalled-convenience layout** (`_libs`
+  versus `.libs`): `ln -s .libs <lib>/_libs` per bundled subdir; a link error
+  surviving that is stale-tree residue.
+- **A downstream version floor rejects git-snapshot version strings**: patch the
+  probe to a measured-correct parse and verify the arithmetic with `cmake -P`
+  before a two-hour build.
+- **A nested aggregate's NSDMIs are unavailable in a default argument inside the
+  enclosing class**: experimental toolchains prove nothing — use an inline
+  overload whose BODY constructs the default, validated with mingw g++.
+- **A snapshot compiler is allowed to be the wall**: reproduce the ICE with a
+  standalone probe and fix the compiler recipe, not the consumer. A tolerant
+  word scan miscompiled into aligned `vmovdqa64` loads is a per-recipe
+  `-fno-tree-vectorize` (`-mno-avx512*` is NOT a fix).
+- **A compiler or flag change needs a clean build tree**: meson `setup` no-ops
+  on a warm dir and make ignores `CFLAGS` — wipe and force the rebuild
+  (rule 70).
+- **`glog`/`gflags` double registration**: a system static init plus a vendored
+  copy define the same flags — find the puller with `readelf -d`/`ldd` and
+  prefer `WITH_SYSTEM_*`.
+- **Bundled-Chromium code against system libs breaks two ways**: gn `.rsp` files
+  embed the build path (keep a short `_build_dir`), and the fix belongs in the
+  consumer, never in the `abi=must` provider.
+- **`cargo test` integration suites mis-resolve binaries on the rust-git
+  toolchain**: irrelevant to packaging (`BUILDENV=(!check)`) — never chase a
+  scratch failure as a recipe bug.
+- **A GHC package-set way flip fails vanilla compiles with a misleading "files
+  missing in 'base'"**: compile the way base was built (`cabal.project` stanza,
+  a `ghc` shim for a custom Setup, no mold for prebuilt haskell `.so`) and check
+  a `source` constraint is not satisfied vacuously.
+- **A `checkdepends`-only dep that upstream CONFIGURES against walls `build()`**,
+  while a suite that only *runs* the tool is upstream brittleness to keep with a
+  documented skew — never delete tests to make `check()` green.
+
+### PGO, sandboxing and packaging traps
+
+- **PGO is two commitments**: `verify_no_profile_instrumentation "$pkgdir"` is
+  the LAST statement of every `package*` function (fatal by design — never
+  soften it with `|| return 1`), and a fallback must `rm -rf build` and rebuild
+  clean with the trainer linking the library it trains
+  (`-L "$srcdir/build/lib"`). Bump `pkgrel` AFTER the first post-sync build and
+  regenerate `.SRCINFO` last.
+- **A sandbox path has a length budget**: the 108-byte `sun_path` needs sockets
+  in a short `mktemp -d`; tear the training tree down as a group and unset
+  `WAYLAND_DISPLAY`.
+- **Never run concurrent inkscape/ImageMagick SVG conversions**: GApplication
+  single-instance registration races under `make -j` — serialize with
+  `make -C doc -j1` or drop the delegate.
+- **A `[[ -f ]] && cmd` guard as a function's LAST command fails the function
+  when the file is absent**: guards at a function tail use `if … fi`.
+- **`$srcdir` persists, and patch-CREATED files survive re-extraction**: recipe
+  state creation must be idempotent (`rm -rf` before recreating staging dirs)
+  and a file-creating patch requires `prepare()` to wipe the source root,
+  re-extract, then patch — validate against a POLLUTED work dir.
+- **A `clone -s` worktree dies when its shared `SRCDEST` mirror is rebuilt under
+  it** (no recipe lever: `rm -rf src/<repo>` or `--cleanbuild`, detect via
+  `git show-ref`), and **a VCS-source husk left by a failed fetch is
+  self-perpetuating**: `prepare()` must detect the husk, wipe `$srcdir`,
+  `$SRCDEST` and the legacy path, then re-fetch the pinned revision.
+- **The four makepkg packaging traps**: a stale `$srcdir/<dir>` with a parent
+  mirror `.git`, split staging under `$srcdir`, `_pick` dirs AND globs, and
+  package()-scoped provides overriding globals.
+- **A mandatory validation fetch inside a cached build needs a bounded
+  step-level retry** (a generated retry shim for transient signatures only) —
+  and a new instance earns its own fixture rather than inheriting a dead pin.
+- **`pod2man` and `prove` live in `/usr/bin/core_perl`, absent from makepkg's
+  `secure_path`**: export `PATH="/usr/bin/core_perl:$PATH"` in the phase that
+  runs the Perl rule.
+- **A recipe asset satisfying an external tool probe must be wired by the
+  recipe**: `install -Dm755` the shim under the probed name, prepend it on
+  `PATH` in `build()`, and pin it in `source=()`.
+- **A bundled consumer broken by a house `-git` API removal gets a consumer
+  patch**: genbuild patches carry per-tarball levels, and `source=`/`sha256sums=`
+  align by position.
+- **Topology edges must cover consumed TOOL providers, and a recipe invoking
+  cargo/rustc declares `rust-git`**: the `edges` field is `config/topology.conf`
+  data, and a preflight cannot substitute for it.
+
+### Host safety and forensics
+
+- **A recipe whose build hard-freezes the host is retired**: three deterministic
+  freezes = quarantine — delete the recipe and its record, and require a bounded
+  rehearsal (`--jobs 2`, single lane) plus kernel forensics to re-add.
+- **Freeze forensics use pstore, not the journal**: `_capture_chain=yes` and
+  config-only `WQ_WATCHDOG`/`PSTORE_CONSOLE`, re-armed under a backup dir.
+- **An unclean shutdown zeroes freshly written files**: XFS log recovery
+  preserves size and mtime, so the red signal is `go mod verify` and the repair
+  `go clean -modcache`.
+- **A systemd bump that drops a hook input is guarded in the mkinitcpio
+  recipe**, never by re-enabling systemd's bootloader integration or deleting
+  host files.
+- **`target not found` means the name left the repos**: solve the feature the
+  way current packaging does — remove output, optprovides, `package_*` and
+  makedeps together, and disable the dead build path explicitly.
+- **A "silent exit N" from a build tool means its reporter swallowed the failure
+  text** (`ENOSPC` filtered out by an `/error \w+:/` pattern) — wrap the binary
+  with a tee and read the raw capture.
+
 
 ## 6 · Queued
 
+- **Snapshot-pin waves (QUEUED for the owner's weekend full rebuild,
+  2026-11-09).** W1 — the 64 fan-out ≤ 4 trackers — is PINNED: every primary
+  `source=()` carries `#commit=` at the last commit at or before Monday
+  2026-11-09 00:00Z, 12 branch-pinned recipes also record `_snapshot_ref`, and
+  `.SRCINFO` is regenerated for all 64 (the engine's `srcinfo-freshness`
+  fixture is clean over the whole tree). **Nothing is built or installed** — the
+  owner deferred every real build ("do not do real build test"), so any archive
+  from the discarded validation pass is stale. The weekend pass: build + install
+  W1, then pin W2 (59 mid-fan-out), W3 (5 build tools), W4 (8 incl. `git-git`
+  and the `icu-git` ABI nucleus) and verify each wave. Engine half W0 (the
+  `<id>-snapshot` frontend alias) landed 2026-11-09; the `-Sy` pin-advance
+  provider is the engine repository's last step. Procedure, the two environment
+  blocks (`libidn2-git` gnulib URL, `libmypaint-git` `gegl.pc`) and the
+  wave-free build recipe: `docs/snapshot-expansion.md` §8.
 - **Flag-revision validation rebuild** (2026-11-03): edit-only T1→T2→T3 flag appends over 133 recipes still need a validating rebuild; blocked on the owner's ~2-week campaign. Separate decision: `libldacdec`'s own `-O3 -march=native`.
 - **Topology missing-prereq edges, systemic** (2026-11-01): `config/topology.conf` only; 1825 gap pairs, representative rows named. Each edge needs a build-order reason — never mass-add — so this advances one verified edge at a time.
 - **Edge verification debt** (2026-11-01): three rows (fluidsynth-git→libsndfile-git/readline-git, gdb→zlib-ng-compat-git) lack metadata justification; verify in a build or drop them.
