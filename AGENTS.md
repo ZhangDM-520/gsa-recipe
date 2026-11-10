@@ -958,7 +958,6 @@ in the engine repository's `AGENTS.md`.
 - **ROCm is half-removed**: `hsa-rocr`/`rocm-llvm`/`comgr` reinstalled while `hip-runtime` is absent — rebuild HIP in the same `-S @core` pass, or prune the dirs and the group membership.
 - **dbus-broker redundancy**: `stable/dbus-broker` and `git/dbus-broker-git` build the same packages — pick one (a topology/group call).
 - **doxygen-git purge**: user decision — no consumer left and `xapian-core` is already gone.
-- **gtk4-git demo trim**: `_package_gtk4-demos` plus `_pick demo` still ship four demo binaries.
 - **libadwaita-git**: keep the optional `check()` with `checkdepends=(weston)`, or drop both.
 - **linux-firmware**: the 2026-09-04 deferred `rm` line's intent is unrecoverable — re-specify it or declare it redundant.
 - **Build freezes: CVE-2026-90432** (2026-09-19): the kernel recipe moved to the CachyOS RC channel; "identified", not proven. Live state is `uname -r`/`/usr/lib/modules`, never a doc.
