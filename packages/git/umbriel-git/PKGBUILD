@@ -8,8 +8,8 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1561.d13b341
-pkgrel=2
+pkgver=0.1.0.r1562.49b2970
+pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -69,11 +69,11 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0023-scratchpad-show-no-recentre.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            '7cbf6d01851123a8f1762971a5196454168c936a008010958f148acfec6ddcb7'
-            '32350ca7895435c4cf43dab6cd6b9b13f00c261e67a51299d031b7004efe638a'
-            'e70d604c49426be408e1106ef6ff39e8dcfaeb08de55ba2f9abe091ca2ae7803'
+            'ab20a2853337336cfbe326af59540db1a0ab91ef95f550b9b443d618228be188'
+            '81e9dbc4d80e4cbe426c6b0e3bf4b29ec4239514f3e9fa44160d0848395c7e97'
+            'debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
-            'adeb3112b0383389f8fe88b5869f3c9f6628e8d65fad4d5ca57cb85c7b7f5396'
+            'c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23'
             'ea7535fde45a2936ff07f3e0f76d145e4d23c21484e95b241de124895e9b8ac4'
             'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
@@ -160,6 +160,9 @@ prepare() {
   # at `scale`, resolved through LayerSurface::fromSurface and re-resolved on
   # the commit that maps the surface (head be549eb2, 47 files +1406/-107,
   # sha256 adeb3112…).
+  # Re-cut 2026-11-11 on main@49b29701: the output key table gained layout.mode
+  # upstream while render_scale is inserted after `scale`, so the re-cut keeps
+  # both rows in one table (head be549eb2, 47 files +1407/-108, sha256 ab20a285…).
   git apply -3 ../0012-per-output-render-scale.patch
 
   # [output] color_profile / sdr_gamut: ICC/EDID output characterization and
@@ -187,6 +190,13 @@ prepare() {
   # check over tests/harness/color_lib.sh.
   # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
   # (head 12dbb80a, 60 files +6643/-130, sha256 32350ca7…).
+  # Re-cut 2026-11-11 on main@49b29701 over the re-cut 0012: round 6's exact
+  # advertised-curve decode plus the blind-audit fix wave (untagged SDR decodes
+  # as sRGB on every output, box-shadow alpha, one identity per description
+  # record, v1 mastering-range bounds, the lcms2 creator gate, white-point/LUT/
+  # PQ refusals, color_profile_resolved) and the docs corrections; the output
+  # key table carries both the layout rows and the color rows (head a4bcf1cf,
+  # 71 files +7520/-181, sha256 81e9dbc4…). Retire on merge of #585.
   git apply -3 ../0013-icc-gamut.patch
 
   # [output] downsample texel footprint: the capped-downsample pass averages
@@ -206,6 +216,9 @@ prepare() {
   # (Retire on merge: 0014 → PR #575, with its 0012 base → PR #573.)
   # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
   # (head 689194f2, 28 files +848/-35, sha256 e70d604c…).
+  # Re-cut 2026-11-11 after 0013's re-cut: fx_render_texture_options gained the
+  # decode fields, so downsample_box follows them (28 files +848/-35, sha256
+  # debceace…).
   git apply -3 ../0014-downsample-box.patch
 
   # [layout] underfull_strip: a scrolling strip narrower than the viewport
