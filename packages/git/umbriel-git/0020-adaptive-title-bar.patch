@@ -1,10 +1,10 @@
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 593d3213..25f75de3 100644
+index 7f7066ac..6d22d15a 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
-@@ -132,6 +132,11 @@ button_padding = -1
- button_corner_radius = -1
- button_glyph = "hover"
+@@ -135,6 +135,11 @@ button_glyph = "hover"
+ button_glyph_size = -1
+ button_glyph_stroke = -1
  button_background = true
 +color_source = "fixed"
 +color_source_height = 1
@@ -14,7 +14,7 @@ index 593d3213..25f75de3 100644
  
  [colors.title_bar]
  background = "#292933FF"
-@@ -172,11 +177,15 @@ Buttons show a drawn X for close, an outlined square for maximize, and an unders
+@@ -177,11 +182,15 @@ Buttons show a drawn X for close, an outlined square for maximize, and an unders
  
  `button_background = false` removes the colored backgrounds and leaves only the symbols. Buttons keep their click targets while their symbols are hidden, including when backgrounds are off. Setting `button_glyph = "never"` together with `button_background = false` hides the controls and returns their space to the title.
  
@@ -25,7 +25,7 @@ index 593d3213..25f75de3 100644
 +`button_corner_radius` uses logical pixels, from `0` to `100`. Its default, `-1`, follows the window's `corner_radius`, including window rules. Use `0` for square buttons or a small positive value for rounded squares. The radius is capped at half the button size, producing circles at larger values. Buttons and symbols scale with the output and overview zoom, and update on reload. The maximize button is disabled for fixed-size windows. The minimize button shows only while the window can [minimize](layout.md#minimize), so tiled and pinned windows do not have one. `background` and `text` apply to the focused window; their `_unfocused` variants apply to other windows. Colors and title bar settings reload live. Two of those settings are on by default and act on the title and symbol colors themselves: `title_shadow` draws a dark edge under the title and around the symbols, and `title_contrast` reverses a color that would sink into the bar, in every `color_source`; both are described below.
  
 -The title bar follows its window's `blur`, `blur_optimized`, and `blur_ignore_alpha` rules, together with the global [blur settings](#blur). Give `background` and `background_unfocused` some transparency, such as `"#292933CC"`, to see the blurred backdrop. The alpha threshold applies to the title bar's own background color, independently of the application's content. Opaque title bar backgrounds remain opaque with blur enabled, including after leaving overview or switching focus between windows. No layer rule is needed. Dragging, overview previews, and close animations keep the blur with the window.
-+`color_source = "window"` paints the bar with a thin strip of the window's own content instead of `background`, so the bar takes on the application's color and follows it as the application repaints that edge. `color_source = "average"` paints the bar with that strip's mean color instead, one uniform color with none of the window's own detail, so a title bar, tab row or loading bar along that edge does not read as fragments of itself inside the bar. It costs a pixel readback when the window repaints that edge, which finishes the frame before reading it, and a burst of repaints pays for at most one readback per two of them, never closer together than a few milliseconds; the read covers the width the title spans plus a small margin instead of the whole bar, so leave it off for windows that repaint that edge every frame, such as video. `color_source_height` sets how many logical pixels that strip takes, from `1` to `4`; its default, `1`, samples the single top row and reads as one flat color, while a larger value keeps more of the window's own detail. In `"window"` mode the bar is only ever the window's own pixels, so anything the application draws along that edge — a toolbar, a tab row, a loading bar — appears in it too; `"average"` reduces that detail to one color and shows none of it. A window whose top edge is transparent keeps the configured `background` there, because the bar color stays painted underneath, and the values in `[colors.title_bar]` remain the fallback for applications that draw nothing. Unfocused windows keep their own color, dimmed over `background_unfocused`. A client-drawn window that reports its own geometry keeps the transparent shadows around it out of the color, so the bar follows the visible window rather than its padding. `"window"` mirrors the window's own buffer instead of reading pixels back, so it adds one bar-sized rectangle per window and a copy of that strip each time the window commits, and pays a readback only when `title_contrast_sample` asks for one, on the same cadence and at the same width. `"average"` does read that strip back on that cadence and at that width, once per commit that actually repaints the sampled region and once more when the bar's geometry, the strip height or the title changes, each finishing the frame first; the resulting color is a single pixel, so no further readback follows until that edge changes again. An explicit-sync window's strip is read only once its frame is reported ready, and read anyway after a brief wait when that report never arrives, so a stalled client cannot hold the bar on a stale color; a window that cannot be read — protected or external-only content — keeps the last color it gave, or the palette if it never gave one. The average is taken in the window's own color space and shown in it. An adaptive fill is opaque while the window is focused and the application's own edge is opaque; an unfocused bar draws it dimmed over `background_unfocused`, and a translucent top edge stays translucent, so the blurred backdrop shows through in both.
++`color_source = "window"` paints the bar with a thin strip of the window's own content instead of `background`, so the bar takes on the application's color and follows it as the application repaints that edge. `color_source = "average"` paints the bar with that strip's mean color instead, one uniform color with none of the window's own detail, so a title bar, tab row or loading bar along that edge does not read as fragments of itself inside the bar. It costs a pixel readback when the window repaints that edge, which finishes the frame before reading it, and a burst of repaints pays for at most one readback per two of them, never closer together than a few milliseconds; the read covers the part of the edge the title spans, plus a small margin, wherever `title_align` puts it, instead of the whole bar, so leave it off for windows that repaint that edge every frame, such as video. `color_source_height` sets how many logical pixels that strip takes, from `1` to `4`; its default, `1`, samples the single top row and reads as one flat color, while a larger value keeps more of the window's own detail. In `"window"` mode the bar is only ever the window's own pixels, so anything the application draws along that edge — a toolbar, a tab row, a loading bar — appears in it too; `"average"` reduces that detail to one color and shows none of it. A window whose top edge is transparent keeps the configured `background` there, because the bar color stays painted underneath, and the values in `[colors.title_bar]` remain the fallback for applications that draw nothing. Unfocused windows keep their own color, dimmed over `background_unfocused`. A client-drawn window that reports its own geometry keeps the transparent shadows around it out of the color, so the bar follows the visible window rather than its padding. `"window"` mirrors the window's own buffer instead of reading pixels back, so it adds one bar-sized rectangle per window and a copy of that strip each time the window commits, and pays a readback only when `title_contrast_sample` asks for one, on the same cadence and at the same width. `"average"` does read that strip back on that cadence and at that width, once per commit that actually repaints the sampled region and once more when the bar's geometry, the strip height or the title changes, each finishing the frame first; the resulting color is a single pixel, so no further readback follows until that edge changes again. An explicit-sync window's strip is read only once its frame is reported ready, and read anyway after a brief wait when that report never arrives, so a stalled client cannot hold the bar on a stale color; a window that cannot be read — protected or external-only content — keeps the last color it gave, or the palette if it never gave one. The average is taken in the window's own color space and shown in it. An adaptive fill is opaque while the window is focused and the application's own edge is opaque; an unfocused bar draws it dimmed over `background_unfocused`, and a translucent top edge stays translucent, so the blurred backdrop shows through in both.
 +
 +Because the bar can be any color the application paints, the title and the button symbols carry a dark edge in every `color_source`, so they stay readable on light and dark windows alike; `title_shadow = false` removes it from both. A bar that matches the title can still make it unreadable, so `title_contrast` replaces the title's color with black or white when it sits too close to the bar behind it, and leaves a color that already reads untouched. This applies in every `color_source`: `"fixed"` judges its palette against itself, and `"average"` its mean. Symbols drawn straight on the bar, with `button_background = false`, follow the same rule against the bar; symbols on a painted button color are judged against that instead, disabled ones included, and one with no alpha leaves the symbol on the bar. The comparison uses the bar's own color, before the unfocused dimming and before any transparency blend over the backdrop, and a `background` with no alpha at all is never judged, since it is not what shows. `"window"` mirrors the window's pixels and knows no color of its own, so it does not reverse until `title_contrast_sample = true` reads that edge back once per change, which finishes the frame first — the cost `"window"` otherwise avoids. A transparent edge is a readable edge with no color in it, so the title is judged against the palette that shows through it; an edge that cannot be read at all keeps the last color the window gave, or leaves the title as configured if it never gave one.
 +
@@ -34,12 +34,12 @@ index 593d3213..25f75de3 100644
  Rounded windows keep a straight join between the title bar and transparent content, including the content's blur and overview preview. The outer frame retains its rounded corners; hiding the title bar restores rounding to the top of the content.
  
 diff --git a/examples/config.toml b/examples/config.toml
-index ef2c34a7..458b510b 100644
+index 4637518a..18f03901 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
-@@ -96,6 +96,11 @@ radius = 3
- # button_corner_radius = -1 # Follow the window's corner_radius; 0 makes square buttons.
- # button_glyph = "hover" # X, square, and underscore symbols: "always", "hover" (while hovered or pressed), or "never".
+@@ -99,6 +99,11 @@ radius = 3
+ # button_glyph_size = -1 # Symbol side in logical pixels, 1 to 128; -1 spans half the button.
+ # button_glyph_stroke = -1 # Symbol stroke in logical pixels, 0.5 to 16; -1 is one twelfth of the button.
  # button_background = true # Show colored backgrounds behind the symbols.
 +# color_source = "fixed" # "window" paints the bar with the top of the window's own content; "average" with its mean color.
 +# color_source_height = 1 # Rows of that edge it takes, 1 (one flat color) to 4.
@@ -50,7 +50,7 @@ index ef2c34a7..458b510b 100644
  # Optional button palette. Glyph colors also apply when button backgrounds are off.
  # [colors.title_bar]
 diff --git a/src/config/config.h b/src/config/config.h
-index 03783df5..519c4152 100644
+index d819feb3..23793cc7 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -36,6 +36,9 @@ namespace umbriel {
@@ -63,9 +63,9 @@ index 03783df5..519c4152 100644
    enum class ModifierKey {
      Super,
      Alt,
-@@ -753,6 +756,20 @@ namespace umbriel {
-         int buttonPadding = -1;
-         TitleBarButtonGlyph buttonGlyph = TitleBarButtonGlyph::Hover;
+@@ -751,6 +754,20 @@ namespace umbriel {
+         int buttonGlyphSize = -1;
+         double buttonGlyphStroke = -1.0;
          bool buttonBackground = true;
 +        // "window" paints the bar with the top strip of the window's own content instead of the palette color, and
 +        // "average" paints it with that strip's mean color; the palette stays underneath as the fallback.
@@ -85,12 +85,12 @@ index 03783df5..519c4152 100644
          std::vector<TitleBarButton> buttons{TitleBarButton::Minimize, TitleBarButton::Maximize, TitleBarButton::Close};
          TitleBarButtonGeometry buttonGeometry() const {
 diff --git a/src/config/fields_general.cpp b/src/config/fields_general.cpp
-index 83d73c3f..caa5d443 100644
+index 8b28b36e..fcf29e2b 100644
 --- a/src/config/fields_general.cpp
 +++ b/src/config/fields_general.cpp
-@@ -107,6 +107,21 @@ namespace umbriel {
-               }
-           ),
+@@ -118,6 +118,21 @@ namespace umbriel {
+           integer("button_glyph_size", -1, 128, &A::TitleBar::buttonGlyphSize),
+           real("button_glyph_stroke", -1.0, 16.0, &A::TitleBar::buttonGlyphStroke),
            boolean("button_background", &A::TitleBar::buttonBackground),
 +          registry::choice(
 +              "color_source", &A::TitleBar::colorSource,
@@ -108,8 +108,8 @@ index 83d73c3f..caa5d443 100644
 +          boolean("title_contrast", &A::TitleBar::titleContrast),
 +          boolean("title_contrast_sample", &A::TitleBar::titleContrastSample),
            registry::text("font", &A::TitleBar::font),
+           registry::choice("title_align", &A::TitleBar::titleAlign, titleAligns()),
            registry::choice(
-               "button_position", &A::TitleBar::buttonPosition,
 diff --git a/src/scene/adaptive_sampling.h b/src/scene/adaptive_sampling.h
 new file mode 100644
 index 00000000..f488fe00
@@ -293,7 +293,7 @@ index 4446f029..953ff6db 100644
      const auto byte = [](float component) {
        return static_cast<int>(std::lround(std::clamp(component, 0.0F, 1.0F) * 255.0F));
 diff --git a/src/scene/ssd_frame.cpp b/src/scene/ssd_frame.cpp
-index d6436f48..971a4753 100644
+index e814b889..1ce5cec1 100644
 --- a/src/scene/ssd_frame.cpp
 +++ b/src/scene/ssd_frame.cpp
 @@ -1,24 +1,60 @@
@@ -384,7 +384,7 @@ index d6436f48..971a4753 100644
      for (auto* buffer : m_iconBuffers) {
        if (buffer != nullptr) {
          wlr_buffer_unlock(buffer);
-@@ -126,6 +175,114 @@ namespace umbriel {
+@@ -126,6 +175,123 @@ namespace umbriel {
      m_blurLive = live;
      updateBlur();
    }
@@ -454,24 +454,33 @@ index d6436f48..971a4753 100644
 +    return touched;
 +  }
 +
++  double SsdFrame::sampleLeftFraction() const {
++    if (m_sampleWidth <= 0 || m_geometry.contentWidth <= 0) {
++      return 0.0;
++    }
++    return std::clamp(static_cast<double>(m_sampleLeft) / static_cast<double>(m_geometry.contentWidth), 0.0, 1.0);
++  }
++
 +  double SsdFrame::sampleWidthFraction() const {
 +    if (m_sampleWidth <= 0 || m_geometry.contentWidth <= 0) {
 +      return 1.0;
 +    }
-+    return std::clamp(static_cast<double>(m_sampleWidth) / static_cast<double>(m_geometry.contentWidth), 0.0, 1.0);
++    const double width = static_cast<double>(m_sampleWidth) / static_cast<double>(m_geometry.contentWidth);
++    return std::clamp(width, 0.0, 1.0 - sampleLeftFraction());
 +  }
 +
-+  void SsdFrame::cacheSampleWidth(const TabLabel* label, const TitleBarLayout& parts) {
++  void SsdFrame::cacheSampleWidth(const TabLabel* label, int labelX) {
++    m_sampleLeft = 0;
++    m_sampleWidth = 0;
 +    if (label == nullptr || m_geometry.contentWidth <= 0) {
-+      m_sampleWidth = 0;
 +      return;
 +    }
-+    // The label renders at the output scale; the layout and the strip are logical pixels.
-+    const double scale = std::max(1.0, std::ceil(static_cast<double>(m_geometry.scale)));
-+    const int text = static_cast<int>(std::lround(static_cast<double>(label->width) / scale));
-+    m_sampleWidth = std::clamp(
-+        parts.title.x + std::min(text, parts.title.width) + kAdaptiveSamplePadding, 0, m_geometry.contentWidth
-+    );
++    // Wherever the title sits, its own span plus a little slack: a centered or right-aligned title is not under the
++    // leading edge, so a readback from there would judge the bar against the wrong part of the window. The label and
++    // the strip are both logical pixels.
++    m_sampleLeft = std::clamp(labelX - kAdaptiveSamplePadding, 0, m_geometry.contentWidth);
++    const int right = std::clamp(labelX + label->width + kAdaptiveSamplePadding, m_sampleLeft, m_geometry.contentWidth);
++    m_sampleWidth = right - m_sampleLeft;
 +  }
 +
 +  void SsdFrame::armStripFallback(std::uint32_t delayMsec) {
@@ -499,7 +508,7 @@ index d6436f48..971a4753 100644
  
    void SsdFrame::updateBlur() {
      const auto& cfg = config().appearance.blur;
-@@ -164,6 +321,376 @@ namespace umbriel {
+@@ -164,6 +330,382 @@ namespace umbriel {
      wlr_scene_blur_set_alpha(m_blur, m_blurAlpha);
    }
  
@@ -679,6 +688,7 @@ index d6436f48..971a4753 100644
 +        m_stripDeferred = false;
 +        m_sampling.reset();
 +      }
++      m_sampledStrip = {};
 +      m_stripPixels.clear();
 +      m_stripPixels.shrink_to_fit();
 +      return;
@@ -735,17 +745,21 @@ index d6436f48..971a4753 100644
 +    }
 +    // Both modes pay the same readback: "average" paints it, "window" judges the title against it. Only the mirror is
 +    // free, so the read covers the title and a little slack instead of the whole edge. A mirror still needs all of it.
++    const double sampleStart = sampleLeftFraction();
 +    const double sampleFraction = sampleWidthFraction();
-+    const wlr_fbox sampleBox = sampleFraction >= 1.0
++    const wlr_fbox sampleBox = sampleStart <= 0.0 && sampleFraction >= 1.0
 +        ? strip
 +        : titleBarStripSourceBox(
 +              base, buffer->width, buffer->height, m_contentGeometry, m_content->current.width,
 +              m_content->current.height, static_cast<uint32_t>(m_content->current.transform), style.colorSourceHeight,
-+              sampleFraction
++              sampleFraction, sampleStart
 +          );
++    // A title that moved takes its sample with it: where the bar reads from is part of what the read covers.
++    const bool spanMoved = (average || sampling) && !wlr_fbox_equal(&m_sampledStrip, &sampleBox);
 +    const bool restrip = (average ? (fromCommit && stripTouched(sampleBox)) : touched)
 +        || modeChanged
 +        || stripMoved
++        || spanMoved
 +        || m_stripDeferred
 +        || samplingChanged;
 +    if (fromCommit && !restrip) {
@@ -778,6 +792,7 @@ index d6436f48..971a4753 100644
 +      case AdaptiveSampling::Action::ReadAnyway: {
 +        const StripSample sample = averageStrip(sampleBox);
 +        m_stripDeferred = false;
++        m_sampledStrip = sampleBox;
 +        if (average) {
 +          if (sample.color.has_value()) {
 +            m_averageColor = sample.color;
@@ -876,7 +891,7 @@ index d6436f48..971a4753 100644
    int SsdFrame::zoomed(int value) const { return static_cast<int>(std::lround(value * m_geometry.zoom)); }
  
    clipped_region SsdFrame::frameClip(int x, int y) const {
-@@ -186,6 +713,33 @@ namespace umbriel {
+@@ -186,6 +728,33 @@ namespace umbriel {
      wlr_scene_buffer_set_corner_box(buffer, clip.inside ? &clip.area : nullptr);
    }
  
@@ -910,7 +925,7 @@ index d6436f48..971a4753 100644
    std::span<const TitleBarButton> SsdFrame::visibleButtons() const {
      const auto& style = config().appearance.titleBar;
      return style.buttonGlyph != TitleBarButtonGlyph::Never || style.buttonBackground
-@@ -193,7 +747,10 @@ namespace umbriel {
+@@ -193,7 +762,10 @@ namespace umbriel {
          : std::span<const TitleBarButton>();
    }
  
@@ -922,29 +937,26 @@ index d6436f48..971a4753 100644
      const auto index = static_cast<size_t>(button);
      auto*& icon = m_icons[index];
      const std::array<wlr_scene_rect*, kTitleBarButtonCount> backgrounds{m_minimize, m_maximize, m_close};
-@@ -210,8 +767,11 @@ namespace umbriel {
-     // on its position, and the renderer copies a buffer within one pixel of that size texel for texel, leaving the
-     // symbol half a pixel off center. Twice the resolution makes it resample symmetrically instead.
-     const int pixels = static_cast<int>(std::ceil(size * scale)) * (scale == std::floor(scale) ? 1 : 2);
--    if (icon == nullptr || m_iconSizes[index] != pixels || m_iconColors[index] != color) {
--      wlr_buffer* buffer = renderTitleBarIcon(button, pixels, color);
-+    if (icon == nullptr
-+        || m_iconSizes[index] != pixels
-+        || m_iconColors[index] != color
-+        || m_iconOutlines[index] != outline) {
-+      wlr_buffer* buffer = renderTitleBarIcon(button, pixels, color, outline);
+@@ -215,8 +787,9 @@ namespace umbriel {
+     if (icon == nullptr
+         || m_iconSizes[index] != pixels
+         || m_iconColors[index] != color
++        || m_iconOutlines[index] != outline
+         || m_iconGlyphs[index] != glyph) {
+-      wlr_buffer* buffer = renderTitleBarIcon(button, pixels, color, glyph);
++      wlr_buffer* buffer = renderTitleBarIcon(button, pixels, color, glyph, outline);
        if (icon == nullptr) {
          icon = wlr_scene_buffer_create(m_tree, buffer);
          if (icon != nullptr) {
-@@ -230,6 +790,7 @@ namespace umbriel {
+@@ -235,6 +808,7 @@ namespace umbriel {
        wlr_buffer_drop(buffer);
        m_iconSizes[index] = pixels;
        m_iconColors[index] = color;
 +      m_iconOutlines[index] = outline;
+       m_iconGlyphs[index] = glyph;
      }
      wlr_scene_buffer_set_dest_size(icon, background->width, background->height);
-     wlr_scene_buffer_set_opacity(icon, alpha);
-@@ -239,6 +800,11 @@ namespace umbriel {
+@@ -245,6 +819,11 @@ namespace umbriel {
    }
  
    void SsdFrame::updateColors() {
@@ -956,7 +968,7 @@ index d6436f48..971a4753 100644
      const auto& colors = config().colors.titleBar;
      const auto& style = config().appearance.titleBar;
      const bool backgrounds = style.buttonBackground;
-@@ -246,8 +812,7 @@ namespace umbriel {
+@@ -252,8 +831,7 @@ namespace umbriel {
      const auto& background = m_focused ? colors.background : colors.backgroundUnfocused;
      premultiplied(color, background, m_alpha);
      wlr_scene_rect_set_color(m_background, color);
@@ -966,7 +978,7 @@ index d6436f48..971a4753 100644
      const auto button = [&](wlr_scene_rect* rect, const std::array<float, 4>& base,
                              const std::array<float, 4>& idleGlyph, const std::array<float, 4>& hoverGlyph,
                              SsdFramePart part, bool enabled, TitleBarButton which) {
-@@ -267,10 +832,19 @@ namespace umbriel {
+@@ -273,10 +851,19 @@ namespace umbriel {
        }
        premultiplied(color, value, backgrounds ? m_alpha * alpha : 0.0F);
        wlr_scene_rect_set_color(rect, color);
@@ -988,7 +1000,7 @@ index d6436f48..971a4753 100644
      };
      button(
          m_close, colors.close, colors.closeGlyph, colors.closeGlyphHover, SsdFramePart::Close, true,
-@@ -287,6 +861,9 @@ namespace umbriel {
+@@ -293,6 +880,9 @@ namespace umbriel {
      if (m_label != nullptr) {
        wlr_scene_buffer_set_opacity(m_label, m_alpha);
      }
@@ -998,20 +1010,22 @@ index d6436f48..971a4753 100644
      updateBlur();
    }
  
-@@ -298,6 +875,9 @@ namespace umbriel {
+@@ -304,6 +894,10 @@ namespace umbriel {
      wlr_scene_node_set_enabled(&m_tree->node, shown);
      wlr_scene_node_set_enabled(&m_gripTree->node, available && m_resizable && !m_preview);
      if (!available) {
 +      // No bar to sample for: let a later redraw measure the title again before it caps a readback.
++      m_sampleLeft = 0;
 +      m_sampleWidth = 0;
 +      updateAdaptive(false);
        updateBlur();
        return;
      }
-@@ -323,11 +903,16 @@ namespace umbriel {
+@@ -329,11 +923,17 @@ namespace umbriel {
        wlr_scene_node_set_enabled(&m_grips[i]->node, m_resizable && !m_preview);
      }
      if (!shown) {
++      m_sampleLeft = 0;
 +      m_sampleWidth = 0;
 +      updateAdaptive(false);
        updateBlur();
@@ -1025,7 +1039,7 @@ index d6436f48..971a4753 100644
      const auto& style = config().appearance.titleBar;
      const int radius = nestedRadius(g.cornerRadius, g.borderInset);
      TitleBarLayout parts =
-@@ -348,42 +933,62 @@ namespace umbriel {
+@@ -354,43 +954,64 @@ namespace umbriel {
      drawButton(m_close, parts.button(TitleBarButton::Close));
      drawButton(m_maximize, parts.button(TitleBarButton::Maximize));
      drawButton(m_minimize, parts.button(TitleBarButton::Minimize));
@@ -1050,11 +1064,13 @@ index d6436f48..971a4753 100644
 +    // The configured color, or black or white when the bar behind it is too close to read.
 +    const std::array<float, 4> textColor = resolvedTitleColor();
 +    const TabLabel* label = measureTitle(textColor, 1.0F, parts, radius);
-+    cacheSampleWidth(label, parts);
-+    // Hold the title before the shadow lookup, which can evict it. The frame keeps this lock for its snapshots.
++    // Held before the shadow lookup, which can evict the label. The frame keeps this lock for its snapshots.
 +    holdLabelBuffer(m_labelBuffer, label != nullptr ? label->buffer : nullptr);
 +    const int labelWidth = label != nullptr ? label->width : 0;
 +    const int labelHeight = label != nullptr ? label->height : 0;
++    // Fixed here for the same reason: the shadow follows the title where it sits.
++    const int labelX = titleBarLabelX(parts, g.contentWidth, labelWidth, style.titleAlign);
++    cacheSampleWidth(label, labelX);
 +    // Any bar can be any color, so the title keeps a dark edge unless it is turned off.
 +    const bool shadowed = style.titleShadow;
 +    const TabLabel* shadow = nullptr;
@@ -1082,9 +1098,10 @@ index d6436f48..971a4753 100644
 +        wlr_scene_buffer_set_buffer(m_label, m_labelBuffer);
        }
 -      wlr_scene_buffer_set_dest_size(m_label, std::max(1, zoomed(label->width)), std::max(1, zoomed(label->height)));
--      wlr_scene_node_set_position(&m_label->node, zoomed(parts.title.x), zoomed(-h + (h - label->height) / 2));
+-      const int x = titleBarLabelX(parts, g.contentWidth, label->width, style.titleAlign);
+-      wlr_scene_node_set_position(&m_label->node, zoomed(x), zoomed(-h + (h - label->height) / 2));
 +      wlr_scene_buffer_set_dest_size(m_label, std::max(1, zoomed(labelWidth)), std::max(1, zoomed(labelHeight)));
-+      wlr_scene_node_set_position(&m_label->node, zoomed(parts.title.x), zoomed(-h + (h - labelHeight) / 2));
++      wlr_scene_node_set_position(&m_label->node, zoomed(labelX), zoomed(-h + (h - labelHeight) / 2));
        clipBuffer(m_label);
      }
 +    if (shadow == nullptr) {
@@ -1105,14 +1122,14 @@ index d6436f48..971a4753 100644
 +          m_labelShadow, std::max(1, zoomed(shadow->width)), std::max(1, zoomed(shadow->height))
 +      );
 +      wlr_scene_node_set_position(
-+          &m_labelShadow->node, zoomed(parts.title.x) + offset, zoomed(-h + (h - shadow->height) / 2) + offset
++          &m_labelShadow->node, zoomed(labelX) + offset, zoomed(-h + (h - shadow->height) / 2) + offset
 +      );
 +      clipBuffer(m_labelShadow);
 +    }
      updateColors();
    }
  
-@@ -424,21 +1029,31 @@ namespace umbriel {
+@@ -431,21 +1052,31 @@ namespace umbriel {
          wlr_scene_node_set_position(&copy->node, m_blur->node.x, m_blur->node.y);
        }
      }
@@ -1150,7 +1167,7 @@ index d6436f48..971a4753 100644
        copy->point_accepts_input = rejectInput;
        wlr_scene_buffer_set_dest_size(copy, source->dst_width, source->dst_height);
        wlr_scene_buffer_set_opacity(copy, source->opacity);
-@@ -446,13 +1061,35 @@ namespace umbriel {
+@@ -453,13 +1084,35 @@ namespace umbriel {
        wlr_scene_buffer_set_corner_box(copy, &source->corner_box);
        wlr_scene_node_set_position(&copy->node, m_tree->node.x + source->node.x, m_tree->node.y + source->node.y);
      };
@@ -1190,7 +1207,7 @@ index d6436f48..971a4753 100644
      preview->m_preview = true;
      syncPreview(*preview);
      return preview;
-@@ -466,6 +1103,13 @@ namespace umbriel {
+@@ -473,6 +1126,13 @@ namespace umbriel {
        frame->setMaximized(m_maximized);
        frame->setFocused(m_focused);
        frame->setBlurOptions(m_blurOptions);
@@ -1205,16 +1222,17 @@ index d6436f48..971a4753 100644
      }
    }
 diff --git a/src/scene/ssd_frame.h b/src/scene/ssd_frame.h
-index 6f5d7988..76a9a93a 100644
+index 08d7fb92..d4c47008 100644
 --- a/src/scene/ssd_frame.h
 +++ b/src/scene/ssd_frame.h
-@@ -1,29 +1,41 @@
+@@ -1,30 +1,42 @@
  #pragma once
  
 +#include "config/config.h"
 +#include "scene/adaptive_sampling.h"
  #include "scene/ssd_frame_geometry.h"
  #include "scene/surface_blur.h"
+ #include "scene/title_bar_icon.h"
  #include "view/chrome_attachment.h"
  
  #include <array>
@@ -1252,7 +1270,7 @@ index 6f5d7988..76a9a93a 100644
      ~SsdFrame() override;
      void layout(const ViewChromeGeometry& geometry) override;
      void setFocused(bool focused) override;
-@@ -41,6 +53,11 @@ namespace umbriel {
+@@ -42,6 +54,11 @@ namespace umbriel {
      void setPressed(SsdFramePart part);
      void setBlurOptions(const SurfaceBlurOptions& options);
      void setBlurLive(bool live);
@@ -1264,7 +1282,7 @@ index 6f5d7988..76a9a93a 100644
      bool maximizeEnabled() const { return m_maximizeEnabled; }
      int titleBarHeight() const { return m_geometry.titleBarHeight; }
      bool contains(const wlr_scene_node* node) const;
-@@ -52,8 +69,49 @@ namespace umbriel {
+@@ -53,8 +70,50 @@ namespace umbriel {
    private:
      void redraw();
      void updateColors();
@@ -1288,8 +1306,9 @@ index 6f5d7988..76a9a93a 100644
 +    // Whether this commit's explicit-sync acquire point has signalled, or has no fence at all.
 +    bool stripFenceSignalled() const;
 +    // The part of the edge worth sampling: the title plus a little slack, as a fraction of the visible width.
++    double sampleLeftFraction() const;
 +    double sampleWidthFraction() const;
-+    void cacheSampleWidth(const TabLabel* label, const TitleBarLayout& parts);
++    void cacheSampleWidth(const TabLabel* label, int labelX);
 +    // Reads the edge once `delayMsec` has passed, for a fence that outlived its wait or a read the cadence skipped.
 +    void armStripFallback(std::uint32_t delayMsec);
 +    static int onStripFallbackTimer(void* data);
@@ -1315,7 +1334,7 @@ index 6f5d7988..76a9a93a 100644
      void updateBlur();
      clipped_region frameClip(int x, int y) const;
      void clipBuffer(wlr_scene_buffer* buffer) const;
-@@ -66,6 +124,50 @@ namespace umbriel {
+@@ -67,6 +126,53 @@ namespace umbriel {
      SurfaceBlurOptions m_blurOptions;
      bool m_blurLive = false;
      wlr_scene_buffer* m_label = nullptr;
@@ -1338,8 +1357,11 @@ index 6f5d7988..76a9a93a 100644
 +    // Runs the fallback for a read the loop would otherwise owe until the next commit; a preview has no loop.
 +    wl_event_loop* m_loop = nullptr;
 +    wl_event_source* m_stripTimer = nullptr;
-+    // Width of the title plus a little slack, in logical pixels; 0 samples the whole edge.
++    // The title plus a little slack, in logical pixels from the bar's left edge; a width of 0 samples the whole edge.
++    int m_sampleLeft = 0;
 +    int m_sampleWidth = 0;
++    // The region the last read covered, so a title that moves re-reads where it now sits.
++    wlr_fbox m_sampledStrip{};
 +    // What the strip node last mirrored, so an unrelated commit costs nothing.
 +    wlr_buffer* m_adaptiveBuffer = nullptr;
 +    wlr_fbox m_adaptiveStrip{};
@@ -1366,16 +1388,16 @@ index 6f5d7988..76a9a93a 100644
      wlr_scene_rect* m_close = nullptr;
      wlr_scene_rect* m_maximize = nullptr;
      wlr_scene_rect* m_minimize = nullptr;
-@@ -73,6 +175,7 @@ namespace umbriel {
+@@ -74,6 +180,7 @@ namespace umbriel {
      // Keep a consumer lock for snapshots and renderer recovery after the scene uploads an icon's texture.
      std::array<wlr_buffer*, kTitleBarButtonCount> m_iconBuffers{};
      std::array<std::array<float, 4>, kTitleBarButtonCount> m_iconColors{};
 +    std::array<std::optional<std::array<float, 4>>, kTitleBarButtonCount> m_iconOutlines{};
      std::array<int, kTitleBarButtonCount> m_iconSizes{};
+     std::array<TitleBarGlyph, kTitleBarButtonCount> m_iconGlyphs{};
      std::vector<TitleBarButton> m_buttons;
-     std::array<wlr_scene_rect*, 4> m_grips{};
 diff --git a/src/scene/ssd_frame_geometry.cpp b/src/scene/ssd_frame_geometry.cpp
-index a33d60d6..10b14a5f 100644
+index 81130d32..330c402b 100644
 --- a/src/scene/ssd_frame_geometry.cpp
 +++ b/src/scene/ssd_frame_geometry.cpp
 @@ -6,6 +6,7 @@
@@ -1386,14 +1408,14 @@ index a33d60d6..10b14a5f 100644
  }
  
  namespace umbriel {
-@@ -154,4 +155,65 @@ namespace umbriel {
+@@ -168,4 +169,67 @@ namespace umbriel {
    wlr_box contentBoxInTile(const wlr_box& tile, int titleBarHeight) {
      return {tile.x, tile.y + titleBarHeight, tile.width, std::max(1, tile.height - titleBarHeight)};
    }
 +
 +  wlr_fbox titleBarStripSourceBox(
 +      const wlr_fbox& source, int bufferWidth, int bufferHeight, const wlr_box& geometry, int surfaceWidth,
-+      int surfaceHeight, uint32_t transform, int logicalHeight, double widthFraction
++      int surfaceHeight, uint32_t transform, int logicalHeight, double widthFraction, double startFraction
 +  ) {
 +    // The whole transform, flip bit included: a flip moves which buffer pixels the geometry maps to, while only a
 +    // quarter turn swaps the buffer's dimensions.
@@ -1430,10 +1452,12 @@ index a33d60d6..10b14a5f 100644
 +        visible = {left, top, right - left, bottom - top};
 +      }
 +    }
-+    // Only the leading part of the edge when the caller samples rather than mirrors it: the title is much narrower
-+    // than the bar, and each readback pixel costs a finished frame.
-+    if (widthFraction < 1.0) {
-+      visible.width = std::max(0.0, visible.width * std::clamp(widthFraction, 0.0, 1.0));
++    // Only the part under the title when the caller samples rather than mirrors it: the title is much narrower than
++    // the bar, and each readback pixel costs a finished frame.
++    if (startFraction > 0.0 || widthFraction < 1.0) {
++      const double start = std::clamp(startFraction, 0.0, 1.0);
++      visible.x += visible.width * start;
++      visible.width = std::max(0.0, visible.width * std::clamp(widthFraction, 0.0, 1.0 - start));
 +    }
 +    // Cap after the floor: a viewport can make the source shorter than a buffer pixel, which inverts clamp()'s bounds.
 +    const double thickness = std::min(visible.height, std::max(1.0, static_cast<double>(logicalHeight) * scaleY));
@@ -1453,10 +1477,10 @@ index a33d60d6..10b14a5f 100644
 +  }
  } // namespace umbriel
 diff --git a/src/scene/ssd_frame_geometry.h b/src/scene/ssd_frame_geometry.h
-index d5f2be8a..6c7c839e 100644
+index 0555ca61..b8be8ed4 100644
 --- a/src/scene/ssd_frame_geometry.h
 +++ b/src/scene/ssd_frame_geometry.h
-@@ -56,4 +56,19 @@ namespace umbriel {
+@@ -64,4 +64,19 @@ namespace umbriel {
        const TitleBarButtonGeometry& geometry, double x, double y, int radius = 0
    );
    wlr_box contentBoxInTile(const wlr_box& tile, int titleBarHeight);
@@ -1469,11 +1493,11 @@ index d5f2be8a..6c7c839e 100644
 +  // `geometry` the window geometry in surface-local coordinates (an empty box means the whole surface, and its
 +  // margins stay out of the strip), `surfaceWidth`/`surfaceHeight` the surface's own size in surface-local pixels,
 +  // and `transform` its buffer transform. A box with no area means the caller has no usable buffer.
-+  // `widthFraction` keeps the strip to that leading part of the visible edge, 1.0 being all of it, so a readback can
-+  // cover only the title instead of the whole bar.
++  // `widthFraction` of the visible edge, starting `startFraction` into it and 1.0 being all of it, keeps the strip to
++  // the part a readback needs: the title and its slack, wherever the title sits, instead of the whole bar.
 +  wlr_fbox titleBarStripSourceBox(
 +      const wlr_fbox& source, int bufferWidth, int bufferHeight, const wlr_box& geometry, int surfaceWidth,
-+      int surfaceHeight, uint32_t transform, int logicalHeight, double widthFraction = 1.0
++      int surfaceHeight, uint32_t transform, int logicalHeight, double widthFraction = 1.0, double startFraction = 0.0
 +  );
  } // namespace umbriel
 diff --git a/src/scene/title_bar_contrast.h b/src/scene/title_bar_contrast.h
@@ -1514,16 +1538,17 @@ index 00000000..2a4c7061
 +
 +} // namespace umbriel
 diff --git a/src/scene/title_bar_icon.cpp b/src/scene/title_bar_icon.cpp
-index 80a6fd98..959eb139 100644
+index 084e3dc2..1f77b5ef 100644
 --- a/src/scene/title_bar_icon.cpp
 +++ b/src/scene/title_bar_icon.cpp
-@@ -6,30 +6,42 @@
- #include <cairo.h>
+@@ -18,36 +18,47 @@ namespace umbriel {
+     return glyph;
+   }
  
- namespace umbriel {
--  wlr_buffer* renderTitleBarIcon(TitleBarButton button, int pixels, const std::array<float, 4>& color) {
+-  wlr_buffer*
+-  renderTitleBarIcon(TitleBarButton button, int pixels, const std::array<float, 4>& color, const TitleBarGlyph& glyph) {
 +  wlr_buffer* renderTitleBarIcon(
-+      TitleBarButton button, int pixels, const std::array<float, 4>& color,
++      TitleBarButton button, int pixels, const std::array<float, 4>& color, const TitleBarGlyph& glyph,
 +      const std::optional<std::array<float, 4>>& outline
 +  ) {
      pixels = std::max(1, pixels);
@@ -1531,57 +1556,67 @@ index 80a6fd98..959eb139 100644
      cairo_t* cr = cairo_create(surface);
      cairo_scale(cr, pixels, pixels);
 -    cairo_set_source_rgba(cr, color[0], color[1], color[2], color[3]);
--    cairo_set_line_width(cr, 1.0 / 12.0);
+-    cairo_set_line_width(cr, glyph.stroke);
+-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+-    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+     const double lo = 0.5 - (glyph.size / 2.0);
+     const double hi = 0.5 + (glyph.size / 2.0);
+-    switch (button) {
+-    case TitleBarButton::Close:
+-      cairo_move_to(cr, lo, lo);
+-      cairo_line_to(cr, hi, hi);
+-      cairo_move_to(cr, hi, lo);
+-      cairo_line_to(cr, lo, hi);
+-      break;
+-    case TitleBarButton::Maximize:
+-      cairo_rectangle(cr, lo, lo, glyph.size, glyph.size);
+-      break;
+-    case TitleBarButton::Minimize: {
+-      // An underscore sits low in the symbol's square, as a text underscore does.
+-      const double y = 0.5 + (glyph.size * 0.4);
+-      cairo_move_to(cr, lo, y);
+-      cairo_line_to(cr, hi, y);
+-      break;
+-    }
 +    const auto path = [&](cairo_t* context) {
 +      switch (button) {
 +      case TitleBarButton::Close:
-+        cairo_move_to(context, 0.25, 0.25);
-+        cairo_line_to(context, 0.75, 0.75);
-+        cairo_move_to(context, 0.75, 0.25);
-+        cairo_line_to(context, 0.25, 0.75);
++        cairo_move_to(context, lo, lo);
++        cairo_line_to(context, hi, hi);
++        cairo_move_to(context, hi, lo);
++        cairo_line_to(context, lo, hi);
 +        break;
 +      case TitleBarButton::Maximize:
-+        cairo_rectangle(context, 0.25, 0.25, 0.5, 0.5);
++        cairo_rectangle(context, lo, lo, glyph.size, glyph.size);
 +        break;
-+      case TitleBarButton::Minimize:
-+        cairo_move_to(context, 0.25, 0.7);
-+        cairo_line_to(context, 0.75, 0.7);
++      case TitleBarButton::Minimize: {
++        // An underscore sits low in the symbol's square, as a text underscore does.
++        const double y = 0.5 + (glyph.size * 0.4);
++        cairo_move_to(context, lo, y);
++        cairo_line_to(context, hi, y);
 +        break;
 +      }
++      }
 +    };
-     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-     cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
--    switch (button) {
--    case TitleBarButton::Close:
--      cairo_move_to(cr, 0.25, 0.25);
--      cairo_line_to(cr, 0.75, 0.75);
--      cairo_move_to(cr, 0.75, 0.25);
--      cairo_line_to(cr, 0.25, 0.75);
--      break;
--    case TitleBarButton::Maximize:
--      cairo_rectangle(cr, 0.25, 0.25, 0.5, 0.5);
--      break;
--    case TitleBarButton::Minimize:
--      cairo_move_to(cr, 0.25, 0.7);
--      cairo_line_to(cr, 0.75, 0.7);
--      break;
++    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
++    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
 +    if (outline) {
 +      cairo_set_source_rgba(cr, (*outline)[0], (*outline)[1], (*outline)[2], (*outline)[3]);
-+      cairo_set_line_width(cr, 1.0 / 12.0 * 2.5);
++      cairo_set_line_width(cr, glyph.stroke * 2.5);
 +      path(cr);
 +      cairo_stroke(cr);
      }
 +    cairo_set_source_rgba(cr, color[0], color[1], color[2], color[3]);
-+    cairo_set_line_width(cr, 1.0 / 12.0);
++    cairo_set_line_width(cr, glyph.stroke);
 +    path(cr);
      cairo_stroke(cr);
      cairo_destroy(cr);
      return createCairoBuffer(surface);
 diff --git a/src/scene/title_bar_icon.h b/src/scene/title_bar_icon.h
-index 24c41382..c0645406 100644
+index 914a13ba..589d20f6 100644
 --- a/src/scene/title_bar_icon.h
 +++ b/src/scene/title_bar_icon.h
-@@ -3,10 +3,15 @@
+@@ -3,6 +3,7 @@
  #include "scene/ssd_frame_geometry.h"
  
  #include <array>
@@ -1589,13 +1624,17 @@ index 24c41382..c0645406 100644
  
  struct wlr_buffer;
  
- namespace umbriel {
+@@ -17,7 +18,10 @@ namespace umbriel {
+   // The glyph for a `button` logical pixels wide; a negative setting derives that dimension from the button.
+   TitleBarGlyph titleBarGlyph(int button, int size, double stroke);
+ 
 -  // Rasterizes geometric button strokes into a transparent square at the requested device resolution.
--  [[nodiscard]] wlr_buffer* renderTitleBarIcon(TitleBarButton button, int pixels, const std::array<float, 4>& color);
+-  [[nodiscard]] wlr_buffer*
+-  renderTitleBarIcon(TitleBarButton button, int pixels, const std::array<float, 4>& color, const TitleBarGlyph& glyph);
 +  // Rasterizes geometric button strokes into a transparent square at the requested device resolution. `outline`, when
 +  // set, strokes the same path wider underneath, so the symbol keeps an edge over an arbitrary title bar color.
 +  [[nodiscard]] wlr_buffer* renderTitleBarIcon(
-+      TitleBarButton button, int pixels, const std::array<float, 4>& color,
++      TitleBarButton button, int pixels, const std::array<float, 4>& color, const TitleBarGlyph& glyph,
 +      const std::optional<std::array<float, 4>>& outline = std::nullopt
 +  );
  } // namespace umbriel
@@ -1624,10 +1663,10 @@ index bd01cb2a..ed750452 100644
          m_presentedBox.width > 0 && m_presentedBox.height > 0 ? m_presentedBox : committedContentBox();
      layoutChromeAttachment(content.width, content.height);
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index ed62016f..28f17a6b 100644
+index 8c030835..dedd90fc 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
-@@ -1139,6 +1139,10 @@ namespace umbriel {
+@@ -1140,6 +1140,10 @@ namespace umbriel {
          m_server->scheduleIpcWindowsEvent();
        }
      }
@@ -1667,10 +1706,10 @@ index d9557dde..ca75f7e6 100644
  background_unfocused = "#000000FF"
 diff --git a/tests/harness/checks/overview/card_title_bar.sh b/tests/harness/checks/overview/card_title_bar.sh
 new file mode 100755
-index 00000000..e02312ab
+index 00000000..bc2f729b
 --- /dev/null
 +++ b/tests/harness/checks/overview/card_title_bar.sh
-@@ -0,0 +1,135 @@
+@@ -0,0 +1,131 @@
 +#!/usr/bin/env bash
 +# harness: outputs=1
 +# An overview card paints what its window resolved rather than reading it again per card: the mean of an "average" bar,
@@ -1789,11 +1828,7 @@ index 00000000..e02312ab
 +FILL_COLOR=0xFF202020 TOP_BAND_COLOR=0xFFF0F0F0 TOP_BAND_HEIGHT=1 REPAINT_ON_STDIN=1 \
 +  "$CLIENT" card-title-bar 480 300 < "$FIFO" > "$LOG" 2>&1 &
 +exec 3> "$FIFO"
-+for _ in $(seq 80); do
-+  [[ $("$UMBRIEL" windows --json | jq length) -eq 1 ]] && break
-+  sleep 0.025
-+done
-+[[ $("$UMBRIEL" windows --json | jq length) -eq 1 ]] || fail "the card client never mapped"
++await_window card-title-bar || fail "the card client never mapped"
 +
 +# The card carries the mean its window read; a card that dropped it falls back to the palette underneath.
 +shoot_card
@@ -1808,10 +1843,10 @@ index 00000000..e02312ab
 +echo "an overview card paints the bar its window resolved, and the palette only when nothing was resolved"
 diff --git a/tests/harness/checks/render/title_bar_adaptive.sh b/tests/harness/checks/render/title_bar_adaptive.sh
 new file mode 100755
-index 00000000..8685b63d
+index 00000000..2b00d9b5
 --- /dev/null
 +++ b/tests/harness/checks/render/title_bar_adaptive.sh
-@@ -0,0 +1,320 @@
+@@ -0,0 +1,335 @@
 +#!/usr/bin/env bash
 +# `color_source` takes the bar's fill from the window instead of the palette: "window" mirrors its top rows, "average"
 +# paints their mean. The window paints its first row green over a red body, so a bar sampling anything else shows red.
@@ -1836,9 +1871,10 @@ index 00000000..8685b63d
 +}
 +
 +# $1 color_source, $2 title color (default transparent), $3 "closing" to enable a fade-out the checks can
-+# sample, $4 "buttons" to paint the button backgrounds, $5 rows of the window's edge to sample.
++# sample, $4 "buttons" to paint the button backgrounds, $5 rows of the window's edge to sample, $6 corner radius,
++# $7 where the title sits.
 +configure() {
-+  local source=$1 text=${2:-"#00000000"} closing=${3:-} buttons=${4:-} rows=${5:-1} radius=${6:-0}
++  local source=$1 text=${2:-"#00000000"} closing=${3:-} buttons=${4:-} rows=${5:-1} radius=${6:-0} align=${7:-left}
 +  {
 +    cat <<EOF
 +[general]
@@ -1876,6 +1912,7 @@ index 00000000..8685b63d
 +color_source_height = $rows
 +button_background = $(if [[ $buttons == buttons ]]; then echo true; else echo false; fi)
 +button_glyph = "never"
++title_align = "$align"
 +
 +[appearance.shadow]
 +enabled = false
@@ -2051,6 +2088,19 @@ index 00000000..8685b63d
 +if ! (( sample_width > 0 && sample_width < 400 )); then
 +  fail "the strip readback covered ${sample_width}px of the 480px edge instead of the title"
 +fi
++
++# The sample follows the title rather than staying on the leading edge: right-aligned, it sits over the split's trailing
++# half, so the mean turns blue without the client repainting anything.
++configure average "" "" "" 1 0 right
++"$UMBRIEL" settle
++grim "$FRAME"
++read -r left_r left_g left_b < <(pixel 200 84)
++read -r right_r right_g right_b < <(pixel 620 84)
++if ! near "$left_g" "$right_g" || ! (( right_b > 200 && right_g < 40 && right_r < 40 )); then
++  fail "a right-aligned title kept the leading sample: left $left_r $left_g $left_b, right $right_r $right_g $right_b"
++fi
++configure average
++"$UMBRIEL" settle
 +
 +# The same window in smear mode keeps the two sides distinct.
 +configure window
@@ -2551,10 +2601,10 @@ index e5469607..591ef47a 100644
                state.repaintFrame = wl_surface_frame(state.surface);
                wl_callback_add_listener(state.repaintFrame, &kRepaintListener, &state);
 diff --git a/tests/meson.build b/tests/meson.build
-index a1d421fd..828fcc0c 100644
+index 985d8ae6..d8888a96 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -65,8 +65,11 @@ unit_tests = [
+@@ -66,8 +66,11 @@ unit_tests = [
    ['cheatsheet-rows', ['unit/cheatsheet_rows.cpp'], []],
    ['shortcut-labels', ['unit/shortcut_labels.cpp'], []],
    ['border-ring', ['unit/border_ring.cpp'], []],
@@ -2764,10 +2814,10 @@ index 00000000..b47a6935
 +
 +int main() { return RUN_TESTS(); }
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index db4fc157..ac659bd9 100644
+index 7c0f1bc4..d5d2a7ae 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -4842,6 +4842,11 @@ button_position = "left"
+@@ -4961,6 +4961,11 @@ button_position = "left"
  button_corner_radius = 4
  button_glyph = "never"
  button_background = false
@@ -2779,7 +2829,7 @@ index db4fc157..ac659bd9 100644
  [colors.title_bar]
  background = "#FF0000FF"
  background_unfocused = "#00FF00FF"
-@@ -4868,6 +4873,11 @@ minimize_glyph_hover = "#00FFFFFF"
+@@ -4988,6 +4993,11 @@ minimize_glyph_hover = "#00FFFFFF"
    CHECK_EQ(bar.buttonCornerRadius, 4);
    CHECK_EQ(bar.buttonGlyph, umbriel::TitleBarButtonGlyph::Never);
    CHECK_EQ(bar.buttonBackground, false);
@@ -2791,7 +2841,7 @@ index db4fc157..ac659bd9 100644
    const auto& colors = store.config().colors.titleBar;
    CHECK_EQ(colors.background[0], 1.0F);
    CHECK_EQ(colors.backgroundUnfocused[1], 1.0F);
-@@ -4895,6 +4905,11 @@ button_position = "middle"
+@@ -5016,6 +5026,11 @@ button_position = "middle"
  button_corner_radius = 500
  button_glyph = "sometimes"
  button_background = 1
@@ -2803,7 +2853,7 @@ index db4fc157..ac659bd9 100644
  [colors.title_bar]
  close_glyph = true
  close_glyph_hover = 1
-@@ -4912,12 +4927,22 @@ minimize_glyph_hover = {}
+@@ -5034,6 +5049,11 @@ minimize_glyph_hover = {}
    CHECK_EQ(store.config().appearance.titleBar.buttonCornerRadius, 100);
    CHECK_EQ(store.config().appearance.titleBar.buttonGlyph, umbriel::TitleBarButtonGlyph::Hover);
    CHECK_EQ(store.config().appearance.titleBar.buttonBackground, true);
@@ -2813,8 +2863,9 @@ index db4fc157..ac659bd9 100644
 +  CHECK_EQ(store.config().appearance.titleBar.titleContrast, true);
 +  CHECK_EQ(store.config().appearance.titleBar.titleContrastSample, false);
    CHECK(containsDiagnostic(store, "appearance.title_bar.height = 500 out of range, clamped to 128"));
+   CHECK(containsDiagnostic(store, "appearance.title_bar.title_align"));
    CHECK(containsDiagnostic(store, "appearance.title_bar.button_position"));
-   CHECK(containsDiagnostic(store, "appearance.title_bar.button_corner_radius"));
+@@ -5041,6 +5061,11 @@ minimize_glyph_hover = {}
    CHECK(containsDiagnostic(store, "appearance.title_bar.button_glyph"));
    CHECK(containsDiagnostic(store, "appearance.title_bar.button_background"));
    CHECK(containsDiagnostic(store, "appearance.title_bar.mode"));
@@ -2827,10 +2878,10 @@ index db4fc157..ac659bd9 100644
         {"close_glyph", "close_glyph_hover", "maximize_glyph", "maximize_glyph_hover", "minimize_glyph",
          "minimize_glyph_hover"}) {
 diff --git a/tests/unit/ssd_frame_geometry.cpp b/tests/unit/ssd_frame_geometry.cpp
-index 00820af0..cb13e5bc 100644
+index a9f664ff..bd53953d 100644
 --- a/tests/unit/ssd_frame_geometry.cpp
 +++ b/tests/unit/ssd_frame_geometry.cpp
-@@ -287,4 +287,158 @@ UMBRIEL_TEST(contentBoxInTileRemovesTitleBar) {
+@@ -309,4 +309,172 @@ UMBRIEL_TEST(contentBoxInTileRemovesTitleBar) {
    CHECK_EQ(contentBoxInTile({8, 8, 1264, 704}, 0).height, 704);
  }
  
@@ -2899,6 +2950,20 @@ index 00820af0..cb13e5bc 100644
 +  CHECK_EQ(whole.width, 400.0);
 +  const wlr_fbox over = titleBarStripSourceBox(full, 400, 300, {}, 400, 300, WL_OUTPUT_TRANSFORM_NORMAL, 2, 2.0);
 +  CHECK_EQ(over.width, 400.0);
++  // A title that is not at the leading edge samples where it sits: start and width are both fractions of the visible
++  // edge, so a right-aligned title takes the last quarter.
++  const wlr_fbox trailing =
++      titleBarStripSourceBox(full, 400, 300, {}, 400, 300, WL_OUTPUT_TRANSFORM_NORMAL, 2, 0.25, 0.75);
++  CHECK_EQ(trailing.x, 300.0);
++  CHECK_EQ(trailing.width, 100.0);
++  // A start plus a width that would run past the end stops at it.
++  const wlr_fbox clamped =
++      titleBarStripSourceBox(full, 400, 300, {}, 400, 300, WL_OUTPUT_TRANSFORM_NORMAL, 2, 0.5, 0.75);
++  CHECK_EQ(clamped.x, 300.0);
++  CHECK_EQ(clamped.width, 100.0);
++  // Past the end there is nothing to read.
++  const wlr_fbox past = titleBarStripSourceBox(full, 400, 300, {}, 400, 300, WL_OUTPUT_TRANSFORM_NORMAL, 2, 0.5, 1.0);
++  CHECK_EQ(past.width, 0.0);
 +}
 +
 +UMBRIEL_TEST(stripSourceBoxScalesWithTheBuffer) {
