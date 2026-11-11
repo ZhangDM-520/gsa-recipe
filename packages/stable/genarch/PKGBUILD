@@ -1,8 +1,13 @@
-# Maintainer: ZhangDM-520 <jixianqiang1540@gmail.com>
+# Maintainer: ZhangDM-520 <jixianqianqiang1540@gmail.com>
 # The engine is this host's sole writer for its power/IO configuration: it ships the intent
 # (typed TOML, byte-exact mirrors for opaque files, anchored-line records for foreign files),
 # judges live against it read-only, and converges. One path has one owner, and the engine
 # refuses to become a second writer for a file another engine already owns.
+#
+# The intent is layered: a host-agnostic base, this machine's profile, and an operator override.
+# The package ships this host's profile AND its selection (/etc/genarch/profile, a backup file);
+# a host whose DMI does not match reports PROFILE DRIFT instead of silently applying another
+# machine's facts.
 #
 # Units and udev rules ship AS INTENT, not as packaged files: the engine deploys every mirror
 # through one mechanism, so `genarch apply` in post_install is what creates them. That is a
@@ -11,22 +16,21 @@
 # Source: the tagged release. This tree is one machine's working configuration, so the tag is
 # the only reviewable artifact; an untagged checkout is not what gets packaged.
 pkgname=genarch
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
-pkgdesc="Native tuning engine: declared intent, read-only judge, converge pass, ryzenadj settings"
+pkgdesc="Native tuning engine: layered intent, machine profiles, read-only judge, converge pass"
 arch=('x86_64')
 url="https://github.com/ZhangDM-520/genarch-settings"
-license=('GPL-2.0-or-later')
+license=('MIT')
 # systemd: units are deployed by post_install; ryzenadj+iw+wireless-regdb: the SMU, WiFi and
 # regulatory rows the intent drives. gcc-libs: the Rust binary's runtime.
 depends=('gcc-libs' 'systemd' 'ryzenadj' 'iw' 'wireless-regdb')
 makedepends=('git' 'cargo' 'rust')
 install=genarch.install
+backup=('etc/genarch/profile')
 options=('!lto')
-source=("git+$url#tag=v$pkgver"
-        "install.sh")
-sha256sums=('SKIP'
-            'ec6d6f16a0b758c509f6be7debb25e67ca4a1a94febe9804e1d1dc79183433c6')
+source=("git+$url#tag=v$pkgver")
+sha256sums=('SKIP')
 
 build() {
   cd "$srcdir/genarch-settings"
@@ -37,18 +41,21 @@ package() {
   cd "$srcdir/genarch-settings"
   install -Dm755 target/release/genarch "$pkgdir/usr/bin/genarch"
 
-  # The intent is package data: the engine reads it and never writes it.
+  # The intent is package data: the engine reads it and never writes it. Copied whole, so a new
+  # typed file (ceil.toml) or a new profile does not need an edit here.
   install -Dm644 Cargo.toml "$pkgdir/usr/lib/genarch/package.toml"
-  for file in intent.toml sysctl.toml ryzenadj.toml passes.toml; do
-    install -Dm644 "intent/$file" "$pkgdir/usr/lib/genarch/$file"
-  done
-  cp -a intent/managed "$pkgdir/usr/lib/genarch/managed"
-  cp -a intent/mirror "$pkgdir/usr/lib/genarch/mirror"
+  cp -a intent/. "$pkgdir/usr/lib/genarch/"
 
-  install -Dm644 AGENTS.md "$pkgdir/usr/share/doc/genarch/AGENTS.md"
-  install -Dm644 CONTEXT.md "$pkgdir/usr/share/doc/genarch/CONTEXT.md"
+  # Built for this host, so it selects this host's profile.
+  install -d "$pkgdir/etc/genarch"
+  printf 'profile = "zenbook-s16"\n' > "$pkgdir/etc/genarch/profile"
+  chmod 644 "$pkgdir/etc/genarch/profile"
+
+  for doc in AGENTS.md CONTEXT.md SCOPE.md CONTRIBUTING.md LICENSE; do
+    install -Dm644 "$doc" "$pkgdir/usr/share/doc/genarch/$doc"
+  done
   install -Dm644 docs/DESIGN.md "$pkgdir/usr/share/doc/genarch/DESIGN.md"
-  # The pacman-free path for a host without this recipe; it installs the same files from the
-  # same tarball, so it ships WITH the package rather than as a second copy in this directory.
-  install -Dm755 "$srcdir/install.sh" "$pkgdir/usr/share/doc/genarch/install.sh"
+  # The pacman-free path for a host without this recipe lives in the source tree, so the recipe
+  # no longer carries a copy that can drift from it.
+  install -Dm755 install.sh "$pkgdir/usr/share/doc/genarch/install.sh"
 }

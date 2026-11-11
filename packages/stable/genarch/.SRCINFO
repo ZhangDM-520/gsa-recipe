@@ -1,11 +1,11 @@
 pkgbase = genarch
-	pkgdesc = Native tuning engine: declared intent, read-only judge, converge pass, ryzenadj settings
-	pkgver = 0.1.1
+	pkgdesc = Native tuning engine: layered intent, machine profiles, read-only judge, converge pass
+	pkgver = 0.2.0
 	pkgrel = 1
 	url = https://github.com/ZhangDM-520/genarch-settings
 	install = genarch.install
 	arch = x86_64
-	license = GPL-2.0-or-later
+	license = MIT
 	makedepends = git
 	makedepends = cargo
 	makedepends = rust
@@ -15,9 +15,8 @@ pkgbase = genarch
 	depends = iw
 	depends = wireless-regdb
 	options = !lto
-	source = git+https://github.com/ZhangDM-520/genarch-settings#tag=v0.1.1
-	source = install.sh
+	backup = etc/genarch/profile
+	source = git+https://github.com/ZhangDM-520/genarch-settings#tag=v0.2.0
 	sha256sums = SKIP
-	sha256sums = ec6d6f16a0b758c509f6be7debb25e67ca4a1a94febe9804e1d1dc79183433c6
 
 pkgname = genarch
