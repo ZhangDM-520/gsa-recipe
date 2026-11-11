@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1562.49b2970
-pkgrel=2
+pkgrel=4
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -74,7 +74,7 @@ sha256sums=('SKIP'
             'debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
             'c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23'
-            'ea7535fde45a2936ff07f3e0f76d145e4d23c21484e95b241de124895e9b8ac4'
+            '398c9aba9c07d7b39cdbbc11ba20e9c03a2af4145d2e3bce50f4e12372a9fb02'
             'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
             '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad')
@@ -297,6 +297,13 @@ prepare() {
   # the same code: the readback's span now follows the label and re-reads when it
   # moves, and renderTitleBarIcon takes the glyph and the outline together (head
   # e4c82089, 30 files +2468/-81, sha256 ea7535fd…).
+  # Re-cut 2026-11-11 on main@49b29701 with the `title_bar_color_source` window
+  # rule: color_source applies per window, in both directions, so the adaptive bar
+  # is given only to the applications that need it (head 2d486c98, 37 files
+  # +2612/-81, sha256 40b552f1…).
+  # Re-cut on the stack through 0019: 0012's `supersample` row rewrites the
+  # window-rule table's padding, so the rule's row is cut against that table
+  # (37 files +2612/-81, sha256 398c9aba…).
   git apply -3 ../0020-adaptive-title-bar.patch
 
   # [animation.windows_minimize]: a minimizing floating window leaves and returns with an animation instead of
