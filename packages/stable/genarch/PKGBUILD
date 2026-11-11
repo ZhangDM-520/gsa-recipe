@@ -16,7 +16,7 @@
 # Source: the tagged release. This tree is one machine's working configuration, so the tag is
 # the only reviewable artifact; an untagged checkout is not what gets packaged.
 pkgname=genarch
-pkgver=0.2.1
+pkgver=0.2.2
 pkgrel=1
 pkgdesc="Native tuning engine: layered intent, machine profiles, read-only judge, converge pass"
 arch=('x86_64')
