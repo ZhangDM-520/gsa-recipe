@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1563.d3c8592
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -68,11 +68,11 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0023-scratchpad-show-no-recentre.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            '593b4d1de74006c798d1523d3bf4791c8b1b31d9472666431b95bf1b8123814d'
-            'debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d'
+            '04ea6557764587d6019198ae381ea013282ddec615e4e642683251b8fab540b5'
+            '7bce12ce163428e1bb6c6759142ad8eaa6a732b41305d9b54ae21f84a4552d1c'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
-            'c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23'
-            '398c9aba9c07d7b39cdbbc11ba20e9c03a2af4145d2e3bce50f4e12372a9fb02'
+            'd022f608352c8b5c533965195a830b100d613b5ef450ffd27808ef9303396a7b'
+            '40b552f162bd91c7dab334cc773672b65d1607127a068422df3bb9121541d9e3'
             'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
             '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad')
@@ -166,6 +166,10 @@ prepare() {
   # color_profile/sdr_gamut schema test beside render_scale's, so the row is cut
   # against that table and both schema tests stay (47 files +1409/-110,
   # sha256 593b4d1d…).
+  # Re-cut 2026-11-12 on main@0c1f1255 from the PR branch after it merged that
+  # main: c2e29215 reflowed window-rules' settings table and added layer-client's
+  # popup-color option, so the table and usage string are cut merged (46 files
+  # +1379/-82, sha256 04ea6557…). The patch no longer conflicts.
   git apply -3 ../0012-per-output-render-scale.patch
 
   # 0013 retired 2026-11-11: PR #585 merged upstream as d3c85928 (ICC/EDID output
@@ -192,6 +196,10 @@ prepare() {
   # Re-cut 2026-11-11 after 0013's re-cut: fx_render_texture_options gained the
   # decode fields, so downsample_box follows them (28 files +848/-35, sha256
   # debceace…).
+  # Re-cut 2026-11-12 as the delta from the resolved 0012 branch tip, so the
+  # patch is the PR's own work only (29 files +849/-36, sha256 7bce12ce…). It
+  # now carries the `appearance.downsample` sentence in outputs.md, which the
+  # flattened form had dropped.
   git apply -3 ../0014-downsample-box.patch
 
   # [layout] underfull_strip: a scrolling strip narrower than the viewport
@@ -234,6 +242,9 @@ prepare() {
   # (Retire on merge: 0019 -> PR #715.)
   # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
   # (head 08ad399e, 34 files +1778/-68, sha256 c6949b0c…).
+  # Re-cut 2026-11-12 on main@0c1f1255: that main added `#include <expected>` to
+  # view.h above the <pixman.h> insertion, so hunk 1's context and counts follow
+  # it; the remaining hunks are unchanged (34 files +1778/-68, sha256 d022f608…).
   git apply -3 ../0019-background-effect.patch
 
   # [appearance.title_bar] color_source: the bar paints itself with a 1-4 row
@@ -272,9 +283,10 @@ prepare() {
   # rule: color_source applies per window, in both directions, so the adaptive bar
   # is given only to the applications that need it (head 2d486c98, 37 files
   # +2612/-81, sha256 40b552f1…).
-  # Re-cut on the stack through 0019: 0012's `supersample` row rewrites the
-  # window-rule table's padding, so the rule's row is cut against that table
-  # (37 files +2612/-81, sha256 398c9aba…).
+  # Re-cut 2026-11-12 on main@0c1f1255 as the PR's own diff: 0012's `supersample`
+  # row and c2e29215's reflow both rewrite the window-rule table's padding, and
+  # a diff taken from the branch carries the formatter's alignment directly
+  # instead of replaying a hand-cut hunk (37 files +2612/-81, sha256 40b552f1…).
   git apply -3 ../0020-adaptive-title-bar.patch
 
   # [animation.windows_minimize]: a minimizing floating window leaves and returns with an animation instead of

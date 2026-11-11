@@ -25,6 +25,19 @@ index 7f7066ac..9763fd9c 100644
  Set `prefer_no_csd = false` to let newly connected applications draw their own decorations. Restart applications after changing it because decoration protocol availability is fixed when an application connects.
  
  Borders render outside window content and are included in layout spacing. `corner_radius = 0` keeps every contour square. A [window rule](window-rules.md#decoration) can override `border_width`, `outer_border_width`, and `corner_radius` for the windows it matches.
+diff --git a/docs/user/outputs.md b/docs/user/outputs.md
+index 5c7dfae8..b1305d8a 100644
+--- a/docs/user/outputs.md
++++ b/docs/user/outputs.md
+@@ -145,7 +145,7 @@ Omit `position` to place outputs automatically from left to right. Explicitly po
+ 
+ ### Supersampling with `render_scale`
+ 
+-`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
++`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. The sampling method is configurable (`appearance.downsample`): the default `box` averages each destination pixel's source footprint. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
+ 
+ Native-resolution X11 applications use the physical output scale by default. To opt them into `render_scale`, see [`force_x11_supersample`](configuration.md#general).
+ 
 diff --git a/examples/config.toml b/examples/config.toml
 index 24cf0f2a..0d2377dd 100644
 --- a/examples/config.toml
@@ -231,7 +244,7 @@ index 3525bb25..53d09410 100644
      for (const auto& output : m_outputs) {
        output->updateVrr();
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index a04e3d9f..d0d0fb27 100644
+index b83523ab..d30c93f7 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -199,6 +199,7 @@ namespace umbriel {
@@ -256,10 +269,10 @@ index a04e3d9f..d0d0fb27 100644
      moveToWorkspace(workspace, attachToLayout, LayoutAttachOrigin::ExistingView);
    }
 diff --git a/src/view/view.h b/src/view/view.h
-index e228e336..e2720610 100644
+index 657a82eb..07683115 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -141,6 +141,10 @@ namespace umbriel {
+@@ -143,6 +143,10 @@ namespace umbriel {
      wlr_scene_tree* captureTree() const;
      bool captureBlocked() const { return m_captureBlocked; }
      void refreshCaptureProtection();
@@ -506,10 +519,10 @@ index d034a4fb..0e090bbc 100644
    CHECK(effects.layerEffects);
    CHECK(effects.animation);
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 85c2e928..77552c09 100644
+index 93380fe0..324a0195 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -862,6 +862,34 @@ render_scale = 1.0
+@@ -863,6 +863,34 @@ render_scale = 1.0
    CHECK(!containsDiagnostic(store, "render_scale"));
  }
  

@@ -1086,8 +1086,9 @@ diff --git a/src/view/view.h b/src/view/view.h
 index 51cd169a..bdc43dcb 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -17,6 +17,7 @@
+@@ -17,7 +17,8 @@
  #include <cmath>
+ #include <expected>
  #include <memory>
  #include <optional>
 +#include <pixman.h>

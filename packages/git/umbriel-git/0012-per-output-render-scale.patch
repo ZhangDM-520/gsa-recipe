@@ -1,8 +1,8 @@
 diff --git a/docs/user/configuration.md b/docs/user/configuration.md
-index b5c1e678..fcf68946 100644
+index 5432c51c..63ac0f9a 100644
 --- a/docs/user/configuration.md
 +++ b/docs/user/configuration.md
-@@ -86,6 +86,7 @@ autostart = ["noctalia", "kitty"]
+@@ -104,6 +104,7 @@ autostart = ["noctalia", "kitty"]
  mod_key = "Super"
  xwayland = true
  xwayland_native_resolution = false
@@ -10,7 +10,7 @@ index b5c1e678..fcf68946 100644
  xwayland_xsettings = true
  xwayland_primary_output = ""
  nvidia_sync_workaround = true
-@@ -101,6 +102,7 @@ honor_restored_maximize = false
+@@ -119,6 +120,7 @@ honor_restored_maximize = false
  | `mod_key`                    | string       | Super, or Alt when nested | Modifier represented by `Mod` in keybinds.                                                                                                                                           |
  | `xwayland`                   | bool         | `true`                    | Start Xwayland lazily for X11 applications. Changes require a restart.                                                                                                               |
  | `xwayland_native_resolution` | bool         | `false`                   | Show outputs to X11 applications at their physical resolution, so they render sharp on scaled outputs. Changes require a restart.                                                    |
@@ -18,7 +18,7 @@ index b5c1e678..fcf68946 100644
  | `xwayland_xsettings`         | bool         | `true`                    | Announce the interface scale and cursor theme to X11 applications through XSETTINGS. Turn it off to run your own XSETTINGS manager, such as `xsettingsd`. Changes require a restart. |
  | `xwayland_primary_output`    | string       | `""`                      | Connector or monitor identity to publish as the X11 primary monitor. Applies on reload. Empty leaves primary selection unmanaged.                                                    |
  | `nvidia_sync_workaround`     | bool         | `true`                    | Wait for GPU completion on composed NVIDIA outputs without explicit synchronization. Applies on reload. See [NVIDIA synchronization](#nvidia-synchronization).                       |
-@@ -113,9 +115,11 @@ honor_restored_maximize = false
+@@ -131,9 +133,11 @@ honor_restored_maximize = false
  
  X11 bounding shapes clip windows to their visible regions, including holes and separate rectangles. Shape changes apply while the window is open and are preserved in overview previews, window captures, and close animations. Input shapes remain independent, so a click-through overlay can keep drawing its visible widgets.
  
@@ -33,7 +33,7 @@ index b5c1e678..fcf68946 100644
  ### X11 primary monitor
  
 diff --git a/docs/user/layer-rules.md b/docs/user/layer-rules.md
-index 9e2cb413..06cbe104 100644
+index 35b0fbb3..03c17010 100644
 --- a/docs/user/layer-rules.md
 +++ b/docs/user/layer-rules.md
 @@ -24,13 +24,14 @@ Selectors are optional: a rule without them matches every layer surface, and eve
@@ -153,74 +153,6 @@ index cb2d2048..5c7dfae8 100644
  ### Transform values
  
  Accepted values are `normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, and `flipped-270`.
-diff --git a/docs/user/window-rules.md b/docs/user/window-rules.md
-index 3ef807df..64ee5b0c 100644
---- a/docs/user/window-rules.md
-+++ b/docs/user/window-rules.md
-@@ -182,34 +182,35 @@ Add `default_column_display = "tabbed"` to keep such a column as [tabs](layout.m
- 
- ## Settings updated while a window is open
- 
--| Key                       | Description                                                                                                                                                                                                                                                            |
--| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
--| `dim_behind`              | Darken content below this window on its output; `0.0`–`1.0`, default `0.0`.                                                                                                                                                                                            |
--| `opacity`                 | Surface opacity from 0.0 to 1.0.                                                                                                                                                                                                                                       |
--| `blur`                    | Enable or disable window blur, including translucent Umbriel title bars.                                                                                                                                                                                               |
--| `blur_popups`             | Apply blur to descendant XDG popups.                                                                                                                                                                                                                                   |
--| `blur_ignore_alpha`       | Skip blur below an alpha threshold.                                                                                                                                                                                                                                    |
--| `blur_optimized`          | Override the global optimized-blur choice.                                                                                                                                                                                                                             |
--| `confine_pointer`         | Keep the pointer inside this window while it has keyboard focus (default `false`).                                                                                                                                                                                     |
--| `touchpad_scroll_factor`  | Touchpad scroll speed multiplier from 0.1 to 10.0 for this window, applied on top of [`input.touchpad.scroll_factor`](input.md#touchpad). Mouse wheels are unaffected.                                                                                                 |
--| `allow_shortcuts_inhibit` | Allow client-requested keyboard shortcut inhibition (default `true`). Set `false` to keep compositor shortcuts available. See [Keyboard shortcuts inhibition](#keyboard-shortcuts-inhibition).                                                                         |
--| `block_capture`           | Omit this window from screenshots and recordings (default `false`). See [Capture protection](#capture-protection).                                                                                                                                                     |
--| `background_render`       | Keep this window drawing while hidden (default `false`). See [Background rendering](#background-rendering).                                                                                                                                                            |
--| `focus_on_activate`       | Override activation focus for this window.                                                                                                                                                                                                                             |
--| `vrr`                     | Override the focused output's VRR policy.                                                                                                                                                                                                                              |
--| `tearing`                 | Request or veto asynchronous presentation.                                                                                                                                                                                                                             |
--| `hdr`                     | Override the focused output's HDR policy.                                                                                                                                                                                                                              |
--| `border_color_focused`    | Override `colors.border.focused`.                                                                                                                                                                                                                                      |
--| `border_color_unfocused`  | Override `colors.border.unfocused`.                                                                                                                                                                                                                                    |
--| `border_color_outer`      | Override `colors.border.outer`.                                                                                                                                                                                                                                        |
--| `border_width`            | Override `appearance.border_width`, 0 to 100.                                                                                                                                                                                                                          |
--| `outer_border_width`      | Override `appearance.outer_border_width`, 0 to 100.                                                                                                                                                                                                                    |
--| `title_bar`               | `"on"` follows client decoration preferences, `"negotiated"` requires Wayland decoration negotiation selecting server-side decorations, `"forced"` forces a title bar, and `"off"` hides it. Overrides `appearance.title_bar.mode`; omission inherits the global mode. |
--| `title_bar_buttons`       | Title bar buttons for this window, from the title outward: any of `"minimize"`, `"maximize"`, and `"close"`, or `[]` for none. Overrides `appearance.title_bar.buttons`; omission inherits it.                                                                         |
--| `corner_radius`           | Override `appearance.corner_radius`, 0 to 100.                                                                                                                                                                                                                         |
--| `shadow`                  | Override `appearance.shadow.enabled`.                                                                                                                                                                                                                                  |
--| `border_effect`           | Replace `effects.border` with a border preset or pool, or `"off"` to disable it.                                                                                                                                                                                       |
--| `window_effect`           | Replace `effects.window` with a window preset or pool, or `"off"` to disable it.                                                                                                                                                                                       |
-+| Key                       | Description                                                                                                                                                                                                                                                                                                  |
-+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-+| `dim_behind`              | Darken content below this window on its output; `0.0`–`1.0`, default `0.0`.                                                                                                                                                                                                                                  |
-+| `opacity`                 | Surface opacity from 0.0 to 1.0.                                                                                                                                                                                                                                                                             |
-+| `blur`                    | Enable or disable window blur, including translucent Umbriel title bars.                                                                                                                                                                                                                                     |
-+| `blur_popups`             | Apply blur to descendant XDG popups.                                                                                                                                                                                                                                                                         |
-+| `blur_ignore_alpha`       | Skip blur below an alpha threshold.                                                                                                                                                                                                                                                                          |
-+| `blur_optimized`          | Override the global optimized-blur choice.                                                                                                                                                                                                                                                                   |
-+| `confine_pointer`         | Keep the pointer inside this window while it has keyboard focus (default `false`).                                                                                                                                                                                                                           |
-+| `touchpad_scroll_factor`  | Touchpad scroll speed multiplier from 0.1 to 10.0 for this window, applied on top of [`input.touchpad.scroll_factor`](input.md#touchpad). Mouse wheels are unaffected.                                                                                                                                       |
-+| `allow_shortcuts_inhibit` | Allow client-requested keyboard shortcut inhibition (default `true`). Set `false` to keep compositor shortcuts available. See [Keyboard shortcuts inhibition](#keyboard-shortcuts-inhibition).                                                                                                               |
-+| `block_capture`           | Omit this window from screenshots and recordings (default `false`). See [Capture protection](#capture-protection).                                                                                                                                                                                           |
-+| `background_render`       | Keep this window drawing while hidden (default `false`). See [Background rendering](#background-rendering).                                                                                                                                                                                                  |
-+| `focus_on_activate`       | Override activation focus for this window.                                                                                                                                                                                                                                                                   |
-+| `vrr`                     | Override the focused output's VRR policy.                                                                                                                                                                                                                                                                    |
-+| `tearing`                 | Request or veto asynchronous presentation.                                                                                                                                                                                                                                                                   |
-+| `supersample`             | Render at the output's `render_scale` (`true`) or at its `scale` (`false`). Omitted supersamples every window except fullscreen ones and game or video content. Native-resolution X11 windows ignore this rule: their mapping is per output and follows [`force_x11_supersample`](configuration.md#general). |
-+| `hdr`                     | Override the focused output's HDR policy.                                                                                                                                                                                                                                                                    |
-+| `border_color_focused`    | Override `colors.border.focused`.                                                                                                                                                                                                                                                                            |
-+| `border_color_unfocused`  | Override `colors.border.unfocused`.                                                                                                                                                                                                                                                                          |
-+| `border_color_outer`      | Override `colors.border.outer`.                                                                                                                                                                                                                                                                              |
-+| `border_width`            | Override `appearance.border_width`, 0 to 100.                                                                                                                                                                                                                                                                |
-+| `outer_border_width`      | Override `appearance.outer_border_width`, 0 to 100.                                                                                                                                                                                                                                                          |
-+| `title_bar`               | `"on"` follows client decoration preferences, `"negotiated"` requires Wayland decoration negotiation selecting server-side decorations, `"forced"` forces a title bar, and `"off"` hides it. Overrides `appearance.title_bar.mode`; omission inherits the global mode.                                       |
-+| `title_bar_buttons`       | Title bar buttons for this window, from the title outward: any of `"minimize"`, `"maximize"`, and `"close"`, or `[]` for none. Overrides `appearance.title_bar.buttons`; omission inherits it.                                                                                                               |
-+| `corner_radius`           | Override `appearance.corner_radius`, 0 to 100.                                                                                                                                                                                                                                                               |
-+| `shadow`                  | Override `appearance.shadow.enabled`.                                                                                                                                                                                                                                                                        |
-+| `border_effect`           | Replace `effects.border` with a border preset or pool, or `"off"` to disable it.                                                                                                                                                                                                                             |
-+| `window_effect`           | Replace `effects.window` with a window preset or pool, or `"off"` to disable it.                                                                                                                                                                                                                             |
- 
- These values refresh when matching identity or state changes. Fullscreen bypasses rule opacity unless [`appearance.opaque_fullscreen`](appearance.md#window-appearance) is `false`.
- 
 diff --git a/examples/config.toml b/examples/config.toml
 index 62fa3f77..24cf0f2a 100644
 --- a/examples/config.toml
@@ -431,7 +363,7 @@ index b7be4aff..72ef387a 100644
      return resolved;
    }
 diff --git a/src/layer/layer_surface.cpp b/src/layer/layer_surface.cpp
-index cd22c933..40579475 100644
+index e8d77a98..d5d0e97f 100644
 --- a/src/layer/layer_surface.cpp
 +++ b/src/layer/layer_surface.cpp
 @@ -108,7 +108,7 @@ namespace umbriel {
@@ -443,7 +375,7 @@ index cd22c933..40579475 100644
      m_scene->tree->node.data = sceneNodeData(this);
      m_layerSurface->data = this;
  
-@@ -411,22 +411,30 @@ namespace umbriel {
+@@ -412,22 +412,30 @@ namespace umbriel {
    }
  
    void LayerSurface::applyConfig() {
@@ -480,7 +412,7 @@ index cd22c933..40579475 100644
    void LayerSurface::onMap(wl_listener* listener, void* /*data*/) {
      LayerSurface* self;
      self = wl_container_of(listener, self, m_map);
-@@ -458,6 +466,9 @@ namespace umbriel {
+@@ -459,6 +467,9 @@ namespace umbriel {
    }
  
    void LayerSurface::handleMap() {
@@ -490,7 +422,7 @@ index cd22c933..40579475 100644
      m_mapped = true;
      syncPopupTree();
      m_server->scheduleIpcLayersEvent();
-@@ -531,8 +542,15 @@ namespace umbriel {
+@@ -532,8 +543,15 @@ namespace umbriel {
    }
  
    void LayerSurface::handleCommit() {
@@ -507,7 +439,7 @@ index cd22c933..40579475 100644
        if (Output* out = output()) {
          out->arrangeLayers();
          out->markDirty(Dirty::LayerArrange);
-@@ -540,18 +558,12 @@ namespace umbriel {
+@@ -541,18 +559,12 @@ namespace umbriel {
        return;
      }
  
@@ -528,7 +460,7 @@ index cd22c933..40579475 100644
        if (exclusiveKeyboard()) {
          focus();
        } else if (hasKeyboardFocus() && !acceptsKeyboard()) {
-@@ -559,7 +571,7 @@ namespace umbriel {
+@@ -560,7 +572,7 @@ namespace umbriel {
        }
      }
  
@@ -657,10 +589,10 @@ index c195ab9d..ab54798c 100644
      // Whether a workspace step wraps around the ends of this output's inventory.
      bool configuredCyclicWorkspaces() const;
 diff --git a/src/server/ipc_commands.cpp b/src/server/ipc_commands.cpp
-index 3685915d..5d927973 100644
+index a2ea5879..2a59a6cc 100644
 --- a/src/server/ipc_commands.cpp
 +++ b/src/server/ipc_commands.cpp
-@@ -314,6 +314,7 @@ namespace umbriel {
+@@ -326,6 +326,7 @@ namespace umbriel {
          std::println("  Position: {},{}", position.value("x", 0), position.value("y", 0));
          std::println("  Transform: {}", output.value("transform", "normal"));
          std::println("  Scale: {:f}", output.value("scale", 1.0));
@@ -668,7 +600,7 @@ index 3685915d..5d927973 100644
          const auto& usable = output.at("usable_area");
          std::println(
              "  Usable area: {}x{}{:+}{:+}", usable.value("width", 0), usable.value("height", 0), usable.value("x", 0),
-@@ -1030,6 +1031,7 @@ namespace umbriel {
+@@ -1043,6 +1044,7 @@ namespace umbriel {
            {"usable_area", {{"x", usable.x}, {"y", usable.y}, {"width", usable.width}, {"height", usable.height}}},
            {"transform", transformName(wlrOutput->transform)},
            {"scale", wlrOutput->scale},
@@ -716,10 +648,10 @@ index fa549261..d90324c4 100644
      if (effects.tearingPolicy) {
        for (const auto& output : m_outputs) {
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index 0ce654a2..a04e3d9f 100644
+index 05efa4c7..b83523ab 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
-@@ -1102,12 +1102,27 @@ namespace umbriel {
+@@ -976,12 +976,27 @@ namespace umbriel {
      if (m_captureSource != nullptr) {
        umbrielfx_scene_capture_source_set_scale(m_captureSource, output->wlr()->scale);
      }
@@ -750,10 +682,10 @@ index 0ce654a2..a04e3d9f 100644
      if (popup == nullptr || m_sceneTree == nullptr || m_toplevel == nullptr) {
        return;
 diff --git a/src/view/view.h b/src/view/view.h
-index f930ac13..e228e336 100644
+index 27edfbdd..657a82eb 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -151,6 +151,10 @@ namespace umbriel {
+@@ -153,6 +153,10 @@ namespace umbriel {
      Output* currentOutput() const;
      // Effective optional window-rule override used by tearing diagnostics.
      std::optional<bool> tearingRuleOverride();
@@ -764,7 +696,7 @@ index f930ac13..e228e336 100644
      bool confinePointer();
      double touchpadScrollFactor();
      bool allowsShortcutsInhibit();
-@@ -791,6 +795,9 @@ namespace umbriel {
+@@ -781,6 +785,9 @@ namespace umbriel {
      // popups included). Scale-aware clients size and map pointer coordinates by this, so it must follow the view across
      // outputs and track scale changes.
      void notifyOutputScale();
@@ -774,7 +706,7 @@ index f930ac13..e228e336 100644
      // Keep floats visually at the last requested size while client geometry lags.
      void syncFloatingSurfaceClip();
      void beginFloatingResize(uint32_t edges);
-@@ -1151,6 +1158,7 @@ namespace umbriel {
+@@ -1117,6 +1124,7 @@ namespace umbriel {
      AnimatedValue m_ruleBlur{0.0};
      bool m_backgroundRender = false;
      bool m_allowShortcutsInhibit = true;
@@ -783,10 +715,10 @@ index f930ac13..e228e336 100644
      float m_overviewOpacity = 1.0F;
      std::vector<std::unique_ptr<ViewSurfaceWatch>> m_viewSurfaceWatches;
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 740ef80c..057de001 100644
+index 8c030835..bff21c8f 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
-@@ -863,6 +863,8 @@ namespace umbriel {
+@@ -855,6 +855,8 @@ namespace umbriel {
      }
      m_contentType = next;
      m_server->scheduleIpcWindowsEvent();
@@ -796,10 +728,10 @@ index 740ef80c..057de001 100644
        if (!m_initialContentTypeRulesSettled && next != ContentType::None) {
          m_initialContentTypeRulesSettled = true;
 diff --git a/src/view/view_role.cpp b/src/view/view_role.cpp
-index 1226a993..07d3609b 100644
+index 9364d8df..8fa88198 100644
 --- a/src/view/view_role.cpp
 +++ b/src/view/view_role.cpp
-@@ -122,6 +122,10 @@ namespace umbriel {
+@@ -126,6 +126,10 @@ namespace umbriel {
        m_xFullscreenSize.reset();
        wlr_xwayland_surface_set_fullscreen(m_xsurface, fullscreen);
      }
@@ -961,7 +893,7 @@ index a5411159..d52cbbdd 100644
      // Stands in when no output is in the layout: a plain translation to the X origin.
      XwaylandRegion m_fallback;
 diff --git a/src/xwayland/xwayland.cpp b/src/xwayland/xwayland.cpp
-index 62e1e160..efa4f0b5 100644
+index 776b7c97..043d0ae1 100644
 --- a/src/xwayland/xwayland.cpp
 +++ b/src/xwayland/xwayland.cpp
 @@ -4,6 +4,7 @@
@@ -1630,11 +1562,11 @@ index 559596de..1a1739c2 100644
      if (!controlled) {
        if (wl_display_dispatch(state.display) < 0) {
 diff --git a/tests/harness/clients/layer_client.cpp b/tests/harness/clients/layer_client.cpp
-index efbc1ada..4e081817 100644
+index 405c1bd7..daf12e95 100644
 --- a/tests/harness/clients/layer_client.cpp
 +++ b/tests/harness/clients/layer_client.cpp
-@@ -6,6 +6,9 @@
- // `popup-on-release` batches the release until the pointer frame and anchors its menu at the last valid position.
+@@ -7,6 +7,9 @@
+ // `popup-color=<ARGB>` paints that menu in a premultiplied colour, so a translucent menu can show what lies below it.
  // LAYER_CONTROL enables stdin commands: frames LABEL COUNT, color LABEL AARRGGBB, child-color LABEL AARRGGBB,
  // child-move LABEL X Y, and margins LABEL TOP RIGHT BOTTOM LEFT. Each prints done after its frame callbacks arrive.
 +// `log-scale` prints "scale N/120" for every preferred fractional scale the surface receives. `hold-map` creates the
@@ -1643,7 +1575,7 @@ index efbc1ada..4e081817 100644
  
  #include <wayland-client.h>
  
-@@ -13,6 +16,7 @@
+@@ -14,6 +17,7 @@
  #include "wlr-layer-shell-unstable-v1-client-protocol.h"
  #undef namespace
  
@@ -1651,7 +1583,7 @@ index efbc1ada..4e081817 100644
  #include "xdg-shell-client-protocol.h"
  
  #include <algorithm>
-@@ -51,6 +55,11 @@ namespace {
+@@ -53,6 +57,11 @@ namespace {
      wl_shm* shm = nullptr;
      wl_subcompositor* subcompositor = nullptr;
      zwlr_layer_shell_v1* layerShell = nullptr;
@@ -1663,7 +1595,7 @@ index efbc1ada..4e081817 100644
      wl_seat* seat = nullptr;
      wl_keyboard* keyboard = nullptr;
      wl_pointer* pointer = nullptr;
-@@ -171,6 +180,16 @@ namespace {
+@@ -174,6 +183,16 @@ namespace {
    }
  
    void handleCommand(State& state, const std::string& line) {
@@ -1680,7 +1612,7 @@ index efbc1ada..4e081817 100644
      std::istringstream command(line);
      std::string action;
      command >> action >> state.commandLabel;
-@@ -482,6 +501,12 @@ namespace {
+@@ -485,6 +504,12 @@ namespace {
        .name = seatName,
    };
  
@@ -1693,7 +1625,7 @@ index efbc1ada..4e081817 100644
    void registryGlobal(void* data, wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
      auto& state = *static_cast<State*>(data);
      if (std::strcmp(interface, wl_compositor_interface.name) == 0) {
-@@ -498,6 +523,10 @@ namespace {
+@@ -501,6 +526,10 @@ namespace {
        state.layerShell = static_cast<zwlr_layer_shell_v1*>(
            wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, std::min(version, 4U))
        );
@@ -1704,17 +1636,16 @@ index efbc1ada..4e081817 100644
      } else if (std::strcmp(interface, xdg_wm_base_interface.name) == 0) {
        state.wmBase =
            static_cast<xdg_wm_base*>(wl_registry_bind(registry, name, &xdg_wm_base_interface, std::min(version, 6U)));
-@@ -526,7 +555,8 @@ int main(int argc, char** argv) {
-     std::println(
+@@ -530,7 +559,7 @@ int main(int argc, char** argv) {
          "usage: layer-client <output> <exclusive-height-or-zero-background> [bottom-layer|overlay-layer] "
          "[log-configures] "
--        "[keyboard=none|on-demand|exclusive] [release-on-escape] [popup-on-click|popup-on-release]"
-+        "[keyboard=none|on-demand|exclusive] [release-on-escape] [popup-on-click|popup-on-release] [log-scale] "
-+        "[hold-map]"
+         "[keyboard=none|on-demand|exclusive] [release-on-escape] [popup-on-click|popup-on-release] "
+-        "[popup-color=<ARGB>]"
++        "[popup-color=<ARGB>] [log-scale] [hold-map]"
      );
      return EXIT_FAILURE;
    }
-@@ -555,6 +585,10 @@ int main(int argc, char** argv) {
+@@ -559,6 +588,10 @@ int main(int argc, char** argv) {
        state.keyboardInteractivity = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE;
      } else if (option == "release-on-escape") {
        state.releaseOnEscape = true;
@@ -1725,7 +1656,7 @@ index efbc1ada..4e081817 100644
      } else if (option == "log-configures") {
        state.logConfigures = true;
      } else if (option == "popup-on-click") {
-@@ -591,6 +625,7 @@ int main(int argc, char** argv) {
+@@ -605,6 +638,7 @@ int main(int argc, char** argv) {
        || state.shm == nullptr
        || state.layerShell == nullptr
        || ((state.popupOnClick || state.popupOnRelease) && (state.wmBase == nullptr || state.seat == nullptr))
@@ -1733,7 +1664,7 @@ index efbc1ada..4e081817 100644
        || selected == state.outputs.end()) {
      std::println(stderr, "layer-client: missing protocol or output '{}'", outputName);
      return EXIT_FAILURE;
-@@ -621,6 +656,11 @@ int main(int argc, char** argv) {
+@@ -636,6 +670,11 @@ int main(int argc, char** argv) {
        state.layerShell, state.surface, (*selected)->resource, layer, "umbriel-output-restore-regression"
    );
    zwlr_layer_surface_v1_add_listener(state.layerSurface, &kLayerSurfaceListener, &state);
@@ -1745,7 +1676,7 @@ index efbc1ada..4e081817 100644
    if (state.keyboardInteractivity != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
      zwlr_layer_surface_v1_set_keyboard_interactivity(state.layerSurface, state.keyboardInteractivity);
    }
-@@ -641,7 +681,12 @@ int main(int argc, char** argv) {
+@@ -656,7 +695,12 @@ int main(int argc, char** argv) {
      }
    }
    zwlr_layer_surface_v1_set_anchor(state.layerSurface, anchors);
@@ -1759,7 +1690,7 @@ index efbc1ada..4e081817 100644
  
    const bool control = std::getenv("LAYER_CONTROL") != nullptr;
    while (!state.closed && wl_display_dispatch_pending(state.display) >= 0) {
-@@ -689,6 +734,12 @@ int main(int argc, char** argv) {
+@@ -704,6 +748,12 @@ int main(int argc, char** argv) {
    if (state.wmBase != nullptr) {
      xdg_wm_base_destroy(state.wmBase);
    }
@@ -1846,10 +1777,10 @@ index f74c4f9b..d034a4fb 100644
    Config before;
    Config after = before;
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 0b76e5df..85c2e928 100644
+index d144bf55..93380fe0 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -821,6 +821,47 @@ center_focused = true
+@@ -822,6 +822,47 @@ center_focused = true
    CHECK(!store.config().outputs[0].layout.scrolling.defaultExtentFraction.has_value());
  }
  
@@ -1897,7 +1828,7 @@ index 0b76e5df..85c2e928 100644
  UMBRIEL_TEST(outputWorkspaceAxisAcceptsOnlyItsTwoNames) {
    const TempConfig file;
    ConfigStore& store = umbriel::configStore();
-@@ -2390,6 +2431,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
+@@ -2391,6 +2432,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
    file.write("[[layer_rule]]\nmatch.layer = \"sideways\"\nblur = true\n");
    CHECK(store.reload().success);
    CHECK(store.config().layerRules.empty());
@@ -1910,7 +1841,7 @@ index 0b76e5df..85c2e928 100644
  }
  
  UMBRIEL_TEST(windowStateMatchersLoadBooleans) {
-@@ -2700,6 +2747,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
+@@ -2701,6 +2748,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
    CHECK(!containsDiagnostic(store, "unknown key general.nvidia_sync_workaround"));
  }
  
