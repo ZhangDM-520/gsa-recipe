@@ -59,10 +59,10 @@ index 9e2cb413..06cbe104 100644
  Layer-shell blur is off by default. Every matching rule contributes its settings, and later values take precedence.
  
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index a5dcc130..44693021 100644
+index cb2d2048..5c7dfae8 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
-@@ -37,29 +37,30 @@ Locking the session or switching away from its active VT revokes outstanding lea
+@@ -37,31 +37,32 @@ Locking the session or switching away from its active VT revokes outstanding lea
  
  ## Settings
  
@@ -78,8 +78,10 @@ index a5dcc130..44693021 100644
 -| `tearing`                                  | bool                              | `false`      | Allow eligible fullscreen windows to use asynchronous page flips.                                    |
 -| `direct_scanout`                           | bool                              | `true`       | Allow eligible fullscreen buffers to bypass composition.                                             |
 -| `hdr`                                      | string                            | `"off"`      | HDR activation policy.                                                                               |
--| `sdr_white`                                | float                             | `203`        | SDR reference white in cd/m² while HDR is active.                                                    |
+-| `sdr_white`                                | float                             | `203`        | SDR reference white in cd/m² while HDR is active, from 80 to 1000.                                   |
 -| `sdr_transfer`                             | string                            | `"gamma22"`  | Transfer curve for untagged SDR on HDR outputs: `"gamma22"` or `"srgb"`.                             |
+-| `color_profile`                            | string                            | `"none"`     | SDR panel characterization: `"none"`, `"edid"`, or a path to an ICC profile.                         |
+-| `sdr_gamut`                                | string                            | `"native"`   | SDR gamut policy while a characterization is active: `"native"` or `"srgb"`.                         |
 -| `bit_depth`                                | int                               | `8`          | Render bit depth for SDR output: `8` or `10`.                                                        |
 -| `workspaces`                               | int, string array, or `"dynamic"` | `"dynamic"`  | Workspace inventory for this output.                                                                 |
 -| `min_workspaces`                           | int                               | `1`          | Minimum count for a dynamic output.                                                                  |
@@ -102,8 +104,10 @@ index a5dcc130..44693021 100644
 +| `tearing`                                  | bool                              | `false`      | Allow eligible fullscreen windows to use asynchronous page flips.                                     |
 +| `direct_scanout`                           | bool                              | `true`       | Allow eligible fullscreen buffers to bypass composition.                                              |
 +| `hdr`                                      | string                            | `"off"`      | HDR activation policy.                                                                                |
-+| `sdr_white`                                | float                             | `203`        | SDR reference white in cd/m² while HDR is active.                                                     |
++| `sdr_white`                                | float                             | `203`        | SDR reference white in cd/m² while HDR is active, from 80 to 1000.                                    |
 +| `sdr_transfer`                             | string                            | `"gamma22"`  | Transfer curve for untagged SDR on HDR outputs: `"gamma22"` or `"srgb"`.                              |
++| `color_profile`                            | string                            | `"none"`     | SDR panel characterization: `"none"`, `"edid"`, or a path to an ICC profile.                          |
++| `sdr_gamut`                                | string                            | `"native"`   | SDR gamut policy while a characterization is active: `"native"` or `"srgb"`.                          |
 +| `bit_depth`                                | int                               | `8`          | Render bit depth for SDR output: `8` or `10`.                                                         |
 +| `workspaces`                               | int, string array, or `"dynamic"` | `"dynamic"`  | Workspace inventory for this output.                                                                  |
 +| `min_workspaces`                           | int                               | `1`          | Minimum count for a dynamic output.                                                                   |
@@ -116,7 +120,7 @@ index a5dcc130..44693021 100644
  
  Umbriel tries an unadvertised resolution as a custom mode. If it cannot apply the configured mode, it uses the preferred advertised mode and logs a warning. Backend tests include the 8-bit SDR fallback, so a rejected swapchain can reach the preferred mode. On that mode, Umbriel retries the configured HDR and bit-depth preferences. A temporary rendering failure after an accepted backend test retries the current candidate instead of changing modes.
  
-@@ -140,6 +141,32 @@ Positions use logical coordinates after scale and transform. A `3840x2160` outpu
+@@ -142,6 +143,32 @@ Positions use logical coordinates after scale and transform. A `3840x2160` outpu
  
  Omit `position` to place outputs automatically from left to right. Explicitly positioned outputs must touch or overlap for the pointer to move between them.
  
@@ -218,7 +222,7 @@ index 3ef807df..64ee5b0c 100644
  These values refresh when matching identity or state changes. Fullscreen bypasses rule opacity unless [`appearance.opaque_fullscreen`](appearance.md#window-appearance) is `false`.
  
 diff --git a/examples/config.toml b/examples/config.toml
-index 4637518a..3822f1bb 100644
+index 62fa3f77..24cf0f2a 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -28,6 +28,8 @@ files = []
@@ -238,7 +242,7 @@ index 4637518a..3822f1bb 100644
  # vrr = "fullscreen"
  # hdr = "auto"
  # sdr_transfer = "gamma22" # Or "srgb" for piecewise SDR decoding in HDR.
-@@ -440,6 +443,12 @@ blur_popups = true
+@@ -442,6 +445,12 @@ blur_popups = true
  match.namespace = "^noctalia-(notification|dock|panel|attached-panel|osd)$"
  blur_optimized = false
  
@@ -252,7 +256,7 @@ index 4637518a..3822f1bb 100644
  # Overview
  # Built-in overview and animation values are used. The top-left hot corner opens
 diff --git a/src/config/change.cpp b/src/config/change.cpp
-index 11caa145..4a70a3e6 100644
+index 05833ba2..4d7a6c23 100644
 --- a/src/config/change.cpp
 +++ b/src/config/change.cpp
 @@ -46,6 +46,7 @@ namespace umbriel {
@@ -264,10 +268,10 @@ index 11caa145..4a70a3e6 100644
            && lhs.vrr == rhs.vrr
            && lhs.hdr == rhs.hdr
 diff --git a/src/config/config.h b/src/config/config.h
-index 253543be..fd4c975a 100644
+index 36c3c1bc..87a6c96d 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -317,6 +317,9 @@ namespace umbriel {
+@@ -325,6 +325,9 @@ namespace umbriel {
      std::optional<OutputMode> mode;
      std::optional<std::array<int, 2>> position;
      std::optional<double> scale;
@@ -277,7 +281,7 @@ index 253543be..fd4c975a 100644
      std::optional<int> transform;
      VrrMode vrr = VrrMode::Disabled;
      bool focusAtStartup = false;
-@@ -470,6 +473,10 @@ namespace umbriel {
+@@ -486,6 +489,10 @@ namespace umbriel {
      // Overrides the client's tearing-control hint. Omitted follows the hint,
      // true forces async preference, and false vetoes it.
      std::optional<bool> allowTearing;
@@ -288,7 +292,7 @@ index 253543be..fd4c975a 100644
      std::optional<HdrMode> hdr;
      std::optional<double> dimBehind;
      std::optional<double> opacity; // 0.0-1.0
-@@ -537,6 +544,7 @@ namespace umbriel {
+@@ -553,6 +560,7 @@ namespace umbriel {
            && allowShortcutsInhibit == other.allowShortcutsInhibit
            && backgroundRender == other.backgroundRender
            && blockCapture == other.blockCapture
@@ -296,7 +300,7 @@ index 253543be..fd4c975a 100644
            && vrr == other.vrr
            && allowTearing == other.allowTearing
            && hdr == other.hdr
-@@ -590,6 +598,7 @@ namespace umbriel {
+@@ -606,6 +614,7 @@ namespace umbriel {
      std::optional<bool> blockCapture;
      std::optional<VrrMode> vrr;
      std::optional<bool> allowTearing;
@@ -304,7 +308,7 @@ index 253543be..fd4c975a 100644
      std::optional<HdrMode> hdr;
      std::optional<double> dimBehind;
      std::optional<double> opacity;
-@@ -628,6 +637,9 @@ namespace umbriel {
+@@ -644,6 +653,9 @@ namespace umbriel {
      std::optional<double> dimBehind;
      std::optional<double> ignoreAlpha;
      std::optional<bool> optimized;
@@ -314,7 +318,7 @@ index 253543be..fd4c975a 100644
  
      // See WindowRule: the regexes are derived from the patterns.
      bool operator==(const LayerRule& other) const {
-@@ -638,7 +650,8 @@ namespace umbriel {
+@@ -654,7 +666,8 @@ namespace umbriel {
            && blurPopups == other.blurPopups
            && dimBehind == other.dimBehind
            && ignoreAlpha == other.ignoreAlpha
@@ -324,7 +328,7 @@ index 253543be..fd4c975a 100644
      }
    };
  
-@@ -648,6 +661,7 @@ namespace umbriel {
+@@ -664,6 +677,7 @@ namespace umbriel {
      std::optional<double> dimBehind;
      std::optional<double> ignoreAlpha;
      std::optional<bool> optimized;
@@ -332,7 +336,7 @@ index 253543be..fd4c975a 100644
      bool operator==(const ResolvedLayerRule&) const = default;
    };
  
-@@ -1103,6 +1117,8 @@ namespace umbriel {
+@@ -1119,6 +1133,8 @@ namespace umbriel {
        // Present outputs to X11 clients at their physical resolution, so they render at native size instead of being
        // upscaled on scaled outputs. Requires restart.
        bool xwaylandNativeResolution = false;
@@ -354,10 +358,10 @@ index 8b28b36e..c2ffb2e5 100644
            registry::text("xwayland_primary_output", &G::xwaylandPrimaryOutput),
            boolean("nvidia_sync_workaround", &G::nvidiaSyncWorkaround),
 diff --git a/src/config/fields_output.cpp b/src/config/fields_output.cpp
-index 02da2126..b795f3ba 100644
+index d4fedefd..6c702e88 100644
 --- a/src/config/fields_output.cpp
 +++ b/src/config/fields_output.cpp
-@@ -139,6 +139,7 @@ namespace umbriel {
+@@ -214,6 +214,7 @@ namespace umbriel {
                }
            ),
            registry::real("scale", 0.25, 4.0, &O::scale),
@@ -365,7 +369,7 @@ index 02da2126..b795f3ba 100644
            registry::choice("vrr", &O::vrr, vrrModes()),
            registry::choice("hdr", &O::hdr, hdrModes()),
            registry::real("sdr_white", 80.0, 1000.0, &O::sdrWhite),
-@@ -199,6 +200,16 @@ namespace umbriel {
+@@ -285,6 +286,16 @@ namespace umbriel {
        if (const toml::node* minNode = keys.node("min_workspaces"); minNode != nullptr && rule.workspaces) {
          errorAt(minNode->source(), "{} requires dynamic workspaces", keys.qualified("min_workspaces"));
        }
@@ -558,10 +562,10 @@ index 5cf72036..08575895 100644
      void refreshStartupRuleEffects();
      void applyFadeAlpha();
 diff --git a/src/output/output.cpp b/src/output/output.cpp
-index 3238e6fe..ab8d2977 100644
+index ce9e82e5..31fec994 100644
 --- a/src/output/output.cpp
 +++ b/src/output/output.cpp
-@@ -473,6 +473,28 @@ namespace umbriel {
+@@ -656,6 +656,28 @@ namespace umbriel {
      return rule == nullptr || rule->directScanout;
    }
  
@@ -590,7 +594,7 @@ index 3238e6fe..ab8d2977 100644
    bool Output::configuredTearingAllowed() const {
      const OutputRule* rule = findOutputRule(config(), identity());
      return rule != nullptr && rule->allowTearing;
-@@ -985,8 +1007,9 @@ namespace umbriel {
+@@ -1178,8 +1200,9 @@ namespace umbriel {
      m_server->updateIdleInhibit();
      if (enabled) {
        kLog.info(
@@ -602,7 +606,7 @@ index 3238e6fe..ab8d2977 100644
        );
      } else if (!desktopEnabled()) {
        const OutputRule* rule = findOutputRule(config(), identity());
-@@ -1342,8 +1365,26 @@ namespace umbriel {
+@@ -1535,8 +1558,26 @@ namespace umbriel {
      if (surface == nullptr || self == nullptr || self->m_output == nullptr) {
        return;
      }
@@ -632,10 +636,10 @@ index 3238e6fe..ab8d2977 100644
  
    Output::~Output() {
 diff --git a/src/output/output.h b/src/output/output.h
-index b17bbf0e..f2ceab48 100644
+index c195ab9d..ab54798c 100644
 --- a/src/output/output.h
 +++ b/src/output/output.h
-@@ -126,6 +126,16 @@ namespace umbriel {
+@@ -152,6 +152,16 @@ namespace umbriel {
      int configuredBitDepth() const;
      const std::string& bitDepthFallbackReason() const { return m_bitDepthFallbackReason; }
      bool configuredDirectScanoutEnabled() const;
@@ -653,10 +657,10 @@ index b17bbf0e..f2ceab48 100644
      // Whether a workspace step wraps around the ends of this output's inventory.
      bool configuredCyclicWorkspaces() const;
 diff --git a/src/server/ipc_commands.cpp b/src/server/ipc_commands.cpp
-index a498bef4..4becbdb0 100644
+index 3685915d..5d927973 100644
 --- a/src/server/ipc_commands.cpp
 +++ b/src/server/ipc_commands.cpp
-@@ -313,6 +313,7 @@ namespace umbriel {
+@@ -314,6 +314,7 @@ namespace umbriel {
          std::println("  Position: {},{}", position.value("x", 0), position.value("y", 0));
          std::println("  Transform: {}", output.value("transform", "normal"));
          std::println("  Scale: {:f}", output.value("scale", 1.0));
@@ -664,7 +668,7 @@ index a498bef4..4becbdb0 100644
          const auto& usable = output.at("usable_area");
          std::println(
              "  Usable area: {}x{}{:+}{:+}", usable.value("width", 0), usable.value("height", 0), usable.value("x", 0),
-@@ -973,6 +974,7 @@ namespace umbriel {
+@@ -1030,6 +1031,7 @@ namespace umbriel {
            {"usable_area", {{"x", usable.x}, {"y", usable.y}, {"width", usable.width}, {"height", usable.height}}},
            {"transform", transformName(wlrOutput->transform)},
            {"scale", wlrOutput->scale},
@@ -673,7 +677,7 @@ index a498bef4..4becbdb0 100644
            {"hdr_active", output->hdrActive()},
            {"direct_scanout", std::move(directScanout)},
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index c44f22a1..c6074171 100644
+index aa4d1e0a..bcbf51ba 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
 @@ -706,6 +706,19 @@ namespace umbriel {
@@ -697,7 +701,7 @@ index c44f22a1..c6074171 100644
        wlr_scene_set_linux_dmabuf_v1(m_scene, linuxDmabuf);
      }
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index bcda3724..41a20cbd 100644
+index fa549261..d90324c4 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
 @@ -862,6 +862,10 @@ namespace umbriel {
@@ -1793,10 +1797,10 @@ index 00000000..29b49448
 +  fi
 +}
 diff --git a/tests/meson.build b/tests/meson.build
-index 985d8ae6..cb80a7d5 100644
+index 78c6bab7..82186619 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -214,6 +214,8 @@ layer_client = executable(
+@@ -217,6 +217,8 @@ layer_client = executable(
      layer_shell_client_c,
      xdg_shell_client_h,
      xdg_shell_client_c,
@@ -1805,7 +1809,7 @@ index 985d8ae6..cb80a7d5 100644
    ],
    dependencies: [wayland_client_dep],
  )
-@@ -323,6 +325,8 @@ fractional_client = executable(
+@@ -326,6 +328,8 @@ fractional_client = executable(
      legacy_decoration_client_c,
      xdg_decoration_client_h,
      xdg_decoration_client_c,
@@ -1815,7 +1819,7 @@ index 985d8ae6..cb80a7d5 100644
    dependencies: [wayland_client_dep],
  )
 diff --git a/tests/unit/config_change.cpp b/tests/unit/config_change.cpp
-index 6ce24969..627daa15 100644
+index f74c4f9b..d034a4fb 100644
 --- a/tests/unit/config_change.cpp
 +++ b/tests/unit/config_change.cpp
 @@ -204,6 +204,22 @@ UMBRIEL_TEST(eachSectionIsReportedOnItsOwn) {
@@ -1842,10 +1846,10 @@ index 6ce24969..627daa15 100644
    Config before;
    Config after = before;
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 6b856f76..d33bbe81 100644
+index 0b76e5df..85c2e928 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -813,6 +813,47 @@ center_focused = true
+@@ -821,6 +821,47 @@ center_focused = true
    CHECK(!store.config().outputs[0].layout.scrolling.defaultExtentFraction.has_value());
  }
  
@@ -1893,7 +1897,7 @@ index 6b856f76..d33bbe81 100644
  UMBRIEL_TEST(outputWorkspaceAxisAcceptsOnlyItsTwoNames) {
    const TempConfig file;
    ConfigStore& store = umbriel::configStore();
-@@ -2191,6 +2232,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
+@@ -2390,6 +2431,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
    file.write("[[layer_rule]]\nmatch.layer = \"sideways\"\nblur = true\n");
    CHECK(store.reload().success);
    CHECK(store.config().layerRules.empty());
@@ -1906,7 +1910,7 @@ index 6b856f76..d33bbe81 100644
  }
  
  UMBRIEL_TEST(windowStateMatchersLoadBooleans) {
-@@ -2501,6 +2548,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
+@@ -2700,6 +2747,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
    CHECK(!containsDiagnostic(store, "unknown key general.nvidia_sync_workaround"));
  }
  
@@ -1995,10 +1999,10 @@ index 4d48b1f5..7d22ba32 100644
    Config config;
  
 diff --git a/tests/unit/config_schema.cpp b/tests/unit/config_schema.cpp
-index c1d3fa7f..6b1e1e8e 100644
+index 6ecde186..868e9919 100644
 --- a/tests/unit/config_schema.cpp
 +++ b/tests/unit/config_schema.cpp
-@@ -262,6 +262,21 @@ UMBRIEL_TEST(outputSdrTransferSchemaListsCanonicalValuesAndDefault) {
+@@ -290,6 +290,21 @@ UMBRIEL_TEST(outputSdrGamutSchemaListsCanonicalValuesAndDefault) {
    CHECK(found);
  }
  
@@ -2158,7 +2162,7 @@ index 5a671970..d4710f08 100644
 +
  int main() { return RUN_TESTS(); }
 diff --git a/umbrielfx/include/umbrielfx/types/wlr_scene.h b/umbrielfx/include/umbrielfx/types/wlr_scene.h
-index 5597b1d6..806f5dd6 100644
+index d3ed2cb5..4e26133e 100644
 --- a/umbrielfx/include/umbrielfx/types/wlr_scene.h
 +++ b/umbrielfx/include/umbrielfx/types/wlr_scene.h
 @@ -170,6 +170,12 @@ struct wlr_scene {
@@ -2174,7 +2178,7 @@ index 5597b1d6..806f5dd6 100644
    } WLR_PRIVATE;
  };
  
-@@ -592,6 +598,18 @@ void wlr_scene_set_gamma_control_manager_v1(
+@@ -596,6 +602,18 @@ void wlr_scene_set_gamma_control_manager_v1(
   */
  void wlr_scene_set_color_manager_v1(struct wlr_scene* scene, struct wlr_color_manager_v1* manager);
  
@@ -2194,10 +2198,10 @@ index 5597b1d6..806f5dd6 100644
   * Add a node displaying nothing but its children.
   */
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index eba8e120..bfaf9135 100644
+index 4be9ac3b..bc576aeb 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -272,6 +272,22 @@ if build_tests
+@@ -274,6 +274,22 @@ if build_tests
      suite: 'umbrielfx',
    )
  
@@ -2369,7 +2373,7 @@ index 15c7989d..6dd17f3a 100644
    size_t output_num = ++last_output_num;
    char name[64];
 diff --git a/umbrielfx/types/scene/surface.c b/umbrielfx/types/scene/surface.c
-index bd79dda4..75e46ab2 100644
+index d8476089..25a8e8fc 100644
 --- a/umbrielfx/types/scene/surface.c
 +++ b/umbrielfx/types/scene/surface.c
 @@ -17,15 +17,22 @@
@@ -2420,10 +2424,10 @@ index bd79dda4..75e46ab2 100644
    if (scene->color_manager_v1 != NULL) {
      struct wlr_image_description_v1_data img_desc = {0};
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index d87ab27e..c50409fc 100644
+index e24d67cf..3df12c09 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
-@@ -4556,6 +4556,14 @@ void wlr_scene_set_color_manager_v1(struct wlr_scene* scene, struct wlr_color_ma
+@@ -4593,6 +4593,14 @@ void wlr_scene_set_color_manager_v1(struct wlr_scene* scene, struct wlr_color_ma
    wl_signal_add(&manager->events.destroy, &scene->color_manager_v1_destroy);
  }
  

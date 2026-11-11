@@ -1,7 +1,7 @@
 pkgbase = umbriel-git
 	pkgdesc = A Wayland compositor built on wlroots
 	pkgver = 0.1.0.r1562.49b2970
-	pkgrel = 4
+	pkgrel = 5
 	epoch = 1
 	url = https://github.com/noctalia-dev/umbriel
 	arch = x86_64
@@ -41,7 +41,6 @@ pkgbase = umbriel-git
 	source = umbriel::git+https://github.com/noctalia-dev/umbriel.git#branch=main
 	source = 0011-drag-deform-settle-crop.patch
 	source = 0012-per-output-render-scale.patch
-	source = 0013-icc-gamut.patch
 	source = 0014-downsample-box.patch
 	source = 0018-underfull-strip-align.patch
 	source = 0019-background-effect.patch
@@ -51,8 +50,7 @@ pkgbase = umbriel-git
 	source = 0023-scratchpad-show-no-recentre.patch
 	sha256sums = SKIP
 	sha256sums = ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64
-	sha256sums = ab20a2853337336cfbe326af59540db1a0ab91ef95f550b9b443d618228be188
-	sha256sums = fecb376aaa22c836ffeae344f58e0d7097eb21beae028b5ac3876d22d7ba9642
+	sha256sums = 593b4d1de74006c798d1523d3bf4791c8b1b31d9472666431b95bf1b8123814d
 	sha256sums = debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d
 	sha256sums = da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621
 	sha256sums = c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23

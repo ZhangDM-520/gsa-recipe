@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1562.49b2970
-pkgrel=4
+pkgrel=5
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -59,7 +59,6 @@ conflicts=('umbriel')
 source=("${_pkgname}::git+${url}.git#branch=main"
         '0011-drag-deform-settle-crop.patch'
         '0012-per-output-render-scale.patch'
-        '0013-icc-gamut.patch'
         '0014-downsample-box.patch'
         '0018-underfull-strip-align.patch'
         '0019-background-effect.patch'
@@ -69,8 +68,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0023-scratchpad-show-no-recentre.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            'ab20a2853337336cfbe326af59540db1a0ab91ef95f550b9b443d618228be188'
-            'fecb376aaa22c836ffeae344f58e0d7097eb21beae028b5ac3876d22d7ba9642'
+            '593b4d1de74006c798d1523d3bf4791c8b1b31d9472666431b95bf1b8123814d'
             'debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
             'c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23'
@@ -163,43 +161,16 @@ prepare() {
   # Re-cut 2026-11-11 on main@49b29701: the output key table gained layout.mode
   # upstream while render_scale is inserted after `scale`, so the re-cut keeps
   # both rows in one table (head be549eb2, 47 files +1407/-108, sha256 ab20a285…).
+  # Re-cut 2026-11-11 on main@d3c85928 after 0013 retired into upstream (PR #585):
+  # the ICC work brought the color rows into the output key table and a
+  # color_profile/sdr_gamut schema test beside render_scale's, so the row is cut
+  # against that table and both schema tests stay (47 files +1409/-110,
+  # sha256 593b4d1d…).
   git apply -3 ../0012-per-output-render-scale.patch
 
-  # [output] color_profile / sdr_gamut: ICC/EDID output characterization and
-  # opt-in SDR gamut mapping (`"srgb"` confines untagged SDR to the sRGB gamut
-  # in the panel's colorimetry; the default `"native"` stages no transform),
-  # plus client ICC image descriptions (`create_icc`) and `icc_file`
-  # advertising. Upstream PR noctalia-dev/umbriel#585; 0013-icc-gamut.patch
-  # Flattened downstream stack adaptation on main@ad46c7d1 over 0011+0012,
-  # preserving the ICC fields, upstream screen_cast_effect, and both capture
-  # and ICC harness helpers. Re-cut 2026-11-08 for the round-3 review: the ICC
-  # byte charge follows the payload's lifetime (surface states copy the store),
-  # the per-client budget is pruned when its wl_client goes away, only exactly
-  # representable transfer curves (sRGB, gamma 2.2) are accepted for imported
-  # profiles and `set_tf_power`, profiles whose RGB TRCs differ are refused, and
-  # the user docs split from the design notes. Delta 44 files, +6185/-108;
-  # sha256 837460c6…. (Retire on merge.)
-  # Re-cut 2026-11-09 for the round-4 review on main@0a22bd2 over 0011+0012: the output
-  # description names the encoding the frame is really written in (the panel only under
-  # `sdr_gamut = "srgb"`, since `"native"` composes into sRGB), a sampled power curve is
-  # reported as `tf_power` so the parametric events and `icc_file` agree, and the protocol
-  # request/error/budget detail moved to the design note. Re-cut 2026-11-10 for the
-  # external round: a sampled curve with no parametric form now fails
-  # get_preferred_parametric with 'unsupported' instead of advertising a description no
-  # parametric client can use, and the two multi-scenario checks became one scenario per
-  # check over tests/harness/color_lib.sh.
-  # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
-  # (head 12dbb80a, 60 files +6643/-130, sha256 32350ca7…).
-  # Re-cut 2026-11-11 on main@49b29701 over the re-cut 0012: round 6's exact
-  # advertised-curve decode plus the blind-audit fix wave (untagged SDR decodes
-  # as sRGB on every output, box-shadow alpha, one identity per description
-  # record, v1 mastering-range bounds, the lcms2 creator gate, white-point/LUT/
-  # PQ refusals, color_profile_resolved) and the docs corrections; the output
-  # key table carries both the layout rows and the color rows (head a4bcf1cf,
-  # 71 files +7520/-181). Re-cut again for CI's clang-tidy, which flags two
-  # cast initialisers the host snapshot accepts (head 34ba7b69, sha256
-  # fecb376a…, pkgrel 2). Retire on merge of #585.
-  git apply -3 ../0013-icc-gamut.patch
+  # 0013 retired 2026-11-11: PR #585 merged upstream as d3c85928 (ICC/EDID output
+  # characterization and SDR gamut mapping); the following patches are cut on the
+  # stack through 0012 plus that merge.
 
   # [output] downsample texel footprint: the capped-downsample pass averages
   # the texel footprint in raster space (review fixes: capped-downsample
