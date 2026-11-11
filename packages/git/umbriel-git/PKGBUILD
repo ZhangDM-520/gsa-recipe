@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1562.49b2970
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -70,7 +70,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
             'ab20a2853337336cfbe326af59540db1a0ab91ef95f550b9b443d618228be188'
-            '81e9dbc4d80e4cbe426c6b0e3bf4b29ec4239514f3e9fa44160d0848395c7e97'
+            'fecb376aaa22c836ffeae344f58e0d7097eb21beae028b5ac3876d22d7ba9642'
             'debceace149cd3d43a465be7ecd708d2ac93342d4697676534a22d3dfbc02d5d'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
             'c6949b0cd244e10f8f44313dddb4c4d55bbae2f86e4a29c6ef68e3e8897bee23'
@@ -196,7 +196,9 @@ prepare() {
   # record, v1 mastering-range bounds, the lcms2 creator gate, white-point/LUT/
   # PQ refusals, color_profile_resolved) and the docs corrections; the output
   # key table carries both the layout rows and the color rows (head a4bcf1cf,
-  # 71 files +7520/-181, sha256 81e9dbc4…). Retire on merge of #585.
+  # 71 files +7520/-181). Re-cut again for CI's clang-tidy, which flags two
+  # cast initialisers the host snapshot accepts (head 34ba7b69, sha256
+  # fecb376a…, pkgrel 2). Retire on merge of #585.
   git apply -3 ../0013-icc-gamut.patch
 
   # [output] downsample texel footprint: the capped-downsample pass averages

@@ -83,15 +83,15 @@ index 00000000..51b12e7b
 +- `tests/harness/checks/protocol/color_profile_*.sh`: one scenario each over `tests/harness/color_lib.sh` — baseline inertness, the native advertisement and pixel pin, the `srgb` mapping and description bytes, the sampled curve, its decode table and the parametric fallback, the mtime reload key, EDID inertness, the create_icc contract (ready, teardown, denial, refusals, `bad_size`/`bad_fd`), the `get_information` fd pin and the per-client budget legs.
 +- `tests/harness/checks/protocol/color_feedback.sh`: parametric validation including `set_tf_power`.
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index 44693021..0cf7e976 100644
+index 44693021..948978d3 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
 @@ -52,6 +52,8 @@ Locking the session or switching away from its active VT revokes outstanding lea
  | `hdr`                                      | string                            | `"off"`      | HDR activation policy.                                                                                |
  | `sdr_white`                                | float                             | `203`        | SDR reference white in cd/m² while HDR is active.                                                     |
  | `sdr_transfer`                             | string                            | `"gamma22"`  | Transfer curve for untagged SDR on HDR outputs: `"gamma22"` or `"srgb"`.                              |
-+| `color_profile`                            | string                            | `"none"`     | SDR panel characterization: `"none"`, `"edid"`, or a path to an ICC profile.                         |
-+| `sdr_gamut`                                | string                            | `"native"`   | SDR gamut policy while a characterization is active: `"native"` or `"srgb"`.                         |
++| `color_profile`                            | string                            | `"none"`     | SDR panel characterization: `"none"`, `"edid"`, or a path to an ICC profile.                          |
++| `sdr_gamut`                                | string                            | `"native"`   | SDR gamut policy while a characterization is active: `"native"` or `"srgb"`.                          |
  | `bit_depth`                                | int                               | `8`          | Render bit depth for SDR output: `8` or `10`.                                                         |
  | `workspaces`                               | int, string array, or `"dynamic"` | `"dynamic"`  | Workspace inventory for this output.                                                                  |
  | `min_workspaces`                           | int                               | `1`          | Minimum count for a dynamic output.                                                                   |
@@ -1201,7 +1201,7 @@ index 00000000..26942e76
 +} // namespace umbriel
 diff --git a/src/output/colorimetry_icc_lcms2.cpp b/src/output/colorimetry_icc_lcms2.cpp
 new file mode 100644
-index 00000000..8ecd4d83
+index 00000000..727f0e1b
 --- /dev/null
 +++ b/src/output/colorimetry_icc_lcms2.cpp
 @@ -0,0 +1,462 @@
@@ -1357,7 +1357,7 @@ index 00000000..8ecd4d83
 +          encode[target] = 1.0F;
 +          continue;
 +        }
-+        const size_t high = static_cast<size_t>(upper - decode.begin());
++        const auto high = static_cast<size_t>(upper - decode.begin());
 +        const size_t low = high - 1;
 +        const float span = decode[high] - decode[low];
 +        const float fraction = span > 0.0F ? (linear - decode[low]) / span : 0.0F;
@@ -2581,7 +2581,7 @@ index d9694467..d36e5992 100644
 +
  } // namespace umbriel
 diff --git a/src/server/color_manager.cpp b/src/server/color_manager.cpp
-index 0e5b12e6..05a87ef2 100644
+index 0e5b12e6..e491a499 100644
 --- a/src/server/color_manager.cpp
 +++ b/src/server/color_manager.cpp
 @@ -1,6 +1,7 @@
@@ -3045,7 +3045,7 @@ index 0e5b12e6..05a87ef2 100644
 +        const float maxLuminance =
 +            data.has_mastering_luminance ? data.mastering_luminance.max : creator->description.luminances.max;
 +        const auto outsideRange = [&](uint32_t level) {
-+          const float value = static_cast<float>(level);
++          const auto value = static_cast<float>(level);
 +          return level != 0 && (value <= minLuminance || value > maxLuminance);
 +        };
 +        if (outsideRange(data.max_cll) || outsideRange(data.max_fall)) {
