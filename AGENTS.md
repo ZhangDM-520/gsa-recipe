@@ -43,6 +43,19 @@ rebuild the engine in this repository; engine defects and engine rules belong
 there. `packages/core/gsa-pm` packages that binary and is git self-tracking —
 it carries no `_commit` pin.
 
+**A `--print-*` engine seam owes a shipped file, and the packaging proves it.**
+The engine answers `--print-conf`/`--print-completion` so a shipped file can
+never drift from the binary, but printing is not shipping: the seam landing in
+the engine repository while `package()` forgets the `install` line leaves the
+feature correct in both repositories and absent on every host (2026-11-11, the
+completion wrappers; ADR 0006 in the engine repository).
+`tests/gsa-pm-shipped-files.sh` closes the shape rather than the instance: it
+runs the real `package()` against the real engine and requires every rostered
+`--print-*` seam to land a non-empty file that is byte-identical to the
+engine's own output. **A new text seam fails that fixture by name until its
+seam → path row and its `install` line are added** — so a packaging change is
+never silently incomplete.
+
 ### Durable stack shape
 
 Durable shape of the stack, re-verified 2026-10-17 against the committed

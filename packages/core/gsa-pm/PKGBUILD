@@ -141,6 +141,23 @@ package() {
   ./target/release/gsa --print-conf gcc >"$pkgdir/etc/gsa/gcc-makepkg.conf"
   ./target/release/gsa --print-conf clang >"$pkgdir/etc/gsa/clang-makepkg.conf"
   chmod 644 "$pkgdir/etc/gsa/gcc-makepkg.conf" "$pkgdir/etc/gsa/clang-makepkg.conf"
+
+  # Shell completion (contract §D.1). `--print-completion` is the same
+  # one-source-of-truth seam as `--print-conf`: the shipped wrapper carries no
+  # grammar, it forwards the command line to `--complete`, so a recipe id or a
+  # group added in this repository appears on the next TAB with no engine
+  # change and the completion can never disagree with the parser. Written from
+  # the binary being packaged, so the three files cannot drift from it.
+  local _shell
+  for _shell in fish bash zsh; do
+    ./target/release/gsa --print-completion "$_shell" >"${srcdir}/${_shell}.completion" || return 1
+  done
+  install -Dm644 "${srcdir}/fish.completion" \
+    "$pkgdir/usr/share/fish/vendor_completions.d/gsa.fish"
+  install -Dm644 "${srcdir}/bash.completion" \
+    "$pkgdir/usr/share/bash-completion/completions/gsa"
+  install -Dm644 "${srcdir}/zsh.completion" \
+    "$pkgdir/usr/share/zsh/site-functions/_gsa"
 }
 
 # vim:set ts=2 sw=2 et:
