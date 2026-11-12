@@ -17,8 +17,9 @@ no `_commit` pin, so a broken engine is always recoverable with plain `makepkg`.
 
 `AGENTS.md` at the repo root is this repository's memory — stack shape, edges,
 landmines, rules, pitfalls, queue, shell hazards. Read it first, then the tail
-of `docs/JOURNAL.md` for what just changed. Rules and pitfalls are not restated
-here; a rule copied into a second file drifts in one of them.
+of `docs/JOURNAL.md` and `.logs/scratchpad.md` for what just changed and what
+is in flight. Rules and pitfalls are not restated here; a rule copied into a
+second file drifts in one of them.
 
 ## Commands
 
@@ -35,6 +36,8 @@ gsa -Sl @git                  # ordered listing (re-validates map, graph, sort)
 gsa -Qa <ref>                 # ABI token and recorded subscriptions
 gsa -Qr                       # revdep report: unresolved DT_NEEDED, exact-pin leftovers
 gsa -Qp <archive>             # probe an archive: .PKGINFO vs its index row, hash/size
+gsa -Qu                       # stale set: tracked version moved past the newest built instance
+gsa -Qb [ref…]                # retained built archives: the side-car's hash-bound index rows
 gsa -Sw @core                 # fetch + verify sources (makepkg --verifysource); builds nothing
 gsa -Ma                       # audit lints: report-only, ALWAYS exits 0 — read it
 ```
@@ -95,6 +98,9 @@ If the engine itself is stale, refresh it before trusting a green run:
 sudo gsa -Sy && sudo gsa -S gsa-pm
 ```
 
+There is no CI workflow in this repository — `bash tests/run-all.sh` plus the
+validation block above are the gate, run locally.
+
 ### Build / install
 
 ```sh
@@ -104,6 +110,14 @@ gsa -S glib2-git                 # build + install it AND its consumer closure
 gsa -S @core                     # ABI-coupled core update
 sudo gsa -S @git                 # write-side verbs need root; makepkg still runs as you
 gsa -Sy                          # version sync only — leaves rewrites UNCOMMITTED
+```
+
+On a machine with no `gsa` yet, or to recover a broken engine, `gsa-pm` is an
+ordinary bootstrap recipe that must build with plain `makepkg`:
+
+```sh
+GIT_CONFIG_COUNT=0 makepkg -f --dir packages/core/gsa-pm
+sudo pacman -U packages/core/gsa-pm/gsa-pm-*.pkg.tar.zst
 ```
 
 Never use a real rebuild as a syntax check, and never run two heavy builds at
@@ -152,7 +166,10 @@ bad usage.
   commits its generator pair (`PKGBUILD.in` + `update.PKGBUILD`, kept in
   lockstep: every manual edit is mirrored into the template). Physical
   categories (`git`, `stable`, `core`, `misc`, and the parked `deprecated`
-  tier) are a filing system, **not** the build order.
+  tier) are a filing system, **not** the build order. `misc` is currently an
+  empty roster slot (`packages/misc/` is where a standalone-staged recipe
+  goes), and a `packages/deprecated/` recipe has its topology record commented
+  out, so it appears in no build list.
 - `config/` — exactly three files. Anything else under `config/` is
   unreachable state and fails a fixture.
   - `topology.conf` — one record per package, `id|path|groups|edges[|tags]`,
@@ -245,7 +262,16 @@ dual with `core`.
   AMD target, must name what they no longer cover, and trim dead packaging
   paths together; keep whatever trains PGO or protects a maintained capability.
 - **PGO recipes call the shared gate** (`lib/pgo.sh`) as the last statement of
-  their package function — never copy its implementation. The engine's
+  their package function — never copy its implementation. The seam is exactly:
+
+  ```sh
+  source "$startdir/../../../lib/pgo.sh"          # top level, before the functions
+  verify_no_profile_instrumentation "$pkgdir"     # last line of each package*()
+  ```
+
+  The gate is fatal by design (`exit 1`, not `|| return 1`), and it inspects
+  readelf symbols *and* strings because a stripped binary hides the symbols but
+  keeps the baked `.gcda`/`.profraw` paths. The engine's
   fail-closed payload check at the install seam does not make the call
   optional. The training threshold is a **per-recipe `local`**
   (`pgo_min_gcda`, `pgo_min_profraw`, `pgo_min_samples`), deliberately not a
@@ -294,10 +320,13 @@ A new fixture needs no runner edit — `tests/run-all.sh` discovers
   ```
 
   `tests/lib/fixture-lib.bash` builds the workspace skeleton and writes the
-  trivial byte-identical stubs; anything oracle-shaped (a fake `pacman`, a
-  ticking `makepkg`, a signal logger) stays inline in the fixture that gives
-  it meaning. Stub knobs are named `GSA_FAKE_*`; the builder's own inputs keep
-  their names.
+  trivial byte-identical stubs; its common entry points are `make_workspace`,
+  `add_package`, `set_topology_record`, the `stub_*` writers, `run_builder`
+  and `makepkg_printsrcinfo`. `tests/lib/rr-v2.bash` owns `format: 2` run-record
+  parsing and the privileged `run_engine`/`run_engine_user` wrappers. Anything
+  oracle-shaped (a fake `pacman`, a ticking `makepkg`, a signal logger) stays
+  inline in the fixture that gives it meaning. Stub knobs are named
+  `GSA_FAKE_*`; the builder's own inputs keep their names.
 - Fixtures stub `sudo`/`pacman`/`date` through `PATH` and assert on the
   builder's own output and the decision rows — never on rendered prose.
 - A new PGO family earns a fixture when its profile-leak shape is new; the
@@ -346,7 +375,9 @@ otherwise). Bump `pkgrel` only *after* the first post-sync build.
 **Investigate a break** — `gsa -Qi <ref>` for the wiring, `gsa -Qa <ref>` for
 the ABI token, `gsa -Qr` for unresolved `DT_NEEDED` and exact-pin leftovers,
 `gsa -Qp <archive>` for a hash/size disagreement, `gsa -Ml` for the per-package
-build log. `ldd` on the shipped ELF is still the ground truth for a soname gap.
+build log. `ldd` on the shipped ELF is still the ground truth for a soname gap,
+and a dependency edit is verified with `pacman -T` over the regenerated
+metadata plus `readelf -d | grep NEEDED` — makepkg exiting 0 proves neither.
 
 ## Where the truth lives
 
