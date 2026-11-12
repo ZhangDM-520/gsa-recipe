@@ -1,0 +1,34 @@
+From ec4acfa0c08e3bebd1aa5c2fbac75691fb9fe411 Mon Sep 17 00:00:00 2001
+From: Hans Wennborg <hans@chromium.org>
+Date: Mon, 9 Nov 2026 10:57:34 +0100
+Subject: [PATCH] Update call to
+ llvm::codegen::InitTargetOptionsFromCodeGenFlags
+
+which was renamed and started taking an LibraryOptionsContext argument
+in https://github.com/llvm/llvm-project/pull/239919
+---
+ compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
+index 53b77729a742..8041ffda9f49 100644
+--- a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
++++ b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
+@@ -372,10 +372,12 @@ extern "C" LLVMTargetMachineRef LLVMRustCreateTargetMachine(
+     return nullptr;
+   }
+ 
+-  TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags(Trip);
+-
+ #if LLVM_VERSION_LT(24, 0)
++  TargetOptions Options = codegen::InitTargetOptionsFromCodeGenFlags(Trip);
+   Options.FloatABIType = FloatABIType;
++#else
++  TargetOptions Options =
++      codegen::getTargetOptions(cl::getCAPILibraryOptions(), Trip);
+ #endif
+   Options.DataSections = DataSections;
+   Options.FunctionSections = FunctionSections;
+-- 
+2.56.0.341.gebdc087dc9
+
