@@ -24,7 +24,13 @@ validpgpkeys+=('3BB639E56F861FA2E86505690FDD682D974CA72A') #"Matt Turner <mattst
 
 build() {
   cd libXt-${pkgver}
-  ./configure --prefix=/usr --sysconfdir=/etc --disable-static
+  # GCC 17's LTO fortify pass flags a long-standing memcpy over-read in
+  # Alloc.c/Create.c, and libXt's configure turns -Werror=array-bounds ON by
+  # default (SELECTIVE_WERROR=yes). The warning is a false positive on code
+  # that predates the analysis, so the house CFLAGS rework surfaced it as a
+  # hard failure. Drop the selective -Werror rather than weakening CFLAGS.
+  ./configure --prefix=/usr --sysconfdir=/etc --disable-static \
+    --disable-selective-werror
   make
 }
 

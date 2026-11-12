@@ -28,6 +28,19 @@ pkgver() {
     git describe --long --tags | sed 's/\([^-]*-g\)/r\1/;s/-/./g;s/^v//g'
 }
 
+prepare() {
+    cd "$srcdir/$_pkgname"
+
+    # upstream's CLI still casts the LZ4 frame preference to `contentChecksum_t`,
+    # a spelling lz4 dropped when the flag became an enum: lz4frame.h has
+    # declared `LZ4F_contentChecksum_t` since 1.9.4, and the house `lz4-git`
+    # (1.10) no longer carries the old name, so the build dies on
+    # "'contentChecksum_t' undeclared" in programs/fileio.c. The cast is the
+    # only site; upstream's own fix is the same rename.
+    sed -i 's/(contentChecksum_t)checksumFlag/(LZ4F_contentChecksum_t)checksumFlag/' \
+        programs/fileio.c
+}
+
 build() {
     cd "$srcdir/$_pkgname"
 
