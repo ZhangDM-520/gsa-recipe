@@ -105,7 +105,16 @@ build() {
   # Lane job count when the builder exports one (GSA_BUILD_JOBS); otherwise
   # the host's online CPU count (house style: jsoncpp-git).
   local _jobs="${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
-  RUSTFLAGS="${_rustflags}" cargo build --release --locked --jobs "$_jobs"
+  # Drop -flto from CFLAGS for this build. Cargo's link step never receives
+  # -flto, so a C dependency compiled with it emits LTO objects the linker
+  # cannot resolve: gsa-pm died at link with nine undefined ZSTD_* symbols
+  # while an identical plain `cargo build` linked, because makepkg's CFLAGS
+  # carry -flto=auto and the host's CFLAGS are not the engine's to inherit
+  # (ADR 0005: the engine owns its makepkg configuration; gsa's CFLAGS do not
+  # steer the Rust link). Measured 2026-11-12: -flto=auto in CFLAGS alone
+  # reproduces it; stripping only CFLAGS fixes it; LDFLAGS needs no change.
+  CFLAGS="${CFLAGS//-flto=auto/}" \
+    RUSTFLAGS="${_rustflags}" cargo build --release --locked --jobs "$_jobs"
 }
 
 check() {

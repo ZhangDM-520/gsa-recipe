@@ -143,6 +143,17 @@ for row in "${seams[@]}"; do
     fi
 done
 
+# --- 4b. the Rust link must not inherit -flto from the host CFLAGS ---------
+# Cargo's link step never receives -flto, so a C dependency compiled with it
+# emits LTO objects the linker cannot resolve. Measured 2026-11-12: gsa-pm died
+# at link with nine undefined ZSTD_* symbols under makepkg's
+# CFLAGS="-flto=auto" while an identical plain `cargo build` linked clean.
+# The engine owns its own makepkg configuration (engine ADR 0005), so the host
+# CFLAGS are not gsa's to inherit on the Rust link.
+build_body=$(sed -n '/^build()/,/^}/p' "$recipe")
+grep -q 'CFLAGS="\${CFLAGS//-flto=auto/}"' <<<"$build_body" ||
+    fail 'build() does not strip -flto=auto from CFLAGS: the Rust link will fail with undefined ZSTD_* symbols when the host enables LTO (measured 2026-11-12)'
+
 # --- 5. the paths are the ones the shells actually search ------------------
 # A file installed somewhere a shell never reads is the same bug with extra
 # steps, so name the search roots the contract promises.
