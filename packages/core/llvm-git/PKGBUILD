@@ -17,7 +17,7 @@
 
 pkgname=('llvm-git' 'llvm-libs-git' 'clang-opencl-headers-git')  # llvm-ocaml-git split dropped 2026-09-04 (no consumer)
 pkgver=24.0.0_r607209.2d12c0df533b
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 url="https://llvm.org/"
 license=('custom:Apache 2.0 with LLVM Exception')
@@ -68,6 +68,20 @@ pkgver() {
              END { print "\n" }' \
              LLVMVersion.cmake)_r$(git rev-list --count HEAD).$(git rev-parse --short HEAD)
     echo "$_pkgver"
+}
+
+prepare() {
+    # compiler-rt's csan (added upstream 2026-11, #225782) calls
+    # `__builtin_readcyclecounter`, a CLANG-ONLY builtin, and this family
+    # builds LLVM with the GCC snapshot: `csan.cpp.o` dies on
+    # "'__builtin_readcyclecounter' was not declared in this scope". csan is
+    # unconditional in ALL_SANITIZERS (compiler-rt/cmake/config-ix.cmake), so
+    # it cannot be turned off without dropping every sanitizer. Map it to
+    # x86 rdtsc for GCC only; clang keeps its own builtin.
+    if ! grep -q '__builtin_ia32_rdtsc' llvm-project/compiler-rt/lib/csan/csan.cpp; then
+        sed -i 's|^#include "csan.h"$|#if defined(__GNUC__) \&\& !defined(__clang__)\n#define __builtin_readcyclecounter() __builtin_ia32_rdtsc()\n#endif\n#include "csan.h"|' \
+            llvm-project/compiler-rt/lib/csan/csan.cpp
+    fi
 }
 
 build() {
