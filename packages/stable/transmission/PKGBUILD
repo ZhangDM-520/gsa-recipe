@@ -17,7 +17,7 @@ pkgname=(transmission-cli
          transmission-gtk)
 pkgdesc='Fast, easy, and free BitTorrent client'
 pkgver=4.1.4
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url="http://www.transmissionbt.com/"
 license=(GPL-2.0-or-later)

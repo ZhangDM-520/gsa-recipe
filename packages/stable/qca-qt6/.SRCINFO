@@ -1,7 +1,7 @@
 pkgbase = qca
 	pkgdesc = Qt Cryptographic Architecture
 	pkgver = 2.3.12
-	pkgrel = 1
+	pkgrel = 2
 	url = https://userbase.kde.org/QCA
 	arch = x86_64
 	license = LGPL-2.1-or-later

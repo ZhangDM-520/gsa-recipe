@@ -7,7 +7,7 @@ pkgname=libclc-git
 # matching LLVM and must move with it (coupled batch, abi=must). ADVANCE THE
 # PIN on the Monday cadence together with llvm-git: move #commit= and pkgver
 # together (pkgver() recomputes the same value at the pin).
-pkgver=24.0.0_r604528.caf7a716fe6e
+pkgver=24.0.0_r605786.6048b5d1724e
 pkgrel=1
 epoch=1
 groups=('chaotic-mesa-git')
@@ -21,7 +21,7 @@ makedepends=('clang' 'llvm-libs' 'llvm' 'git' 'python' 'ninja' 'cmake')
 # Trimmed 2026-09-04: amdgcn target only. The spirv* targets feed clover/rusticl
 # OpenCL (mesa-git builds none) and nvptx64 is NVIDIA-only; polly and
 # spirv-llvm-translator were only needed by those dropped targets.
-source=('llvm-project-git::git+https://github.com/llvm/llvm-project.git#commit=caf7a716fe6eb7fbc0f0cec7b745b94ab3706ddf')
+source=('llvm-project-git::git+https://github.com/llvm/llvm-project.git#commit=6048b5d1724e868332074c69118a63f5215613fb')
 md5sums=('SKIP')
 
 pkgver() {

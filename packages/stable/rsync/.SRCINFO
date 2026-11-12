@@ -1,7 +1,7 @@
 pkgbase = rsync
 	pkgdesc = A fast and versatile file copying tool for remote and local files
-	pkgver = 3.5.1
-	pkgrel = 3.1
+	pkgver = 3.5.2
+	pkgrel = 1.1
 	url = https://rsync.samba.org/
 	arch = x86_64
 	license = GPL-3.0-or-later
@@ -17,13 +17,13 @@ pkgbase = rsync
 	depends = zstd
 	optdepends = python: for rrsync
 	backup = etc/rsyncd.conf
-	source = https://github.com/RsyncProject/rsync/releases/download/v3.5.1/rsync-3.5.1.tar.gz
-	source = https://github.com/RsyncProject/rsync/releases/download/v3.5.1/rsync-3.5.1.tar.gz.asc
+	source = https://github.com/RsyncProject/rsync/releases/download/v3.5.2/rsync-3.5.2.tar.gz
+	source = https://github.com/RsyncProject/rsync/releases/download/v3.5.2/rsync-3.5.2.tar.gz.asc
 	source = rsyncd.conf
 	validpgpkeys = 0048C8B026D4C96F0E589C2F6C859FB14B96A8C5
 	validpgpkeys = 9FEF112DCE19A0DC7E882CB81BB24997A8535F6F
 	validpgpkeys = C0E1054505704F757D925AB26A64E8AA2EFBCF5D
-	sha256sums = c55f9c9dc10fb8bec397b399a0fdded53cc9a2d8e30891bb0d63724d25c37bef
+	sha256sums = a10d591825251e070f74c98df3daad195def4ed81b4a2de16169026aea33f6c8
 	sha256sums = SKIP
 	sha256sums = 733ccb571721433c3a6262c58b658253ca6553bec79c2bdd0011810bb4f2156b
 

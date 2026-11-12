@@ -6,7 +6,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=noctalia-git
 _pkgname=noctalia
-pkgver=5.4.1.r6148.gcece614d2
+pkgver=5.4.1.r6310.g2f3e3c4f6
 pkgrel=1
 pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
 arch=('x86_64' 'aarch64')
@@ -68,7 +68,7 @@ conflicts=('noctalia' 'noctalia-bin')
 # Pin 2026-11-02 (snapshot-pins policy): cece614d2 is the base the 0001 zoom/pan
 # patch is re-cut against; floating main re-drifted it twice in one day (850ae99f7).
 # Advance the pin deliberately alongside a patch re-cut.
-source=("${_pkgname}::git+${url}.git#commit=cece614d286fd0c22e432213735b3ee451472342"
+source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
         0001-capture-annotate-zoom-pan.patch)
 sha256sums=('SKIP'
             '04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d')

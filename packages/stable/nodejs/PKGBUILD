@@ -9,8 +9,8 @@
 # Contributor: TIanyi Cui <tianyicui@gmail.com>
 
 pkgname=nodejs
-pkgver=26.12.1
-pkgrel=4
+pkgver=26.13.0
+pkgrel=2
 pkgdesc='Evented I/O for V8 javascript ("Current" release)'
 arch=('x86_64')
 url='https://nodejs.org/'
@@ -47,7 +47,7 @@ source=("git+https://github.com/nodejs/node.git#tag=v$pkgver?signed"
         '0001-v8-regexp-special-case-keep-class-walk-bmp-only.patch'
         '0002-lief-include-sstream-explicitly.patch')
 
-sha512sums=('bbf66cd385c68f1bdfa85ea4f9a547a4e9302c59558bc514be87cb0e724bea5bdeda23f7f7cb14c45bf02fafebf2725ad0bd5b275b18d51f93fdea6fe6b061f7'
+sha512sums=('f551ef6e9ab1073ff871b4e20b4316cdc3a3dff20a44fa53da0397134772a2753bf27497fc2e552499475382370f43f500d4cdc7938db0d78e1f44dd2b063db8'
             '6d3b819a703faa6f25b118c7467afaf8900472e83f58aed68e643f36b711741d2faf1a9cc025ae222731d7013c98e1d59b61d1717c02eabebc0e8106eef52305'
             'b053f6c21f5dc3d36d48a1c142038bc9f2f5d7184f9a878c5e78eba5fb025d12a5e674b6cc3d5e35e3d504551b3c90f9047cc12f9561624bdd850607fa925113')
 validpgpkeys=(

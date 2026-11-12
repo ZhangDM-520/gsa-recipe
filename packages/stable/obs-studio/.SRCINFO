@@ -1,6 +1,6 @@
 pkgbase = obs-studio
 	pkgdesc = Free, open source software for live streaming and recording
-	pkgver = 32.2.2
+	pkgver = 33.0.1
 	pkgrel = 1.1
 	url = https://obsproject.com
 	arch = x86_64
@@ -41,13 +41,13 @@ pkgbase = obs-studio
 	provides = libobs-frontend-api.so
 	provides = libobs-opengl.so
 	provides = libobs-scripting.so
-	source = obs-studio::git+https://github.com/obsproject/obs-studio#tag=32.2.2
+	source = obs-studio::git+https://github.com/obsproject/obs-studio#tag=33.0.1
 	source = obs-studio-libdshowcapture::git+https://github.com/obsproject/libdshowcapture.git
 	source = obs-studio-obs-browser::git+https://github.com/obsproject/obs-browser.git
 	source = obs-studio-obs-websocket::git+https://github.com/obsproject/obs-websocket.git
 	source = obs-studio-ffmpeg-snapshot-version.patch
 	source = obspython-swig-genex.patch
-	sha256sums = 18edf1162e6cc37c192c4532ccfb902a07c5891d5929e95c4f028c6ad5d762d5
+	sha256sums = 146e64de76ee79a8bc9155a7eb33886ab7b9b3a3de0f275a7ba3ff75ceb2ac74
 	sha256sums = SKIP
 	sha256sums = SKIP
 	sha256sums = SKIP

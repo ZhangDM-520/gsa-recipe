@@ -6,7 +6,7 @@ pkgbase=libcloudproviders
 pkgname=(
   libcloudproviders
 )
-pkgver=0.4.1
+pkgver=0.4.2
 pkgrel=1.1
 pkgdesc="DBus API that allows cloud storage sync clients to expose their services"
 url="https://gitlab.gnome.org/GNOME/libcloudproviders"
@@ -26,7 +26,7 @@ makedepends=(
   vala
 )
 source=("git+$url.git?signed#tag=$pkgver")
-b2sums=('720a21e38d745b84164859977952369e5986cb96221f791caaadd0399ce17cf012ba20ccbd878586059383970ce00800818310f9e72c935b865bf5e4f1c244d8')
+b2sums=('8fbee0ce57343b12454b3053aaafb704602d7a8d6352ecc3cedc5a0190ddbebb8d319f62b91cd8b0061d8a576d87ed87310ad84628b792761fba78aa4b0c2c26')
 validpgpkeys=(
   AD1483F8A95118F7F0C8AF4A965D4777208E7691 # Corentin Noël <corentin.noel@collabora.com>
 )

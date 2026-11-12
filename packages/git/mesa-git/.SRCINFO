@@ -1,6 +1,6 @@
 pkgbase = mesa-git
 	pkgdesc = an open-source implementation of the OpenGL specification, git version
-	pkgver = 27.0.0_devel.232390.18879c94176.2f181b7
+	pkgver = 27.0.0_devel.232847.bd830ce2eea.d41d8cd
 	pkgrel = 1
 	url = https://www.mesa3d.org
 	arch = x86_64
@@ -49,20 +49,20 @@ pkgbase = mesa-git
 	depends = aur-llvm-libs-git
 	optdepends = opengl-man-pages: for the OpenGL API man pages
 	optdepends = aur-llvm-git: opencl
-	provides = vulkan-mesa-layers=27.0.0_devel.232390.18879c94176.2f181b7
+	provides = vulkan-mesa-layers=27.0.0_devel.232847.bd830ce2eea.d41d8cd
 	provides = opengl-driver
 	provides = vulkan-driver
-	provides = vulkan-intel=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-nouveau=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-radeon=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-swrast=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-virtio=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = libva-mesa-driver=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = mesa-libgl=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = mesa=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = opencl-mesa=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-mesa-device-select=27.0.0_devel.232390.18879c94176.2f181b7
-	provides = vulkan-mesa-implicit-layers=27.0.0_devel.232390.18879c94176.2f181b7
+	provides = vulkan-intel=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-nouveau=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-radeon=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-swrast=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-virtio=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = libva-mesa-driver=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = mesa-libgl=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = mesa=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = opencl-mesa=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-mesa-device-select=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+	provides = vulkan-mesa-implicit-layers=27.0.0_devel.232847.bd830ce2eea.d41d8cd
 	provides = libva-driver
 	conflicts = vulkan-mesa-layers
 	conflicts = opencl-clover-mesa
@@ -78,7 +78,7 @@ pkgbase = mesa-git
 	conflicts = vulkan-mesa-device-select
 	conflicts = vulkan-mesa-implicit-layers
 	options = !debug
-	source = mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=18879c94176c777064cbc5223a7206468c7a00a7
+	source = mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=bd830ce2eead03d775486234902fe22215e334b8
 	source = LICENSE
 	source = mesa-llvm24-target-include.patch
 	source = mesa-llvm24-passbuilder-context.patch

@@ -5,7 +5,7 @@
 # Contributor: Giovanni Scafora <giovanni@archlinux.org>
 
 pkgname=wine
-pkgver=11.20
+pkgver=11.21
 pkgrel=1.1
 
 _pkgbasever=${pkgver/rc/-rc}
@@ -14,7 +14,7 @@ source=("git+https://gitlab.winehq.org/wine/wine.git?signed#tag=wine-$_pkgbaseve
         30-win32-aliases.conf
         wine-binfmt.conf
         cups-2.5-enum-compat.patch)
-sha512sums=('31fdb5de2c3cf57daa9080a875b5b8531f310a6e352e3f0ad517e437608bc958ee14ea130e201cb9258bed57be549c08ba9ecc6453ca0a397981166493612307'
+sha512sums=('9c06abd56c6f27bc88a375b919e9fade088b89b69badbde27c768d635965389deeae1e63be85976010ad400eca84c2d3afd5becaaec0dc83b81dfcfc06242890'
             '6e54ece7ec7022b3c9d94ad64bdf1017338da16c618966e8baf398e6f18f80f7b0576edf1d1da47ed77b96d577e4cbb2bb0156b0b11c183a0accf22654b0a2bb'
             'bdde7ae015d8a98ba55e84b86dc05aca1d4f8de85be7e4bd6187054bfe4ac83b5a20538945b63fb073caab78022141e9545685e4e3698c97ff173cf30859e285'
             '15af3559146c552b85277c6146e3ad22352406560fad0f61412a83c640a76d1c6a70f2f9a5ad9087a69c134636c5c747ad0584b40e558f219cc1ff9ae580addc')

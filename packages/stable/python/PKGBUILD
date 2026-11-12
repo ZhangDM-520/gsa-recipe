@@ -9,8 +9,8 @@ pkgbase=python
 # trim: python-tests split (regression tests) — dropped with its split-install
 # path below; the test tree is trimmed from the python output instead
 pkgname=(python)
-pkgver=3.14.8
-pkgrel=5
+pkgver=3.14.10
+pkgrel=1
 _pybasever=${pkgver%.*}
 pkgdesc="The Python programming language"
 arch=('x86_64')
@@ -22,13 +22,8 @@ makedepends=('tk' 'sqlite' 'bluez-libs' 'llvm' 'gdb' 'xorg-server-xvfb' 'ttf-fon
 source=("https://www.python.org/ftp/python/${pkgver%rc*}/Python-${pkgver}.tar.xz"
         EXTERNALLY-MANAGED
         python-posix-2024.patch)
-sha512sums=('f9e6809b0c45d90fcc174b8051e15058a3037981c9136c598d110a118a22cbbb8263fbd677e07b2b9d93e1aa83cd9cb835b61b6af898fd301d1080a29c2156fe'
+sha512sums=('730ea64f7e8815a5e1a4280b1205d77719875de630e6807b3140987b44e7b91215918cf75ed77250cf6feb5de98ff4175555cbba96eaf32564d2f421e723994a'
             '62a6fbfbaeaa3ba7c54e109d9c3b7f67e73bb21986da4c1fcc5d28cca83d71e0fcae28e1fc70ee8ddce7dea8cd0b64e18d1031dae3a2eae5eaa379c53efd53a0'
-            # python-posix-2024.patch is VENDORED (2026-10-19): the stable
-            # API diff of pinned commit 927eb448, body verified byte-identical
-            # to GitHub's mail rendering. The moving `.patch` URL retired
-            # after TWO checksum walls (2026-10-15, 2026-10-19) — GitHub
-            # re-renders the mail preamble of a pinned commit at will.
             '3bcbc57e903fb880d437e7683bffdadc478988a116c2f5c11f190eaf879148b406b0f7ab40660ca6acdfd138546296a3dbaf1997a0b0c705b3985e51c241bffe')
 validpgpkeys=('0D96DF4D4110E5C43FBFB17F2D347EA6AA65421D'  # Ned Deily (Python release signing key) <nad@python.org>
               'E3FF2839C048B25C084DEBE9B26995E310250568'  # Łukasz Langa (GPG langa.pl) <lukasz@langa.pl>

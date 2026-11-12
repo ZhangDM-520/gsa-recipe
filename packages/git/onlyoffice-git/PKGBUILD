@@ -97,7 +97,7 @@ _v8_branch_head=branch-heads/9.0
 source=(
     # The tree that defines everything else. Named without a prefix so that
     # build_tools finds its sibling directories where it expects them.
-    "DesktopEditors::git+${_url}/DesktopEditors#commit=7b9cd379f428ce23c7ef9c93cbb93f1e3c75f613"
+    "DesktopEditors::git+${_url}/DesktopEditors#commit=daf8c6948148827201b2907ac1134d222fbfa7b4"
 
     # The six submodules declared by .gitmodules at v9.4.0. Note web-apps: the
     # *directory* must be `web-apps` (that is the path build_tools uses), but the

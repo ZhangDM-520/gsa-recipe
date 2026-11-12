@@ -54,7 +54,7 @@ pkgbase = onlyoffice-git
 	noextract = cef_5414.tar.bz2
 	options = !emptydirs
 	options = !lto
-	source = DesktopEditors::git+https://github.com/ONLYOFFICE/DesktopEditors#commit=7b9cd379f428ce23c7ef9c93cbb93f1e3c75f613
+	source = DesktopEditors::git+https://github.com/ONLYOFFICE/DesktopEditors#commit=daf8c6948148827201b2907ac1134d222fbfa7b4
 	source = core::git+https://github.com/ONLYOFFICE/core#commit=a016fc2868b9f99f59dd30aa2088e68bbe5104af
 	source = desktop-apps::git+https://github.com/ONLYOFFICE/desktop-apps#commit=3ad4e294ae5e25902ccc56088a760ad21a9d123a
 	source = desktop-sdk::git+https://github.com/ONLYOFFICE/desktop-sdk#commit=c84d59c08cf5303908ff8aa43296b0b9de936817

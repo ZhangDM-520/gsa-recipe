@@ -15,7 +15,7 @@ _pkgname=bindgen
 # ADVANCE THE PIN on the Monday cadence together with the llvm coupled set:
 # move #commit= and pkgver together (pkgver() recomputes the same value at
 # the pin).
-pkgver=0.73.2.r17.gf08d4fff
+pkgver=0.73.2.r23.gbb8bd1b0
 pkgrel=1
 pkgdesc="Automatically generates Rust FFI bindings to C (and some C++) libraries"
 arch=('x86_64')
@@ -25,7 +25,7 @@ depends=('glibc' 'libgcc' 'clang')
 makedepends=('cargo' 'git')
 provides=("rust-bindgen=$pkgver")
 conflicts=('rust-bindgen')
-source=("git+${url}.git#commit=f08d4fff0e060fb4081222b0ad624e0bd7ec247d")
+source=("git+${url}.git#commit=bb8bd1b0211752477707f0084f92c2af526eba89")
 sha512sums=('SKIP')
 
 pkgver() {

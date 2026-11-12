@@ -3,8 +3,8 @@
 # Contributor: John Eivind Helset <jehelset@gmail.com>
 
 pkgname=debugedit
-pkgver=5.3
-pkgrel=3
+pkgver=5.4
+pkgrel=1
 pkgdesc='Tool to mangle source locations in .debug files'
 arch=('x86_64')
 url='https://sourceware.org/debugedit/'
@@ -15,7 +15,7 @@ source=("https://sourceware.org/ftp/debugedit/${pkgver}/debugedit-${pkgver}.tar.
 validpgpkeys=(
     '28FF4B30A88D5523A7E2CBA20376A15C6FFC11CD' # Mark J. Wielaard <mark@klomp.org>
 )
-sha512sums=('a02e04f5b91e0ec5d880207658e5b89b28424ffee6aed7374c495c0c49b2f0180eeb2277bdb758a3d245279a2083d5f7b8b4872b8972b92d5c92ef5f1d27d958'
+sha512sums=('a5813796779f7a09c4845b4d995296692d88ab8fe889c7c97b1f868dec4b6f9c426bcb18dd051a6f49e2275d553374103460c1b700e78c4db7dc7eafd4c55342'
             'SKIP'
             'fe10d161fffd392d8ac86d439eaac267955a81ca2bb68d4218aa585fab6ca07b9ecb12f146050077bf82f95d1c93cbf6e916eec5713efb729f26f53b74677b15')
 

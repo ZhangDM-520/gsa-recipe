@@ -5,7 +5,7 @@
 # together with the qt5-svg/qt5-tools/qt5-x11extras makedeps and its
 # build5/style install path — this single-output recipe packages only kvantum
 pkgname=kvantum
-pkgver=1.1.8
+pkgver=1.1.9
 pkgrel=1.1
 pkgdesc='SVG-based theme engine for Qt6 (including config tool and extra themes)'
 arch=(x86_64)
@@ -25,7 +25,7 @@ makedepends=(cmake
 optdepends=('kvantum-qt5: Qt5 style')
 provides=(libkvantum.so)
 source=(git+https://github.com/tsujan/Kvantum#tag=V$pkgver?signed)
-sha256sums=('c407e9fb1e9e985b3af78d7535445da31f03473387b1c45b4c810883b8c27ec6')
+sha256sums=('cf302658285cc053689c13baaea46778b5abae0b505ed00874e1dadef5a0dd9b')
 validpgpkeys=(19DFDF3A579BD509DBB572D8BE793007AD22DF7E) # Pedram Pourang <tsujan2000@gmail.com>
 
 build() {

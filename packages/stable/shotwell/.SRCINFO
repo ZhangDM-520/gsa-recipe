@@ -1,7 +1,7 @@
 pkgbase = shotwell
 	pkgdesc = A digital photo organizer designed for the GNOME desktop environment
-	pkgver = 33.0
-	pkgrel = 2.1
+	pkgver = 33.2
+	pkgrel = 1.1
 	epoch = 2
 	url = https://gitlab.gnome.org/GNOME/shotwell
 	arch = x86_64
@@ -28,7 +28,7 @@ pkgbase = shotwell
 	provides = libshotwell-authenticator.so
 	provides = libshotwell-plugin-common.so
 	provides = libshotwell-plugin-dev-1.0.so
-	source = git+https://gitlab.gnome.org/GNOME/shotwell.git#tag=33.0
-	sha256sums = e1195715fc0f9f76b857f16e99a9fffc397e9d526225f086f86b37b22357c92a
+	source = git+https://gitlab.gnome.org/GNOME/shotwell.git#tag=33.2
+	sha256sums = 76fd28fa92c389cab4fb67c9fe9de8ec77b02381e8033bebca6bc24adf2d9e77
 
 pkgname = shotwell
