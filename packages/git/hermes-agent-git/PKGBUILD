@@ -1,5 +1,5 @@
 pkgname=hermes-agent-git
-pkgver=2026.10.28.083505.gee987d9
+pkgver=2026.11.12.223416.g71b6765
 pkgrel=1
 pkgdesc='CLI AI agent with a TUI and web dashboard (Git main)'
 arch=('x86_64')
@@ -11,8 +11,16 @@ provides=("hermes-agent=$pkgver")
 conflicts=('hermes-agent')
 source=(
   'hermes-agent::git+https://github.com/NousResearch/hermes-agent.git#branch=main'
+  # Upstream's scripts/build/node-deps.mjs hard-refuses any pnpm whose version
+  # differs from pm/lock.json's pin, and neither pnpm nor corepack is in
+  # makedepends, so the build silently used the HOST pnpm (12.17.0) and aborted.
+  # Fetch the pinned version instead of trusting a host binary. The sha256 is
+  # pm/lock.json's own packages.pnpm.artifacts.linux-x64 entry (the @pnpm/exe
+  # tarball; the bare pnpm-12.15.0.tgz is the JS wrapper, not the executable).
+  'pnpm-exe::https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.15.0.tgz'
 )
-sha256sums=('SKIP')
+sha256sums=('SKIP'
+            '402f7045b1e0587acb1542f18d38afbccb6babf3c7451394e6fb3d9f0160c6ca')
 
 pkgver() {
   cd "$srcdir/hermes-agent"
@@ -38,6 +46,18 @@ build() {
   # outside a Nix build). The editable finder's srcdir references are covered by
   # the hard-verify rewrite in package(), which fails the build if any survive.
   uv sync --locked --python /usr/bin/python3.14 --extra all --editable
+
+  # pnpmCommand() resolves pnpm by scanning PATH, so put the pinned one first.
+  # The source is renamed `pnpm-exe` (no extension): makepkg uses an explicit
+  # `name::` prefix VERBATIM and never appends an extension, so the fetched file
+  # is exactly `$srcdir/pnpm-exe`. Unpack it OUT of the way of that file.
+  local pnpm_root="$srcdir/pnpm-unpacked"
+  if [ ! -x "$pnpm_root/package/pnpm" ]; then
+    rm -rf "$pnpm_root"
+    install -d "$pnpm_root"
+    tar -xf "$srcdir/pnpm-exe" -C "$pnpm_root"
+  fi
+  export PATH="$pnpm_root/package:$PATH"
 
   node scripts/build/node-deps.mjs \
     --source "$root" --workspace ui-tui --workspace web --reuse

@@ -11,7 +11,7 @@ pkgname=(qt6-multimedia
          qt6-multimedia-ffmpeg)
 # placeholder — overridden by pkgver() (git describe on dev branch)
 pkgver=6.13.0_r9875.g99eda9976
-pkgrel=1
+pkgrel=2
 arch=(x86_64)
 url='https://www.qt.io'
 license=(GPL-3.0-only
@@ -46,11 +46,17 @@ sha256sums=('SKIP')
 # PGO toggle — false for quick rebuilds
 _pgo=true
 
+# libcamera is an UNDECLARED optional feature: cmake probes it system-wide and,
+# when the host carries a newer libcamera-git, compiles the plugin against an API
+# Qt 6.13 does not match (controls.h ControlValue get<T>() name lookup,
+# 2026-11-14). Pin it OFF so the build cannot depend on an undeclared host
+# package; re-enable deliberately, with a real dependency entry.
 _configure_and_build() {
   cmake -B build -S $_pkgfn -G Ninja \
     -DCMAKE_MESSAGE_LOG_LEVEL=STATUS \
     -DQT_BUILD_TESTS=OFF \
     -DQT_BUILD_EXAMPLES=OFF \
+    -DFEATURE_libcamera=OFF \
     -DCMAKE_CXX_FLAGS="$CXXFLAGS -ffat-lto-objects"
   cmake --build build
 }

@@ -20,7 +20,7 @@
 pkgbase=samba
 pkgname=('libwbclient' 'ldb' 'smbclient')
 pkgver=4.25.1
-pkgrel=1.1
+pkgrel=1.3
 arch=(x86_64)
 url="https://www.samba.org"
 license=('GPL-3.0-or-later')
@@ -84,6 +84,13 @@ prepare() {
 
 build() {
 
+# yapp (perl-parse-yapp) installs to /usr/bin/vendor_perl, and Perl 5.44 keeps
+# the core scripts in /usr/bin/core_perl — both are appended to PATH only by
+# /etc/profile.d/perlbin.sh, i.e. login shells, never under makepkg's sudo
+# secure_path. Same idiom as pacutils; configure aborts with "yapp not found"
+# without them. List all three dirs so this cannot rot again when a tool moves
+# between the core/site/vendor buckets.
+export PATH="/usr/bin/vendor_perl:/usr/bin/core_perl:/usr/bin/site_perl:$PATH"
 _samba4_idmap_modules=idmap_ad,idmap_rid,idmap_adex,idmap_hash,idmap_tdb2
 _samba4_pdb_modules=pdb_tdbsam,pdb_ldap,pdb_ads,pdb_smbpasswd,pdb_wbc_sam,pdb_samba4
 _samba4_auth_modules=auth_unix,auth_wbc,auth_server,auth_netlogond,auth_script,auth_samba4

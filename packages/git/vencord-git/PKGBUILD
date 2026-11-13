@@ -9,7 +9,7 @@
 
 pkgname=vencord-git
 _pkgname=Vencord
-pkgver=1.15.13.r0.g443688b536
+pkgver=1.15.17.r5.gd07030c09
 pkgrel=1
 pkgdesc='The cutest Discord client mod (git build)'
 arch=('any')
@@ -46,7 +46,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         vencord-discord-desktop.hook)
 sha256sums=('SKIP'
             'd26eb9b6c1dbd204d9e1a287aa7feca57c2482e563b65ac3dbd32ce5d50adcad'
-            '5cfb7c12b5d4e5af750aaa76e47604b976a63ab79f0bd8875f28261eb33062ff'
+            'eecaa5f8241086d3dbf0fa122ad99ae3fb78e86641413890ae16734e4ead0003'
             'b9ada45f032c7722cb667b5e0273eba143d50a756cfdec104d84840411456384'
             '8c1ef45e980f264948d70230e80832b303bd502a6f07efe2a2f6901d563dcdda')
 

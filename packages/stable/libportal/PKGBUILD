@@ -9,7 +9,7 @@ pkgname=(
   libportal-qt6
 )
 pkgver=0.11.0
-pkgrel=1.1
+pkgrel=1.2
 pkgdesc="GIO-style async APIs for most Flatpak portals"
 url="https://github.com/flatpak/libportal"
 arch=(x86_64)
@@ -51,7 +51,12 @@ prepare() {
 build() {
   # trim: -Ddocs=false — the libportal-docs split is dropped together with
   # its gi-docgen makedepends and the _pick docs machinery
-  arch-meson libportal build -Ddocs=false
+  # backend-qt5 defaults to 'auto': with qt5-base installed meson builds the
+  # Qt5 backend, but this recipe has no libportal-qt5 split to receive it, so
+  # libportal-qt5.pc landed in the base package and collided with the installed
+  # split (2026-11-14 install-failed "exists in filesystem"). This recipe
+  # splits gtk3/gtk4/qt6 only — pin qt5 off.
+  arch-meson libportal build -Ddocs=false -Dbackend-qt5=disabled
   meson compile -C build
 }
 

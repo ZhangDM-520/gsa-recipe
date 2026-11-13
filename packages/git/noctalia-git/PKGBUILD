@@ -6,7 +6,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=noctalia-git
 _pkgname=noctalia
-pkgver=5.4.1.r6310.g2f3e3c4f6
+pkgver=5.4.1.r6148.gcece614d2
 pkgrel=1
 pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
 arch=('x86_64' 'aarch64')
@@ -65,10 +65,13 @@ makedepends=(
 options=('!debug' 'lto')
 provides=("noctalia=${pkgver}")
 conflicts=('noctalia' 'noctalia-bin')
-# Pin 2026-11-02 (snapshot-pins policy): cece614d2 is the base the 0001 zoom/pan
-# patch is re-cut against; floating main re-drifted it twice in one day (850ae99f7).
-# Advance the pin deliberately alongside a patch re-cut.
-source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
+# Pin 2026-11-13 (snapshot-pins policy): the pin and the 0001 zoom/pan patch are
+# a PAIR. 2f3e3c4f60 was ahead of the patch's base and the 3-way apply left 16
+# conflict hunks in five files (en.json, annotation_overlay.cpp/.h,
+# annotation_view.h, annotation_view_test.cpp). The patch applies CLEANLY at
+# cece614d2 (the base it was cut against) and both commits carry the same
+# upstream version, 5.4.1. Advance the pin ONLY together with a patch re-cut.
+source=("${_pkgname}::git+${url}.git#commit=cece614d2"
         0001-capture-annotate-zoom-pan.patch)
 sha256sums=('SKIP'
             '04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d')
