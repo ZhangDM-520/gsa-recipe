@@ -17,7 +17,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=mesa-git
 pkgdesc="an open-source implementation of the OpenGL specification, git version"
 pkgver=27.0.0_devel.232847.bd830ce2eea.d41d8cd
-pkgrel=1
+pkgrel=1.3
 arch=('x86_64')
 makedepends=(
     'git'
@@ -110,17 +110,11 @@ license=('custom')
 source=(
     'mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=bd830ce2eead03d775486234902fe22215e334b8'
     'LICENSE'
-    'mesa-llvm24-target-include.patch'
-    'mesa-llvm24-passbuilder-context.patch'
 )
 sha256sums=('SKIP'
-            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2'
-            '67b1a38b23b1035ff2558ac0dfc6981c1fa9a1375a3e8cdd95c4ebab986600d8'
-            '9bc108ae1904569c02628eafb187d9d1fc7d3b6590fe2ea20f354451cc9a8e0b')
+            '7fdc119cf53c8ca65396ea73f6d10af641ba41ea1dd2bd44a824726e01c8b3f2')
 b2sums=('SKIP'
-        'cc60238726b35133b5b729fb4ed1e76e04136588533615d84b4a54656d5b41727d5e7ff06ef4de3eb102eed6669d6c5c5cb8ac9fbdf6fc25aa477877c5c3ba87'
-        '4bc5ea99dd4f30ce27120a557d5f4520b583b890c1e8f55690f79c72a336ba00cd243898679d7dceb871d8c1a17a8f503ccd4e7e421ddf264c6c1ecfd6e69b38'
-        '055ce840f11e7860b437f07afe70f60c5cd2d33f294e6e39ff2ff3b72b3951895b2e8666a4c58513e36ea1a7b9e24f7cfb6a66c2872d3509abb09f6b3362971c')
+        'cc60238726b35133b5b729fb4ed1e76e04136588533615d84b4a54656d5b41727d5e7ff06ef4de3eb102eed6669d6c5c5cb8ac9fbdf6fc25aa477877c5c3ba87')
 
 
 options=(!debug)
@@ -255,19 +249,10 @@ prepare() {
         rm -rf _build
     fi
 
-    # LLVM 24 changed PassBuilder's constructor to lead with LLVMContext&
-    # (Passes/PassBuilder.h). mesa-llvm24-passbuilder-context.patch is the
-    # upstream fix (b39d00df594, MR 45591); drop it when the pin advances
-    # past that commit (2026-11-02 llvm-git/mesa pair wall).
-
-    local _patchfile
-    for _patchfile in "${source[@]}"; do
-        _patchfile="${_patchfile%%::*}"
-        _patchfile="${_patchfile##*/}"
-        [[ $_patchfile = *.patch ]] || continue
-        echo "Applying patch $_patchfile..."
-        patch --directory=mesa --forward --strip=1 --input="${srcdir}/${_patchfile}"
-    done
+    # The two LLVM-24 patches (llvm-c/Target.h include; PassBuilder context)
+    # were dropped 2026-11-13: both fixes are upstream now — b39d00df594 is an
+    # ancestor of the pinned commit and all three C TUs carry llvm-c/Target.h,
+    # so --forward skipped/Failed every hunk. Re-add only for an older pin.
 }
 
 build () {
@@ -301,7 +286,6 @@ build () {
         -D vulkan-layers=device-select
         -D tools=[]
         -D zstd=enabled
-        -D buildtype=plain
         --wrap-mode=nofallback
         -D prefix=/usr
         -D sysconfdir=/etc
@@ -330,11 +314,26 @@ build () {
         # Phase 1: Instrumented build with PGO generation. LTO is switched
         # OFF for this pass: `-fprofile-generate` plus fat LTO in one link
         # keeps the counters behind the LTO pass, so the profile is empty and
-        # the phase-2 rebuild has nothing to use.
+        # the phase-2 rebuild has nothing to use. `meson_options` pins
+        # `-D b_lto=true`, and a second -D silently wins, so phase 1 builds its
+        # own list rather than appending an override to the shared one.
         CFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
         CXXFLAGS+=" -fprofile-generate=${_pgo_profile_dir} -fprofile-correction"
 
-        meson setup --buildtype=plain mesa _build "${meson_options[@]}" -D b_lto=false
+        local _pgo_options=()
+        local _i
+        for (( _i = 0; _i < ${#meson_options[@]}; _i++ )); do
+            # The array holds `-D` and `key=value` as separate elements, so
+            # b_lto is removed as a pair (dropping only the value orphans -D).
+            if [[ ${meson_options[_i]} == '-D' && ${meson_options[_i+1]} == b_lto=* ]]; then
+                (( _i++ ))
+                continue
+            fi
+            _pgo_options+=("${meson_options[_i]}")
+        done
+        _pgo_options+=('-D' 'b_lto=false')
+
+        meson setup --buildtype=plain mesa _build "${_pgo_options[@]}"
         meson configure --no-pager _build
         ninja $NINJAFLAGS -C _build
 

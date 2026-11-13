@@ -34,7 +34,7 @@ pkgname=(
   gst-python
 )
 pkgver=1.28.9
-pkgrel=1
+pkgrel=2
 pkgdesc="Multimedia graph framework"
 url="https://gstreamer.freedesktop.org/"
 arch=(x86_64)
@@ -217,9 +217,6 @@ source=(
   # Disable broken tests
   0001-HACK-meson-Disable-broken-tests.patch
 
-  # https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/12148
-  0002-faac-support-faac-2.0-faac_-API.patch
-
   # House: current spandsp made plc_state_t opaque (JOURNAL 2026-10-11)
   0003-spandsp-opaque-plc_state_t.patch
 )
@@ -227,7 +224,6 @@ b2sums=('515aff0af4cc758c52bcbf4604e1db7b15888b7e339c657ade0211384b579b03d9bfb62
         'b714129214f9953c1ea15250ea31d275e92551359d3c5b240617e557a4dd9dc01ffff03f2f8d9a607c3af0b9e1afd39c843d56740b4bc228244096652b54ac29'
         'SKIP'
         '64198edd8f3fe8c8ad36455df34e6df471b96e5ab1bb320db16d8c86718e0122fa03b4ee83e2dd5c508e3a5b893b605be4c652c740fc962b1e907ab0ba0e3f4b'
-        '4e425222d8fd1fc3c49750ad4920433e3b298698e96e714fb9d6f887ac62509f2b187a131fa31da53dcedd2a150ca59d3bd7d7519b7df91a0cff90c65094edbc'
         '3a21e7cfca6d7b4eb52d08351f67ba79db8fb15498a619145e301b572fac0459de0877944cd21ffd7fe1fdeabe7c8697004678cfd24a3bbd29ec3cfda8c0da91')
 validpgpkeys=(
   D637032E45B8C6585B9456565D2EEE6F6F349D7C # Tim Müller <tim@gstreamer-foundation.org>

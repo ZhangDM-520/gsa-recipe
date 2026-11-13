@@ -5,7 +5,7 @@
 pkgname=libcamera-git
 _pkgname=libcamera
 pkgver=0.8.0.r2.gbe7e83e9
-pkgrel=1
+pkgrel=1.1
 pkgdesc="A complex camera support library for Linux, Android, and ChromeOS (git build)"
 arch=('x86_64')
 url="https://libcamera.org/"
@@ -26,8 +26,20 @@ makedepends=('cmake' 'git' 'meson' 'ninja' 'python-jinja' 'python-ply' 'python-p
 provides=("libcamera=$pkgver" "libcamera-ipa=${pkgver}" 'libcamera.so' 'libcamera-base.so')
 conflicts=('libcamera' 'libcamera-ipa')
 # upstream moved hosting: git.libcamera.org redirects to freedesktop gitlab
-source=("git+https://gitlab.freedesktop.org/camera/${_pkgname}.git#commit=be7e83e91348250c015aad6d6f59f1468555bae8")
-b2sums=('SKIP')
+# 0001: v4l2_compat.cpp overrides open()/openat() while glibc's fortify
+# redirects (bits/fcntl2.h, included only under _FORTIFY_SOURCE) declare them
+# always_inline — a hard "function not inlinable" LTO error with the house
+# -Wp,-D_FORTIFY_SOURCE=3. Drop the patch once upstream stops overriding
+# openat() or ships its own fortify guard for this target.
+source=("git+https://gitlab.freedesktop.org/camera/${_pkgname}.git#commit=be7e83e91348250c015aad6d6f59f1468555bae8"
+        0001-v4l2-compat-disable-fortify.patch)
+b2sums=('SKIP'
+        'SKIP')
+
+prepare() {
+  cd "$_pkgname"
+  patch -Np1 -i ../0001-v4l2-compat-disable-fortify.patch
+}
 
 pkgver() {
   cd "$_pkgname"

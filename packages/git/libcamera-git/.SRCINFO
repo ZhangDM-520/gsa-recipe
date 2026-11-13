@@ -1,7 +1,7 @@
 pkgbase = libcamera-git
 	pkgdesc = A complex camera support library for Linux, Android, and ChromeOS (git build)
 	pkgver = 0.8.0.r2.gbe7e83e9
-	pkgrel = 1
+	pkgrel = 1.1
 	url = https://libcamera.org/
 	arch = x86_64
 	license = Apache-2.0
@@ -38,6 +38,8 @@ pkgbase = libcamera-git
 	conflicts = libcamera
 	conflicts = libcamera-ipa
 	source = git+https://gitlab.freedesktop.org/camera/libcamera.git#commit=be7e83e91348250c015aad6d6f59f1468555bae8
+	source = 0001-v4l2-compat-disable-fortify.patch
+	b2sums = SKIP
 	b2sums = SKIP
 
 pkgname = libcamera-git
