@@ -1,6 +1,6 @@
 pkgbase = libxcb-git
 	pkgdesc = X11 client-side library (git build)
-	pkgver = 1.17.0.r22.gd4e07ba
+	pkgver = 1.17.0.r25.gaa7f325
 	pkgrel = 1
 	url = https://gitlab.freedesktop.org/xorg/lib/libxcb
 	arch = x86_64
@@ -14,7 +14,7 @@ pkgbase = libxcb-git
 	depends = libxau
 	depends = libxdmcp
 	depends = xcb-proto
-	provides = libxcb=1.17.0.r22.gd4e07ba
+	provides = libxcb=1.17.0.r25.gaa7f325
 	provides = libxcb.so
 	provides = libxcb-composite.so
 	provides = libxcb-damage.so

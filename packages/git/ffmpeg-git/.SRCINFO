@@ -1,6 +1,6 @@
 pkgbase = ffmpeg-git
 	pkgdesc = Complete solution to record, convert and stream audio and video (git version)
-	pkgver = 9.1.dev.r127554.gbc139b7812
+	pkgver = 9.1.dev.r128294.gb034eb5e7e
 	pkgrel = 1
 	url = https://ffmpeg.org/
 	arch = x86_64
@@ -94,7 +94,7 @@ pkgbase = ffmpeg-git
 	optdepends = nvidia-utils: for NVIDIA NVDEC/NVENC support
 	optdepends = vapoursynth: for VapourSynth demuxer support
 	optdepends = vpl-runtime: for Intel Quick Sync Video
-	provides = ffmpeg=9.1.dev.r127554.gbc139b7812
+	provides = ffmpeg=9.1.dev.r128294.gb034eb5e7e
 	provides = libavcodec.so
 	provides = libavdevice.so
 	provides = libavfilter.so

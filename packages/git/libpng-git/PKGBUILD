@@ -20,7 +20,7 @@
 
 pkgname=libpng-git
 _pkgname=libpng
-pkgver=1.6.59.r2.gd76d5106f
+pkgver=1.6.59.r11.ge88e1735a
 pkgrel=1
 pkgdesc="The official PNG reference library (git build)"
 arch=('x86_64')

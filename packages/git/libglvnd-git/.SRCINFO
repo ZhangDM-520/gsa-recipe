@@ -1,6 +1,6 @@
 pkgbase = libglvnd-git
 	pkgdesc = The GL Vendor-Neutral Dispatch library (git build)
-	pkgver = 1.7.0.r10.g908086d
+	pkgver = 1.7.0.r16.g8731041
 	pkgrel = 1
 	url = https://gitlab.freedesktop.org/glvnd/libglvnd
 	arch = x86_64
@@ -14,7 +14,7 @@ pkgbase = libglvnd-git
 	depends = libxext
 	depends = mesa
 	depends = opengl-driver
-	provides = libglvnd=1.7.0.r10.g908086d
+	provides = libglvnd=1.7.0.r16.g8731041
 	provides = libgl
 	provides = libegl
 	provides = libgles

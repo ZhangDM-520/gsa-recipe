@@ -1,6 +1,6 @@
 pkgbase = genoffice-git
 	pkgdesc = AI-native office suite: Word, Excel, PowerPoint, PDF and Markdown in one local app (git build)
-	pkgver = 0.12.0.r1213.g8ad8dc9
+	pkgver = 0.13.0.r1324.g87b99f1
 	pkgrel = 1
 	url = https://github.com/genspark-ai/genoffice
 	arch = x86_64
@@ -24,7 +24,7 @@ pkgbase = genoffice-git
 	depends = nss
 	optdepends = libappindicator-gtk3: system tray icon
 	optdepends = xdg-utils: open external links in the browser
-	provides = genoffice=0.12.0.r1213.g8ad8dc9
+	provides = genoffice=0.13.0.r1324.g87b99f1
 	conflicts = genoffice
 	conflicts = genoffice-bin
 	options = !strip

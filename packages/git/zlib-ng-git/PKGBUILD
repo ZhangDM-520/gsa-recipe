@@ -8,7 +8,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=zlib-ng-git
-pkgver=2.3.1.r596.gg8b61b4ef
+pkgver=2.3.1.r697.ggda9e0129
 pkgrel=1
 pkgdesc='zlib replacement with optimizations for next generation systems'
 url='https://github.com/zlib-ng/zlib-ng'

@@ -13,7 +13,7 @@ pkgname=(
   libxml2-git
   libxml2-docs-git
 )
-pkgver=2.15.0.r129.gc43dc98d
+pkgver=2.15.0.r139.g21c8223ac
 pkgrel=1
 pkgdesc='XML C parser and toolkit (git build)'
 url='https://gitlab.gnome.org/GNOME/libxml2/-/wikis/home'

@@ -1,6 +1,6 @@
 pkgbase = zlib-ng-git
 	pkgdesc = zlib replacement with optimizations for next generation systems
-	pkgver = 2.3.1.r596.gg8b61b4ef
+	pkgver = 2.3.1.r697.ggda9e0129
 	pkgrel = 1
 	url = https://github.com/zlib-ng/zlib-ng
 	arch = x86_64
@@ -13,6 +13,6 @@ pkgbase = zlib-ng-git
 	sha256sums = SKIP
 
 pkgname = zlib-ng-git
-	provides = zlib-ng=2.3.1.r596.gg8b61b4ef
+	provides = zlib-ng=2.3.1.r697.ggda9e0129
 	provides = libz-ng.so
 	conflicts = zlib-ng

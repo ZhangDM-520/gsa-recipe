@@ -1,6 +1,6 @@
 pkgbase = libpulse-git
 	pkgdesc = A featureful, general-purpose sound server (client library) (git build)
-	pkgver = 17.0.r38.gcba313d8f
+	pkgver = 17.0.r134.g77d25a1e6
 	pkgrel = 1
 	url = https://www.freedesktop.org/wiki/Software/PulseAudio/
 	arch = x86_64
@@ -58,7 +58,7 @@ pkgbase = libpulse-git
 	depends = libxcb
 	depends = systemd-libs
 	optdepends = pulse-native-provider: PulseAudio backend
-	provides = libpulse=17.0.r38.gcba313d8f
+	provides = libpulse=17.0.r134.g77d25a1e6
 	provides = libpulse-mainloop-glib.so
 	provides = libpulse-simple.so
 	provides = libpulse.so

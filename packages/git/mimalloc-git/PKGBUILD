@@ -10,7 +10,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 _pkgbase=mimalloc
 pkgname=mimalloc-git
-pkgver=3.5.4.r77.ga0c58a2f
+pkgver=3.6.1.r272.g80899607
 pkgrel=1
 pkgdesc='General-purpose allocator with excellent performance characteristics'
 arch=('x86_64')

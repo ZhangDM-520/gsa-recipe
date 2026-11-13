@@ -25,7 +25,7 @@
 
 pkgname=logseq-desktop-git
 _pkgname=logseq
-pkgver=2.0.2.r25933.gd06ded997
+pkgver=2.0.2.r25993.ga0f4399cb
 pkgrel=1
 pkgdesc="Privacy-first, open-source platform for knowledge management and collaboration (desktop, git build)"
 arch=('x86_64')

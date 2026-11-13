@@ -4,8 +4,8 @@
 # reference only)
 
 pkgname=libx11-git
-pkgver=1.8.13.r12.g6d4432b
-pkgrel=2
+pkgver=1.8.14.r2.g4c8ed231
+pkgrel=1
 pkgdesc='Core X11 protocol client library (git build)'
 arch=('x86_64')
 url='https://www.x.org/wiki/'

@@ -1,7 +1,7 @@
 # Maintainer: Kenny Levinsen <aur [at] kl [dot] wtf>
 
 pkgname=seatd-git
-pkgver=r365.427b5d956a
+pkgver=r368.92b1617c50
 pkgrel=1
 pkgdesc="Seat management daemon and library"
 arch=(x86_64)

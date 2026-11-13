@@ -1,6 +1,6 @@
 pkgbase = libtiff-git
 	pkgdesc = Library for manipulation of TIFF images (git build)
-	pkgver = 4.7.2.r59.gd2324997
+	pkgver = 4.7.2.r96.gf38ffa35
 	pkgrel = 1
 	url = https://libtiff.gitlab.io/libtiff/
 	arch = x86_64
@@ -22,7 +22,7 @@ pkgbase = libtiff-git
 	depends = xz
 	depends = zlib
 	depends = zstd
-	provides = libtiff=4.7.2.r59.gd2324997
+	provides = libtiff=4.7.2.r96.gf38ffa35
 	provides = libtiff.so
 	provides = libtiffxx.so
 	conflicts = libtiff

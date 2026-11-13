@@ -1,6 +1,6 @@
 pkgbase = git-git
 	pkgdesc = A fast distributed version control system
-	pkgver = 2.56.0.r116.g6de20f6092
+	pkgver = 2.56.1.r471.g1891de46f7
 	pkgrel = 1
 	url = https://git-scm.com/
 	install = git-git.install
@@ -35,7 +35,7 @@ pkgbase = git-git
 	optdepends = python: git svn & git p4
 	optdepends = subversion: git svn
 	optdepends = org.freedesktop.secrets: keyring credential helper
-	provides = git=2.56.0.r116.g6de20f6092
+	provides = git=2.56.1.r471.g1891de46f7
 	conflicts = git
 	source = git+https://github.com/git/git.git
 	source = git-daemon@.service

@@ -5,7 +5,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=lz4-git
-pkgver=1.10.0.r321.g0774d055
+pkgver=1.11.1.r21.g8ce5c3d9
 pkgrel=1
 pkgdesc="Extremely Fast Compression algorithm"
 arch=('i686' 'x86_64')

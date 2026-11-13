@@ -1,6 +1,6 @@
 pkgbase = libusb-git
 	pkgdesc = A cross-platform library to access USB devices (git build)
-	pkgver = 1.0.30.r143.gabba63e
+	pkgver = 1.0.30.r160.gd3937ff1
 	pkgrel = 1
 	url = https://libusb.info/
 	arch = x86_64
@@ -8,7 +8,7 @@ pkgbase = libusb-git
 	makedepends = git
 	depends = glibc
 	depends = libudev.so
-	provides = libusb=1.0.30.r143.gabba63e
+	provides = libusb=1.0.30.r160.gd3937ff1
 	provides = libusb-1.0.so
 	conflicts = libusb
 	options = staticlibs

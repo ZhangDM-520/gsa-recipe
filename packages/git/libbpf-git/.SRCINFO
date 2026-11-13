@@ -1,6 +1,6 @@
 pkgbase = libbpf-git
 	pkgdesc = Library for loading eBPF programs and reading and manipulating eBPF objects from user-space (git build)
-	pkgver = 1.7.0.r138.g85c0d57
+	pkgver = 1.8.0.r33.g872299d9
 	pkgrel = 1
 	url = https://github.com/libbpf/libbpf
 	arch = x86_64
@@ -10,7 +10,7 @@ pkgbase = libbpf-git
 	depends = libelf
 	depends = linux-api-headers
 	depends = zlib
-	provides = libbpf=1.7.0.r138.g85c0d57
+	provides = libbpf=1.8.0.r33.g872299d9
 	provides = libbpf.so
 	conflicts = libbpf
 	source = git+https://github.com/libbpf/libbpf.git

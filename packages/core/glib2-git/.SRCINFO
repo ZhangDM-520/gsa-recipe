@@ -1,7 +1,7 @@
 pkgbase = glib2-git
 	pkgdesc = Low level core library
-	pkgver = 2.90.0.r60.g36c60f0
-	pkgrel = 2
+	pkgver = 2.90.1.r203.g107dde1
+	pkgrel = 1
 	url = https://gitlab.gnome.org/GNOME/glib
 	arch = x86_64
 	license = LGPL-2.1-or-later
@@ -63,7 +63,7 @@ pkgname = glib2-git
 	provides = libgmodule-2.0.so
 	provides = libgobject-2.0.so
 	provides = libgthread-2.0.so
-	provides = glib2=2.90.0
+	provides = glib2=2.90.1
 	conflicts = glib2
 	options = staticlibs
 
@@ -74,5 +74,5 @@ pkgname = glib2-devel-git
 	depends = libelf
 	depends = python
 	depends = python-packaging
-	provides = glib2-devel=2.90.0
+	provides = glib2-devel=2.90.1
 	conflicts = glib2-devel

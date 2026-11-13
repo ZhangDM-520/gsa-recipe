@@ -3,7 +3,7 @@
 # Contributor: Laurent Carlier <lordheavym@gmail.com>)
 pkgname=libepoxy-git
 _pkgname=libepoxy
-pkgver=1.5.10.r0.g34ecb90
+pkgver=1.5.10.r31.gd1f952c
 pkgrel=1
 pkgdesc="Library handling OpenGL function pointer management (git build)"
 arch=('x86_64')

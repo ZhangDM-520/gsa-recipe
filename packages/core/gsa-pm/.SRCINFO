@@ -1,6 +1,6 @@
 pkgbase = gsa-pm
 	pkgdesc = Native package manager engine for the Gentoo-style Arch package set
-	pkgver = 0.1.0+r570+g05a6c9f39b08
+	pkgver = 0.1.0+r717+g055e4c564c7a
 	pkgrel = 1
 	url = https://github.com/ZhangDM-520/gentoo-style-arch
 	arch = x86_64

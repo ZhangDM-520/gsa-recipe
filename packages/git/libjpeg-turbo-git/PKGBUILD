@@ -2,7 +2,7 @@
 # AUR reference: libjpeg-turbo-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libjpeg-turbo-git
 _pkgname=libjpeg-turbo
-pkgver=3.2.0.r2.g8a99315b
+pkgver=3.2.1.r25.g3ef3367e
 pkgrel=1
 pkgdesc="JPEG codec with SIMD accelerated compression and decompression (git build)"
 arch=('x86_64')

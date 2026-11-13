@@ -4,7 +4,7 @@
 
 pkgbase=elfutils-git
 pkgname=(elfutils-git libelf-git)
-pkgver=0.196.r15.g0391c894
+pkgver=0.197.r31.gff9e30d3
 pkgrel=1
 pkgdesc="Utilities and libraries to handle ELF object files and DWARF debugging information (git build)"
 arch=('x86_64')

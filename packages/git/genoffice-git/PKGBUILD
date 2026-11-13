@@ -19,7 +19,7 @@
 
 pkgname=genoffice-git
 _pkgname=genoffice
-pkgver=0.12.0.r1213.g8ad8dc9
+pkgver=0.13.0.r1324.g87b99f1
 pkgrel=1
 pkgdesc='AI-native office suite: Word, Excel, PowerPoint, PDF and Markdown in one local app (git build)'
 arch=('x86_64')

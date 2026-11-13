@@ -15,7 +15,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 _reponame=mold
 pkgname=${_reponame}-git
-pkgver=2.42.1.r468.g6fc6e191
+pkgver=3.0.0.r1782.g331ac6636
 pkgrel=1
 pkgdesc='A Modern Linker'
 arch=('x86_64')

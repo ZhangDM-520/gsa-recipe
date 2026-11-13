@@ -1,6 +1,6 @@
 pkgbase = libnsgif-git
 	pkgdesc = Decoding library for the gif image file format (git build)
-	pkgver = 1.0.0.r8.g22e99eb
+	pkgver = 1.0.0.r13.gc26c7aa
 	pkgrel = 1
 	url = http://www.netsurf-browser.org/projects/libnsgif/
 	arch = x86_64
@@ -8,7 +8,7 @@ pkgbase = libnsgif-git
 	makedepends = git
 	makedepends = netsurf-buildsystem
 	depends = glibc
-	provides = libnsgif=1.0.0.r8.g22e99eb
+	provides = libnsgif=1.0.0.r13.gc26c7aa
 	provides = libnsgif.so
 	conflicts = libnsgif
 	source = git://git.netsurf-browser.org/libnsgif.git

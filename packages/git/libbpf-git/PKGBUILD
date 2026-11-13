@@ -5,7 +5,7 @@
 
 pkgname=libbpf-git
 _pkgname=libbpf
-pkgver=1.7.0.r138.g85c0d57
+pkgver=1.8.0.r33.g872299d9
 pkgrel=1
 pkgdesc="Library for loading eBPF programs and reading and manipulating eBPF objects from user-space (git build)"
 arch=('x86_64')

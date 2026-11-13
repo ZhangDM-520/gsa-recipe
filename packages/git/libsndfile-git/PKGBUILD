@@ -7,7 +7,7 @@
 
 pkgname=libsndfile-git
 _pkgname=libsndfile
-pkgver=1.2.2.r51.g52b803f5
+pkgver=1.2.2.r124.g396a715d
 pkgrel=1
 pkgdesc="A C library for reading and writing files containing sampled audio data (git build)"
 arch=('x86_64')

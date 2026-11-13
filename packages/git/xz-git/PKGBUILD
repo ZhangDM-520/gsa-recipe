@@ -8,7 +8,7 @@
 # shellcheck shell=bash disable=SC2034,SC2154
 
 pkgname=xz-git
-pkgver=5.8.4.r2.g3b1efb04
+pkgver=5.8.4.r28.gf54febc5
 pkgrel=1
 pkgdesc='Library and command line tools for XZ and LZMA compressed files'
 arch=('x86_64')

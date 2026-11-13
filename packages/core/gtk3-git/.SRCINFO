@@ -1,6 +1,6 @@
 pkgbase = gtk3-git
 	pkgdesc = GObject-based multi-platform GUI toolkit (GIT Version)
-	pkgver = 3.24.52.r67.g2776f156e2
+	pkgver = 3.24.52.r82.gbac4a949b1
 	pkgrel = 1
 	url = http://www.gtk.org/
 	arch = x86_64
@@ -33,7 +33,7 @@ pkgbase = gtk3-git
 	depends = libcloudproviders
 	optdepends = gnome-icon-theme: Default icon theme
 	optdepends = gnome-themes-standard: Default widget theme
-	provides = gtk3=3.24.52.r67.g2776f156e2
+	provides = gtk3=3.24.52.r82.gbac4a949b1
 	conflicts = gtk3
 	backup = usr/share/gtk-3.0/settings.ini
 	source = git+https://gitlab.gnome.org/GNOME/gtk.git#branch=gtk-3-24
@@ -70,8 +70,8 @@ pkgname = gtk3-git
 	depends = libcloudproviders
 	depends = gtk-update-icon-cache
 	optdepends = evince: Default print preview command
-	provides = gtk3=3.24.52.r67.g2776f156e2
-	provides = gtk3-print-backends=3.24.52.r67.g2776f156e2
+	provides = gtk3=3.24.52.r82.gbac4a949b1
+	provides = gtk3-print-backends=3.24.52.r82.gbac4a949b1
 	provides = libgailutil-3.so
 	provides = libgdk-3.so
 	provides = libgtk-3.so

@@ -1,7 +1,7 @@
 pkgbase = yay-git
 	pkgdesc = Pacman wrapper and AUR helper (git version; house-muted IgnorePkg and not-in-AUR notices)
-	pkgver = 13.1.0.r0.g0938a75e
-	pkgrel = 2
+	pkgver = 13.1.0.r2.g7781367f
+	pkgrel = 1
 	url = https://github.com/Jguer/yay
 	arch = x86_64
 	license = GPL-3.0-only
@@ -10,7 +10,7 @@ pkgbase = yay-git
 	makedepends = gettext
 	depends = git
 	depends = pacman
-	provides = yay=13.1.0.r0.g0938a75e
+	provides = yay=13.1.0.r2.g7781367f
 	conflicts = yay
 	conflicts = yay-bin
 	options = !debug

@@ -9,7 +9,7 @@
 
 pkgname=libtiff-git
 _pkgname=libtiff
-pkgver=4.7.2.r59.gd2324997
+pkgver=4.7.2.r96.gf38ffa35
 pkgrel=1
 pkgdesc='Library for manipulation of TIFF images (git build)'
 arch=('x86_64')

@@ -1,6 +1,6 @@
 pkgbase = libqalculate-git
 	pkgdesc = Multi-purpose desktop calculator library (git build)
-	pkgver = r744.0262019
+	pkgver = 5.13.2.r23.g2eb6c7b0
 	pkgrel = 1
 	url = https://qalculate.github.io/
 	arch = x86_64
@@ -18,7 +18,7 @@ pkgbase = libqalculate-git
 	depends = mpfr
 	depends = readline
 	optdepends = gnuplot: for plotting support
-	provides = libqalculate=r744.0262019
+	provides = libqalculate=5.13.2.r23.g2eb6c7b0
 	provides = libqalculate.so
 	conflicts = libqalculate
 	source = git+https://github.com/Qalculate/libqalculate.git

@@ -2,7 +2,7 @@
 # AUR reference: libglvnd-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libglvnd-git
 _pkgname=libglvnd
-pkgver=1.7.0.r10.g908086d
+pkgver=1.7.0.r16.g8731041
 pkgrel=1
 pkgdesc="The GL Vendor-Neutral Dispatch library (git build)"
 arch=('x86_64')

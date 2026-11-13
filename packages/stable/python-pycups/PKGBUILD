@@ -15,7 +15,7 @@ provides=('pycups')
 source=(${pkgname}-${pkgver}.tar.gz::https://github.com/OpenPrinting/pycups/archive/v${pkgver}.tar.gz
         'cups25-compat.h')
 sha256sums=('31d9cf62df7884fe430d11970a8c9278282a47a0ff6b1529c58c7d26e8eb4789'
-            '8b671f53bf9348e3a68af2b9077965f8f47d77aa779790f6266b6d631dc96c98')
+            '4533bd25a6e1b725c17ab7b079a79a868381e7efe316055fe03c49baf0ccd4cb')
 
 build() {
   cd ${pkgbase}-${pkgver}

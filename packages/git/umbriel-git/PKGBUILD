@@ -8,7 +8,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1566.0c1f125
+pkgver=0.1.0.r1569.88ba829
 pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'

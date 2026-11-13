@@ -1,6 +1,6 @@
 pkgbase = vulkan-icd-loader-git
 	pkgdesc = Vulkan Installable Client Driver (ICD) Loader (git version)
-	pkgver = 1.4.365.r2.gb82e310
+	pkgver = 1.4.368.r7.g850cfff
 	pkgrel = 1
 	url = https://github.com/KhronosGroup/Vulkan-Loader
 	arch = x86_64
@@ -10,13 +10,13 @@ pkgbase = vulkan-icd-loader-git
 	makedepends = libx11
 	makedepends = libxrandr
 	makedepends = wayland
-	makedepends = vulkan-headers>=1:1.4.365
+	makedepends = vulkan-headers>=1:1.4.368
 	makedepends = git
 	makedepends = ninja
 	makedepends = make
 	depends = glibc
 	optdepends = vulkan-driver: packaged vulkan driver
-	provides = vulkan-icd-loader=1.4.365.r2.gb82e310
+	provides = vulkan-icd-loader=1.4.368.r7.g850cfff
 	provides = libvulkan.so
 	provides = vulkan-icd-loader-git
 	conflicts = vulkan-icd-loader

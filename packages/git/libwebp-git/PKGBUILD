@@ -11,7 +11,7 @@
 
 pkgbase=libwebp-git
 pkgname=(libwebp-git libwebp-utils-git)
-pkgver=1.6.0.r293.ga1d89ff2
+pkgver=1.6.0.r394.g5283313ff
 pkgrel=1
 pkgdesc='WebP image codec library (git build)'
 arch=('x86_64')

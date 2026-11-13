@@ -9,7 +9,7 @@
 # static-only surface).
 
 pkgname=libtommath-git
-pkgver=r0.g00000000
+pkgver=r1568.ae40a87a92
 pkgrel=1
 pkgdesc='Highly optimized and portable routines for integer based number theoretic applications (git build)'
 url='https://www.libtom.net/'

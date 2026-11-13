@@ -14,7 +14,7 @@
 
 pkgname=libpulse-git
 _pkgname=pulseaudio
-pkgver=17.0.r38.gcba313d8f
+pkgver=17.0.r134.g77d25a1e6
 pkgrel=1
 pkgdesc="A featureful, general-purpose sound server (client library) (git build)"
 arch=('x86_64')

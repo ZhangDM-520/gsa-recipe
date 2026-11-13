@@ -4,7 +4,7 @@
 # only)
 
 pkgname=libusb-git
-pkgver=1.0.30.r143.gabba63e
+pkgver=1.0.30.r160.gd3937ff1
 pkgrel=1
 pkgdesc='A cross-platform library to access USB devices (git build)'
 arch=('x86_64')

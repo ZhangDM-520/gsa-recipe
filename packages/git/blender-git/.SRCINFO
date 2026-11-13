@@ -1,6 +1,6 @@
 pkgbase = blender-git
 	pkgdesc = A fully integrated 3D graphics creation suite (development)
-	pkgver = 5.4.r167201.g51533e282005
+	pkgver = 5.4.r167598.gcb5c0780c7aa
 	pkgrel = 1
 	url = https://blender.org/
 	arch = i686
@@ -59,7 +59,7 @@ pkgbase = blender-git
 	optdepends = intel-oneapi-compiler-shared-runtime: Intel OpenCL FPGA kernels (all four needed)
 	optdepends = intel-oneapi-dpcpp-cpp: Intel OpenCL FPGA kernels (all four needed)
 	optdepends = makepkg-cg: Control resources during compilation
-	provides = blender=5.4.r167201.g51533e282005
+	provides = blender=5.4.r167598.gcb5c0780c7aa
 	conflicts = blender
 	options = !lto
 	source = blender::git-lfs+https://projects.blender.org/blender/blender#branch=main

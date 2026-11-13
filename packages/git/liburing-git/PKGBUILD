@@ -1,6 +1,6 @@
 # Maintainer: Nikita Puzyryov <PuzyryovN@gmail.com>
 pkgname=liburing-git
-pkgver=2.15.r35.g78dce99b
+pkgver=2.15.r75.ga10946dc
 pkgrel=1
 pkgdesc="Linux-native io_uring I/O access library (git-version)"
 arch=(x86 x86_64)

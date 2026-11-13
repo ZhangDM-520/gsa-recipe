@@ -10,7 +10,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgbase=cairo-git
 pkgname=(cairo-git)
-pkgver=1.18.6.r4.g74755964e
+pkgver=1.18.6.r9.g07adef44b
 pkgrel=1
 pkgdesc="2D graphics library with support for multiple output devices"
 url="https://cairographics.org/"

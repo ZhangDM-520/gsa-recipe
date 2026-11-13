@@ -16,7 +16,7 @@ pkgbase="${_pkgbase}-git"
 pkgname=(
   "${pkgbase}"
 )
-pkgver=3.24.52.r67.g2776f156e2
+pkgver=3.24.52.r82.gbac4a949b1
 pkgrel=1
 pkgdesc="GObject-based multi-platform GUI toolkit (GIT Version)"
 arch=($CARCH)

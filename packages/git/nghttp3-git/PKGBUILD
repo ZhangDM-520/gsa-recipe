@@ -5,7 +5,7 @@
 # libnghttp3). Stock's submodule redirect list copied verbatim.
 
 pkgname=nghttp3-git
-pkgver=1.18.0.r0.g2304973e5a
+pkgver=1.19.0.r29.ga6c5eb6
 pkgrel=1
 pkgdesc="HTTP/3 library written in C (git build)"
 arch=('x86_64')

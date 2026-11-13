@@ -6,7 +6,7 @@
 # The AUR package of the same name was used as a reference only.
 
 pkgname=ffmpeg-git
-pkgver=9.1.dev.r127554.gbc139b7812
+pkgver=9.1.dev.r128294.gb034eb5e7e
 pkgrel=1
 pkgdesc='Complete solution to record, convert and stream audio and video (git version)'
 arch=('x86_64')

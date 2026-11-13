@@ -6,7 +6,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=libinput-git
-pkgver=1.32.0.r6.ge5159497
+pkgver=1.32.0.r26.g0685c978
 pkgrel=1
 pkgdesc="Input device management and event handling library"
 url="https://gitlab.freedesktop.org/libinput/libinput"

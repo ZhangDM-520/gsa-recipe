@@ -1,6 +1,6 @@
 pkgbase = libpng-git
 	pkgdesc = The official PNG reference library (git build)
-	pkgver = 1.6.59.r2.gd76d5106f
+	pkgver = 1.6.59.r11.ge88e1735a
 	pkgrel = 1
 	url = http://www.libpng.org/pub/png/libpng.html
 	arch = x86_64
@@ -8,7 +8,7 @@ pkgbase = libpng-git
 	makedepends = git
 	depends = zlib
 	depends = sh
-	provides = libpng=1.6.59.r2.gd76d5106f
+	provides = libpng=1.6.59.r11.ge88e1735a
 	provides = libpng16.so
 	conflicts = libpng
 	source = git+https://github.com/pnggroup/libpng.git#branch=libpng16

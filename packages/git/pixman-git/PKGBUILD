@@ -9,7 +9,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=pixman-git
-pkgver=0.46.4.r63.gf227dcb
+pkgver=0.46.4.r74.g3174212
 pkgrel=1
 pkgdesc="Library for pixel manipulation"
 arch=('i686' 'x86_64')

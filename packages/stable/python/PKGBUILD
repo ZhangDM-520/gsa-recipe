@@ -10,7 +10,7 @@ pkgbase=python
 # path below; the test tree is trimmed from the python output instead
 pkgname=(python)
 pkgver=3.14.10
-pkgrel=1
+pkgrel=2
 _pybasever=${pkgver%.*}
 pkgdesc="The Python programming language"
 arch=('x86_64')
@@ -52,6 +52,24 @@ prepare() {
   rm -f Misc/NEWS.d/next/Build/2026-01-28-19-04-12.gh-issue-144309.3sMFOh.rst
   grep -q '_POSIX_C_SOURCE 202405L' configure ||
     patch -p1 < ../python-posix-2024.patch
+
+  # GCC 17 LTO miscompiles _Py_ADJUST_ERANGE1 (2026-11-13 wall): the helper
+  # must clear a stale ERANGE when pow underflows to 0.0, but once LTO inlines
+  # it the clear is lost, so operator.pow(2.0, -2000.0) raises OverflowError
+  # and the PGO profile-run dies in test_float_pow (also -2.0**-2001.0;
+  # -2.0**-2000.0 is unaffected, which is what makes it read as a libm bug —
+  # an LD_PRELOAD interposer shows BOTH calls return 0 with errno=34, so libm
+  # is correct and the defect is inside CPython). Measured on the real tree:
+  # full -O3 + LTO fails; EVERY single-flag drop still fails; only dropping
+  # LTO for this one TU, or -fno-inline, passes. Keeping all optimisation:
+  # mark just that 8-line helper noinline, which fixes all three cases with
+  # -O3 and LTO intact everywhere (red-first: restored header fails again).
+  # Idempotent over a warm $srcdir (rule 70 class).
+  sed -i \
+    -e 's/^static inline void _Py_ADJUST_ERANGE1(double x)$/static inline __attribute__((noinline)) void _Py_ADJUST_ERANGE1(double x)/' \
+    Include/internal/pycore_pymath.h
+  grep -q "noinline)) void _Py_ADJUST_ERANGE1" Include/internal/pycore_pymath.h
+
 }
 
 build() {

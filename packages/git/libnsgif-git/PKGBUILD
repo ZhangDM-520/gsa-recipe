@@ -6,7 +6,7 @@
 # (git.netsurf-browser.org has no https git) — kept as upstream-published.
 
 pkgname=libnsgif-git
-pkgver=1.0.0.r8.g22e99eb
+pkgver=1.0.0.r13.gc26c7aa
 pkgrel=1
 pkgdesc='Decoding library for the gif image file format (git build)'
 url='http://www.netsurf-browser.org/projects/libnsgif/'

@@ -7,7 +7,7 @@
 source "$startdir/../../../lib/pgo.sh"
 
 pkgname=xorg-xwayland-git
-pkgver=24.1.14.r1243.gf258a85da
+pkgver=24.1.15.r1243.gf258a85da
 pkgrel=1
 arch=('x86_64')
 license=(

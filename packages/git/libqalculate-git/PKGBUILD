@@ -7,7 +7,7 @@
 
 pkgname=libqalculate-git
 _pkgname=libqalculate
-pkgver=r744.0262019
+pkgver=5.13.2.r23.g2eb6c7b0
 pkgrel=1
 pkgdesc="Multi-purpose desktop calculator library (git build)"
 arch=('x86_64')

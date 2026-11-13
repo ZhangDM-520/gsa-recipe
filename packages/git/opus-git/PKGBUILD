@@ -6,7 +6,7 @@
 # Contributor: pumbur
 
 pkgname=opus-git
-pkgver=1.6.1.r68.g503d81b1
+pkgver=1.6.1.r101.g0145a624
 pkgrel=1
 pkgdesc="Totally open, royalty-free, highly versatile audio codec (git build)"
 arch=('x86_64')

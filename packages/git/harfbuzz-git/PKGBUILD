@@ -6,7 +6,7 @@
 # The AUR package of the same name was used as a reference only.
 
 pkgname=harfbuzz-git
-pkgver=8.0.1.r1.5a65ede5d
+pkgver=15.1.0.r138.gf6b7a4cb7
 pkgrel=1
 pkgdesc="OpenType text shaping engine (git build)"
 url="https://github.com/harfbuzz/harfbuzz"

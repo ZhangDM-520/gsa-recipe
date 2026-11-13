@@ -2,7 +2,7 @@
 # AUR reference: libffi-git (Maintainer: Chocobo1 <chocobo1 AT archlinux DOT net>)
 pkgname=libffi-git
 _pkgname=libffi
-pkgver=3.8.0.r27.gac598b7f
+pkgver=3.8.0.r85.gd02afc25
 pkgrel=1
 pkgdesc="Portable foreign function interface library (git build)"
 arch=('x86_64')

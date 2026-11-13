@@ -3,7 +3,7 @@
 # The AUR package of the same name was used as a reference only.
 
 pkgname=icu-git
-pkgver=78.3.r454.g2014b811944
+pkgver=79.1.r67.g45ee74ff7c1
 pkgrel=1
 pkgdesc="International Components for Unicode library (git build)"
 arch=('x86_64')

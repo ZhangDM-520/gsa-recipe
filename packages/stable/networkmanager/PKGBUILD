@@ -12,7 +12,7 @@ pkgname=(
   nm-cloud-setup
 )
 pkgver=1.58.1
-pkgrel=3
+pkgrel=3.1
 pkgdesc="Network connection manager and user applications"
 url="https://networkmanager.dev/"
 arch=(x86_64)
@@ -218,6 +218,12 @@ END
 
   # Not actually packaged (https://bugs.archlinux.org/task/69138)
   _pick ovs usr/lib/systemd/system/NetworkManager.service.d/NetworkManager-ovs.conf
+
+  # gtk-doc HTML has no split here and no consumer, but the installed
+  # networkmanager-docs package owns those paths — shipping them is a hard
+  # install conflict ("exists in filesystem (owned by networkmanager-docs)",
+  # 2026-11-13 wall, same class as systemd's ukify). The man pages stay.
+  rm -rf usr/share/gtk-doc
 
   # Restore empty dir
   install -d usr/lib/NetworkManager/dispatcher.d/no-wait.d

@@ -1,6 +1,6 @@
 pkgbase = libjpeg-turbo-git
 	pkgdesc = JPEG codec with SIMD accelerated compression and decompression (git build)
-	pkgver = 3.2.0.r2.g8a99315b
+	pkgver = 3.2.1.r25.g3ef3367e
 	pkgrel = 1
 	url = https://libjpeg-turbo.org/
 	arch = x86_64
@@ -10,7 +10,7 @@ pkgbase = libjpeg-turbo-git
 	makedepends = cmake
 	makedepends = nasm
 	depends = glibc
-	provides = libjpeg-turbo=3.2.0.r2.g8a99315b
+	provides = libjpeg-turbo=3.2.1.r25.g3ef3367e
 	provides = libjpeg.so
 	provides = libturbojpeg.so
 	conflicts = libjpeg-turbo

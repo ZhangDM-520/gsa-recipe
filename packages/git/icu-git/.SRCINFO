@@ -1,6 +1,6 @@
 pkgbase = icu-git
 	pkgdesc = International Components for Unicode library (git build)
-	pkgver = 78.3.r454.g2014b811944
+	pkgver = 79.1.r67.g45ee74ff7c1
 	pkgrel = 1
 	url = https://icu.unicode.org/
 	arch = x86_64
@@ -10,7 +10,7 @@ pkgbase = icu-git
 	depends = libgcc
 	depends = libstdc++
 	depends = sh
-	provides = icu=78.3.r454.g2014b811944
+	provides = icu=79.1.r67.g45ee74ff7c1
 	provides = libicudata.so
 	provides = libicui18n.so
 	provides = libicuio.so

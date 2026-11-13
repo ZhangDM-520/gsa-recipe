@@ -11,7 +11,7 @@
 # NOTE cargo/rustc: needs rust-git edge.
 
 pkgname=librsvg-git
-pkgver=2.62.0.r14.gcd744e2c8
+pkgver=2.63.4.r8.g8b4eabc8e
 pkgrel=1
 epoch=2
 pkgdesc="SVG rendering library (git build)"

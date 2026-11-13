@@ -16,8 +16,8 @@ pkgname=(
   glib2-git
   glib2-devel-git
 )
-pkgver=2.90.0.r60.g36c60f0
-pkgrel=2
+pkgver=2.90.1.r203.g107dde1
+pkgrel=1
 pkgdesc="Low level core library"
 url="https://gitlab.gnome.org/GNOME/glib"
 license=(LGPL-2.1-or-later)

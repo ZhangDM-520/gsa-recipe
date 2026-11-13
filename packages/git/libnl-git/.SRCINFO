@@ -1,6 +1,6 @@
 pkgbase = libnl-git
 	pkgdesc = A collection of libraries providing APIs to netlink protocol based Linux kernel interfaces (git build)
-	pkgver = 3.12.0.r0.g655a638d4e
+	pkgver = 3.12.0.r8.g655a638d
 	pkgrel = 1
 	url = https://www.infradead.org/~tgr/libnl/
 	arch = x86_64
@@ -9,7 +9,7 @@ pkgbase = libnl-git
 	depends = glibc
 	depends = libgcc
 	depends = libgcc_s.so
-	provides = libnl=3.12.0.r0.g655a638d4e
+	provides = libnl=3.12.0.r8.g655a638d
 	provides = libnl-3.so
 	provides = libnl-cli-3.so
 	provides = libnl-genl-3.so

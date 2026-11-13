@@ -2,7 +2,7 @@
 # AUR reference: libheif-git (Maintainer: Daniel Bermond <dbermond@archlinux.org>)
 pkgname=libheif-git
 _pkgname=libheif
-pkgver=1.23.6.r12.gf223c23c
+pkgver=1.23.7.r0.g12a259a5
 pkgrel=1
 pkgdesc="HEIF and AVIF file format decoder and encoder (git build)"
 arch=('x86_64')

@@ -1,6 +1,6 @@
 pkgbase = libxi-git
 	pkgdesc = X11 Input extension library (git build)
-	pkgver = 1.8.3.r1.g3a0adab
+	pkgver = 1.8.4.r0.g9ea632a
 	pkgrel = 1
 	url = https://www.x.org/wiki/
 	arch = x86_64
@@ -14,7 +14,7 @@ pkgbase = libxi-git
 	depends = libxext
 	depends = libxfixes
 	depends = xorgproto
-	provides = libxi=1.8.3.r1.g3a0adab
+	provides = libxi=1.8.4.r0.g9ea632a
 	provides = libXi.so
 	conflicts = libxi
 	options = staticlibs

@@ -1,7 +1,7 @@
 # Maintainer: Daniel Bermond <dbermond@archlinux.org>
 
 pkgname=libva-git
-pkgver=2.24.1.r6.gf3fefceb
+pkgver=2.24.1.r9.gf052e984
 pkgrel=1
 pkgdesc='Video Acceleration (VA) API for Linux (git version)'
 arch=('x86_64')

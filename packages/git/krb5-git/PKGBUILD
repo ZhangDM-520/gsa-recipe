@@ -4,7 +4,7 @@
 
 pkgname=krb5-git
 _pkgname=krb5
-pkgver=1.22.2.r98.g82a4224f0
+pkgver=1.22.3.r153.gbdf3a4dc3c
 pkgrel=1
 pkgdesc="The Kerberos network authentication system (git build)"
 arch=('x86_64')

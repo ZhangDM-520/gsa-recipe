@@ -4,7 +4,7 @@
 # reference only)
 
 pkgname=libxi-git
-pkgver=1.8.3.r1.g3a0adab
+pkgver=1.8.4.r0.g9ea632a
 pkgrel=1
 pkgdesc='X11 Input extension library (git build)'
 arch=('x86_64')

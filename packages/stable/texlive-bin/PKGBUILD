@@ -7,7 +7,7 @@
 # target row; the libsynctex split is not a separate row) — qca-qt6 precedent
 pkgname=(texlive-bin libsynctex)
 pkgver=2026.0
-pkgrel=4.2
+pkgrel=4.3
 license=(GPL-2.0-or-later)
 arch=(x86_64)
 makedepends=(bash
@@ -85,6 +85,11 @@ prepare() {
 build() {
   cd texlive-source
 
+  # pod2man lives in /usr/bin/core_perl since Perl 5.42 — on PATH for login
+  # shells only, never under makepkg's sudo secure_path. xindy's man-page
+  # rule calls it directly and dies with "command not found". Same idiom as
+  # pacutils/libpwquality.
+  export PATH="/usr/bin/core_perl:$PATH"
   mkdir -p build
   cd build
   CFLAGS=${CFLAGS/FORTIFY_SOURCE=3/FORTIFY_SOURCE=2} # https://gitlab.archlinux.org/archlinux/packaging/packages/texlive-bin/-/issues/3 

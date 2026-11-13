@@ -1,6 +1,6 @@
 pkgbase = polkit-git
 	pkgdesc = Application development toolkit for controlling system-wide privileges
-	pkgver = 127.r64.9eb08a9
+	pkgver = 128.r6.4c2422f
 	pkgrel = 1
 	epoch = 1
 	url = https://github.com/polkit-org/polkit
@@ -19,7 +19,7 @@ pkgbase = polkit-git
 	depends = glibc
 	depends = pam
 	depends = systemd-libs
-	provides = polkit=127
+	provides = polkit=128
 	provides = libpolkit-agent-1.so
 	provides = libpolkit-gobject-1.so
 	conflicts = polkit

@@ -1,6 +1,6 @@
 pkgbase = xwayland-satellite-git
 	pkgdesc = Xwayland outside your Wayland - git version
-	pkgver = 0.8.2.r17.gb5690b5
+	pkgver = 0.8.3.r15.gb424e5e
 	pkgrel = 1
 	url = https://github.com/Supreeeme/xwayland-satellite
 	arch = x86_64
@@ -13,7 +13,7 @@ pkgbase = xwayland-satellite-git
 	depends = libxcb
 	depends = xcb-util-cursor
 	depends = xorg-xwayland
-	provides = xwayland-satellite=0.8.2.r17.gb5690b5
+	provides = xwayland-satellite=0.8.3.r15.gb424e5e
 	conflicts = xwayland-satellite
 	source = git+https://github.com/Supreeeme/xwayland-satellite.git
 	source = 0001-round-half-up.patch

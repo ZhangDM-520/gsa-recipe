@@ -4,7 +4,7 @@
 # Contributor: Sébastien Luttringer <seblu@seblu.net> (stock wayland-protocols)
 
 pkgname=wayland-protocols-git
-pkgver=1.49.r5.gaa62366
+pkgver=1.50.r0.g3eab2dc
 pkgrel=1
 pkgdesc='Wayland protocols that add functionalities not available in the core protocol (git build)'
 arch=('any')

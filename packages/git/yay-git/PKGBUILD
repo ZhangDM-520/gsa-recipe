@@ -5,12 +5,12 @@
 
 pkgname=yay-git
 _pkgname=yay
-pkgver=13.1.0.r0.g0938a75e
+pkgver=13.1.0.r2.g7781367f
 # pkgrel 2: the same upstream commit is already packaged as -1 by the AUR
 # recipe; this build carries the mute patch and its pkgver matches, so a bump
 # is the only way the replacement installs as an upgrade rather than a
 # downgrade or a same-version skip.
-pkgrel=2
+pkgrel=1
 pkgdesc='Pacman wrapper and AUR helper (git version; house-muted IgnorePkg and not-in-AUR notices)'
 arch=(x86_64)
 url='https://github.com/Jguer/yay'

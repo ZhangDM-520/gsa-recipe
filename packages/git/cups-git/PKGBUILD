@@ -7,7 +7,7 @@
 
 pkgbase=cups-git
 pkgname=(cups-git libcups-git)
-pkgver=2.4.3.r351.gefb31d1a9
+pkgver=2.4.3.r1540.g0ca508851
 pkgrel=1
 pkgdesc="OpenPrinting CUPS. VCS package providing client libraries, headers and daemon."
 arch=('x86_64')

@@ -1,6 +1,6 @@
 pkgbase = seatd-git
 	pkgdesc = Seat management daemon and library
-	pkgver = r365.427b5d956a
+	pkgver = r368.92b1617c50
 	pkgrel = 1
 	url = https://git.sr.ht/~kennylevinsen/seatd
 	arch = x86_64
@@ -10,8 +10,8 @@ pkgbase = seatd-git
 	makedepends = scdoc
 	makedepends = git
 	depends = systemd
-	provides = seatd=r365.427b5d956a
-	provides = libseat=r365.427b5d956a
+	provides = seatd=r368.92b1617c50
+	provides = libseat=r368.92b1617c50
 	provides = libseat.so
 	conflicts = seatd
 	conflicts = libseat

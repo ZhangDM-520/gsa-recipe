@@ -1,6 +1,6 @@
 pkgbase = pango-git
 	pkgdesc = A library for layout and rendering of text
-	pkgver = 1.58.2.r13.g8e74c27c
+	pkgver = 1.58.2.r52.g6bd640fd
 	pkgrel = 1
 	epoch = 1
 	url = https://www.pango.org/
@@ -26,7 +26,7 @@ pkgbase = pango-git
 	sha256sums = SKIP
 
 pkgname = pango-git
-	provides = pango=1.58.2.r13.g8e74c27c
+	provides = pango=1.58.2.r52.g6bd640fd
 	provides = libpango-1.0.so
 	provides = libpangocairo-1.0.so
 	provides = libpangoft2-1.0.so

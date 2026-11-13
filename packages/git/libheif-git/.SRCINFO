@@ -1,6 +1,6 @@
 pkgbase = libheif-git
 	pkgdesc = HEIF and AVIF file format decoder and encoder (git build)
-	pkgver = 1.23.6.r12.gf223c23c
+	pkgver = 1.23.7.r0.g12a259a5
 	pkgrel = 1
 	url = https://github.com/strukturag/libheif/
 	arch = x86_64
@@ -31,7 +31,7 @@ pkgbase = libheif-git
 	depends = svt-av1
 	depends = x264
 	depends = x265
-	provides = libheif=1.23.6.r12.gf223c23c
+	provides = libheif=1.23.7.r0.g12a259a5
 	provides = libheif.so
 	conflicts = libheif
 	source = git+https://github.com/strukturag/libheif.git

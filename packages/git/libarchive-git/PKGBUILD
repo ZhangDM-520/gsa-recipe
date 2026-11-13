@@ -4,7 +4,7 @@
 
 pkgname=libarchive-git
 _pkgname=libarchive
-pkgver=3.8.9.r0.g27cbc782
+pkgver=3.8.11.r0.g03036ffa
 pkgrel=1
 pkgdesc="Multi-format archive and compression library (git build)"
 arch=('x86_64')
