@@ -1,39 +1,39 @@
 # bettbox
 
-Bettbox 是一款使用 Mihomo (Clash Meta) 内核、基于 FlClash 早期版本进行重构的多平台代理客户端
+Bettbox is a cross-platform proxy client built on the Mihomo (Clash Meta) core, refactored from an early version of FlClash.
 
-基于 [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox) 的 Arch Linux AUR 包，从源码构建。
+Arch Linux AUR package based on [appshubcc/Bettbox](https://github.com/appshubcc/Bettbox), built from source.
 
-## 安装
+## Installation
 
 ```sh
-# 手动构建
+# Manual build
 makepkg -si
 
-# 或通过 AUR helper
+# Or via an AUR helper
 paru -S bettbox-compatible
 ```
 
-## 更新 pkgver
+## Updating pkgver
 
-仓库附带 `update-pkgver.sh` 脚本与 [nvchecker](https://github.com/archlinux/nvchecker) 配置。在包目录内运行：
+The repository includes an `update-pkgver.sh` script and [nvchecker](https://github.com/archlinux/nvchecker) config. Run inside the package directory:
 
 ```sh
 ./update-pkgver.sh
 ```
 
-脚本会通过 nvchecker 检测最新版本（stable 或 pre-release，取较新者；`-test` 标签已被排除），若有新版本则更新 `pkgver`、重置 `pkgrel=1`、刷新校验和（`updpkgsums`）并重建 `.SRCINFO`，最后打印 `git diff`。需要 `nvchecker makepkg updpkgsums jq`（安装 `nvchecker` 与 `jq`）。
+The script checks for the latest version via nvchecker (stable or pre-release, whichever is newer; `-test` tags are excluded). If a new version is found, it updates `pkgver`, resets `pkgrel=1`, refreshes checksums (`updpkgsums`), rebuilds `.SRCINFO`, and prints `git diff`. Requires `nvchecker makepkg updpkgsums jq` (`nvchecker` and `jq` installed).
 
-仅查看而无需修改文件时：
+To check without modifying files:
 
 ```sh
 nvchecker -c .nvchecker.toml
 ```
 
-`.nvchecker.toml` 将标签限定为 stable + pre-release，并以 `pkgver` 形式输出：
+`.nvchecker.toml` restricts tags to stable + pre-release and outputs in `pkgver` format:
 
 ```
 bettbox-compatible: updated to 1.18.9pre1
 ```
 
-> 注意：AUR 提交使用 stable 版本；pre-release 仅用于本地构建测试。
+> Note: Submit stable versions to the AUR; pre-releases are for local build testing only.
