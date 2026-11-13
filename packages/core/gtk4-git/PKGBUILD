@@ -10,7 +10,7 @@ source "$startdir/../../../lib/pgo.sh"
 _pkgname="gtk4"
 pkgbase="$_pkgname-git"
 pkgver=4.25.r94.gb9cd929
-pkgrel=1
+pkgrel=2
 pkgdesc="GObject-based multi-platform GUI toolkit"
 url="https://gitlab.gnome.org/GNOME/gtk"
 license=('LGPL-2.1-or-later')
@@ -93,8 +93,8 @@ sha256sums=(
   'f1d3a0dbfd82f7339301abecdbe5f024337919b48bd0e09296bb0e79863b2541'
   'a5074ffc057a3041a4f851b4b4674cfc21f3cb9cc90c5414c3e91816a5d205e9'
   '92d08db5aa30bda276bc3d718e7ff9dd01dc40dcab45b359182dcc290054e24e'
-  '7185a6d43d41fd8fa2c905f5b88db5de078fdd11674763b527d79202068e025a'
-  '961c9b61c5121cf020146c51151505ca6687f8ebeb35c0ce0eaf4e89c7a7198e'
+  '089aa1ae8318c1b095b84bac2afb34de2955feb4a283fb0adc08b3f53d532deb'
+  '305dc96964f7fb94d1ee7f33fa63e484274feed06a9dbfa7de8a33408743e7da'
 )
 
 pkgver() {
@@ -126,7 +126,7 @@ build() {
 
   local meson_options=(
     -D broadway-backend=false
-    -D demos=false
+    -D build-demos=false
     -D cloudproviders=disabled
     -D colord=enabled
     -D documentation=false

@@ -27,6 +27,14 @@ build() {
     CFLAGS+=' -g1'
     CXXFLAGS+=' -g1'
 
+    # This tree builds clang ITSELF and hands it the inherited CFLAGS, so a
+    # GCC-only optimisation flag aborts configure in compiler-rt's
+    # check_section_exists ("clang: error: unknown argument: '-fipa-pta'",
+    # 2026-11-13 wall). Drop the flags clang cannot parse or does not
+    # implement; everything else (ISA, -O3, LTO controls) stays.
+    CFLAGS="${CFLAGS//-fipa-pta/}"; CFLAGS="${CFLAGS//-fprefetch-loop-arrays/}"
+    CXXFLAGS="${CXXFLAGS//-fipa-pta/}"; CXXFLAGS="${CXXFLAGS//-fprefetch-loop-arrays/}"
+
     # This package is huge: clang/flang translation units at -O3 can consume
     # multiple GiB each. Prefer the builder's memory-aware job budget, while
     # retaining a conservative standalone fallback for direct makepkg calls.

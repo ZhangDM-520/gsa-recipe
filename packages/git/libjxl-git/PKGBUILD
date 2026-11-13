@@ -5,8 +5,8 @@
 
 pkgbase=libjxl-git
 pkgname=('libjxl-git' 'libjxl-doc-git')
-pkgver=0.12.0.r0.ga7a9c78
-pkgrel=1
+pkgver=0.13.0.r0.ga7a9c787
+pkgrel=2
 pkgdesc='JPEG XL image format reference implementation (git build)'
 arch=('x86_64')
 url='https://jpeg.org/jpegxl/'
@@ -78,6 +78,13 @@ build() {
 
     export CFLAGS+=' -DNDEBUG -ffat-lto-objects'
     export CXXFLAGS+=' -DNDEBUG -ffat-lto-objects'
+
+    # GCC 17 ICE (2026-11-13 wall): lto1 segfaults inside
+    # `GIMPLE pass: phiopt` while building enc_ma.cc's CollectPixelSamples,
+    # only under LTO. Disable just that pass instead of dropping LTO or -O3,
+    # so the rest of the optimisation profile is untouched.
+    export CFLAGS+=' -fno-ssa-phiopt'
+    export CXXFLAGS+=' -fno-ssa-phiopt'
     # Pin the manpage generator's interpreter to the SYSTEM python: upstream's
     # manpages seam runs `python3 a2x` via find_package(Python3), and a
     # user-local python shim earlier in PATH (uv/pyenv in ~/.local/bin) binds

@@ -22,7 +22,7 @@ pkgname=('systemd'
 # way or another. We use proper version for pacman here (no dash for rc
 # release!), and change in source array below.
 pkgver=262
-pkgrel=1
+pkgrel=2
 arch=('x86_64')
 license=('LGPL-2.1-or-later')
 url='https://www.github.com/systemd/systemd'
@@ -311,8 +311,13 @@ package_systemd() {
 
   meson install -C build --no-rebuild --destdir "$pkgdir" --quiet
   # ukify has no split and no consumer here (the host boots limine), and its
-  # python deps are not declared — ship the daemon set without it.
-  rm -f "$pkgdir"/usr/bin/ukify "$pkgdir"/usr/share/man/man1/ukify.1*
+  # python deps are not declared — ship the daemon set without it. The whole
+  # payload goes, not just the entry point: the repo's systemd-ukify package
+  # still owns lib/systemd/ukify and kernel/install.d/60-ukify.install.
+  rm -f "$pkgdir"/usr/bin/ukify \
+        "$pkgdir"/usr/lib/systemd/ukify \
+        "$pkgdir"/usr/lib/kernel/install.d/60-ukify.install \
+        "$pkgdir"/usr/share/man/man1/ukify.1*
 
   # runtime libraries shipped with systemd-libs
   install -d -m0755 systemd-libs/lib/

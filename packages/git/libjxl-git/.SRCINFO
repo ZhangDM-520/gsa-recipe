@@ -1,7 +1,7 @@
 pkgbase = libjxl-git
 	pkgdesc = JPEG XL image format reference implementation (git build)
-	pkgver = 0.12.0.r0.ga7a9c78
-	pkgrel = 1
+	pkgver = 0.13.0.r0.ga7a9c787
+	pkgrel = 2
 	url = https://jpeg.org/jpegxl/
 	arch = x86_64
 	license = BSD-3-Clause
@@ -46,7 +46,7 @@ pkgname = libjxl-git
 	depends = libpng
 	depends = libstdc++
 	optdepends = java-runtime: for JNI bindings
-	provides = libjxl=0.12.0.r0.ga7a9c78
+	provides = libjxl=0.13.0.r0.ga7a9c787
 	provides = libjxl.so
 	provides = libjxl_cms.so
 	provides = libjxl_threads.so
@@ -56,5 +56,5 @@ pkgname = libjxl-doc-git
 	pkgdesc = JPEG XL image format reference implementation (documentation; git build)
 	arch = any
 	depends = 
-	provides = libjxl-doc=0.12.0.r0.ga7a9c78
+	provides = libjxl-doc=0.13.0.r0.ga7a9c787
 	conflicts = libjxl-doc

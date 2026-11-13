@@ -4,7 +4,7 @@ pkgname=bettbox
 _pkgname=Bettbox
 pkgver=1.19.8
 _pkgver="${pkgver/pre/-pre}"
-pkgrel=1
+pkgrel=1.1
 pkgdesc="A multi-platform proxy client powered by the Mihomo (Clash Meta) core, refactored based on early versions of FlClash."
 arch=('x86_64' 'aarch64')
 options=('!lto')
@@ -40,6 +40,13 @@ prepare() {
 
 build () {
 	cd "${_pkgname}-${_pkgver}"
+	# The Go core's cgo probe runs the C++ compiler (clang via llvm-git) but
+	# inherits the GCC-tuned CFLAGS, and clang rejects the GCC-only flags
+	# outright ("clang++: error: unknown argument: '-fipa-pta'", the same wall
+	# as rocm-llvm). Drop only what clang cannot parse; ISA, -O3 and the rest
+	# stay.
+	CFLAGS="${CFLAGS//-fipa-pta/}"; CFLAGS="${CFLAGS//-fprefetch-loop-arrays/}"
+	CXXFLAGS="${CXXFLAGS//-fipa-pta/}"; CXXFLAGS="${CXXFLAGS//-fprefetch-loop-arrays/}"
 	# cargokit (code_forge plugin) requires FLUTTER_ROOT for its dart
 	export FLUTTER_ROOT="$(pwd)/.fvm/flutter_sdk"
 	# cargokit's Rustup() constructor runs `rustup toolchain list` before any

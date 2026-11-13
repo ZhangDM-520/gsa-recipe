@@ -1,7 +1,7 @@
 pkgbase = gtk4-git
 	pkgdesc = GObject-based multi-platform GUI toolkit
 	pkgver = 4.25.r94.gb9cd929
-	pkgrel = 1
+	pkgrel = 2
 	url = https://gitlab.gnome.org/GNOME/gtk
 	arch = x86_64
 	license = LGPL-2.1-or-later
@@ -70,8 +70,8 @@ pkgbase = gtk4-git
 	sha256sums = f1d3a0dbfd82f7339301abecdbe5f024337919b48bd0e09296bb0e79863b2541
 	sha256sums = a5074ffc057a3041a4f851b4b4674cfc21f3cb9cc90c5414c3e91816a5d205e9
 	sha256sums = 92d08db5aa30bda276bc3d718e7ff9dd01dc40dcab45b359182dcc290054e24e
-	sha256sums = 7185a6d43d41fd8fa2c905f5b88db5de078fdd11674763b527d79202068e025a
-	sha256sums = 961c9b61c5121cf020146c51151505ca6687f8ebeb35c0ce0eaf4e89c7a7198e
+	sha256sums = 089aa1ae8318c1b095b84bac2afb34de2955feb4a283fb0adc08b3f53d532deb
+	sha256sums = 305dc96964f7fb94d1ee7f33fa63e484274feed06a9dbfa7de8a33408743e7da
 
 pkgname = gtk4-git
 	optdepends = evince: Default print preview command

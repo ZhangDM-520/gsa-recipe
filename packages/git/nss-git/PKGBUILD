@@ -9,7 +9,7 @@ pkgname=(
   nss-git
   ca-certificates-mozilla-git
 )
-pkgver=3.131beta1.r50.g7fe08a2596be
+pkgver=3.133beta1.r39.g46a64f316965
 pkgrel=1
 pkgdesc="Network Security Services (hg build)"
 arch=('x86_64')
@@ -122,13 +122,15 @@ package_nss-git() {
     -e "s,@MOD_PATCH_VERSION@,$vpatch,g" \
     | install -D /dev/stdin "$pkgdir/usr/bin/nss-config"
 
+  # signtool was dropped upstream (no cmd/signtool, no doc/src/legacy signtool,
+  # no doc/nroff/signtool.1 in this checkout) — listing it aborts package().
   install -Dt "$pkgdir/usr/bin" \
-    dist/Release/bin/{*util,shlibsign,signtool,signver,ssltap}
+    dist/Release/bin/{*util,shlibsign,signver,ssltap}
 
   install -Dt "$pkgdir$includedir" -m644 dist/public/nss/*.h
 
   install -Dt "$pkgdir/usr/share/man/man1" -m644 \
-    nss/doc/nroff/{*util,signtool,signver,ssltap}.1
+    nss/doc/nroff/{*util,signver,ssltap}.1
 
   # Replace built-in trust with p11-kit connection
   ln -sf pkcs11/p11-kit-trust.so "$pkgdir$libdir/libnssckbi.so"
