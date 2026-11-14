@@ -1003,6 +1003,10 @@ in the engine repository's `AGENTS.md`.
    → durable rule in its journal line, naming the affected recipe ids and the
    command that proved it.
 5. Never commit or push unprompted. A green battery is evidence, not consent.
+   Every commit ends with two trailers, in this order: `Assisted-by: LLM
+   (human-reviewed)` then `Signed-off-by` matching the committer's configured
+   git identity. No `Co-authored-by: Copilot` line — the assistant is already
+   disclosed by `Assisted-by`, and a second trailer duplicates one fact.
 6. `rm` is a trash wrapper in the fish login shell: it moves targets to
    `~/.local/share/Trash` and ignores `-r`/`-R`. Tool-call shells are bash, so
    hand any command you give the user to `bash -c '...'`.

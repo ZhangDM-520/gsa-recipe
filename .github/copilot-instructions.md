@@ -298,8 +298,12 @@ dual with `core`.
   fetches. `rm` is a trash wrapper in fish; use `command rm`.
 - **Never commit or push unprompted.** A green battery is evidence, not
   consent. Do not commit sources, archives, signatures, build trees or logs.
-  Trailers:
-  `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
+- **Every commit ends with two trailers**, in this order:
+  `Assisted-by: LLM (human-reviewed)` then `Signed-off-by` matching the
+  committer's configured git identity. `Assisted-by` discloses that an LLM
+  drafted the change and a human reviewed it; `Signed-off-by` names who takes
+  responsibility for it. No `Co-authored-by: Copilot` line — the assistant is
+  already disclosed, and a second trailer duplicates one fact.
 
 ## Fixture authoring
 
