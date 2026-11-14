@@ -1,0 +1,30 @@
+# Rationale: v4l2_compat.cpp deliberately overrides open()/open64()/openat()/
+# openat64() and also defines the __open*_2 fortify wrappers. glibc's
+# bits/fcntl2.h — included ONLY when _FORTIFY_SOURCE is defined — redeclares
+# openat() as an always_inline wrapper redirecting to openat_alias, so an
+# openat() override collides with it. Under -flto the collision stops being a
+# warning and becomes a hard error:
+#   error: inlining failed in call to 'always_inline' 'openat.localalias':
+#          function not inlinable
+# Upstream's own comment at v4l2_compat.cpp:92 assumes _FORTIFY_SOURCE is NOT
+# in use, and upstream meson.build adds fortify for CLANG ONLY, on the stated
+# premise that gcc enables it by default — which this house config then does
+# explicitly. Disabling fortify for this single target restores the assumption
+# upstream wrote the file against; every other target keeps the house setting.
+diff --git a/src/v4l2/meson.build b/src/v4l2/meson.build
+index 2c040414..310516fe 100644
+--- a/src/v4l2/meson.build
++++ b/src/v4l2/meson.build
+@@ -25,6 +25,12 @@ v4l2_compat_cpp_args = [
+     '-D_LARGEFILE64_SOURCE',
+     '-U_TIME_BITS',
+     '-fvisibility=hidden',
++    # This translation unit overrides open()/openat() and defines the
++    # __open*_2 fortify wrappers, which cannot coexist with glibc's
++    # always_inline fortify redirects (bits/fcntl2.h); under -flto the
++    # collision is a hard "function not inlinable" error. Fortify is off
++    # here, and only here.
++    '-Wp,-U_FORTIFY_SOURCE',
+ ]
+ 
+ v4l2_compat = shared_library('v4l2-compat',
