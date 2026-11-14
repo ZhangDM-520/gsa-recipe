@@ -1,0 +1,50 @@
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Contributor: Mélanie Chauvel (ariasuni) <perso at hack-libre dot org>
+
+pkgname=nuspell
+pkgver=5.1.9
+# stock packaging stamps pkgrel 1.1, so this build must strictly beat the
+# installed stamp — a delta that merely differs is skipped as not-newer
+# (AGENTS.md §5, `stock+.1` pkgrel delta)
+pkgrel=1.2
+pkgdesc="Fast and safe spellchecking C++ library"
+arch=(x86_64)
+url="https://nuspell.github.io/"
+license=(LGPL-3.0-or-later)
+depends=(
+  glibc
+  icu
+  libgcc
+  libstdc++
+)
+makedepends=(cmake)
+# trim: BUILD_DOCS/BUILD_MAN/BUILD_API_DOCS off — the pandoc/doxygen payload
+# and its makedepends — and BUILD_TESTING off with the catch2/expat
+# checkdepends. Class B trim standard (docs, man, tests). BUILD_TOOLS stays on:
+# the packaged /usr/bin/nuspell is the consumer this recipe exists to heal.
+source=("$pkgname-$pkgver.tar.gz::https://github.com/nuspell/nuspell/archive/v$pkgver.tar.gz")
+b2sums=('ae21b3b4f75b76e8ca4f185e9afafe1b4406d625da62a96e20d58f9ff5d413124ed9e2128d81f6a84b45775b560c3c06ddb5b2d34033a2a5c8a3519fd07a768b')
+
+build() {
+  cmake -B build -S "$pkgname-$pkgver" \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=/usr/lib \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_DOCS=OFF \
+    -DBUILD_TESTING=OFF
+  cmake --build build --parallel "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
+}
+
+package() {
+  provides+=(libnuspell.so)
+
+  DESTDIR="$pkgdir" cmake --install build
+
+  # trim: the upstream README landed by CMake's install(DOCS)
+  rm -rf "$pkgdir/usr/share/doc"
+
+  # license: ship upstream's LGPL-3.0-or-later texts
+  install -Dm644 "$srcdir/$pkgname-$pkgver/COPYING" \
+    "$srcdir/$pkgname-$pkgver/COPYING.LESSER" \
+    -t "$pkgdir/usr/share/licenses/$pkgname/"
+}

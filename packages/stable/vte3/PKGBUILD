@@ -1,0 +1,115 @@
+# Maintainer: Jan Alexander Steffens (heftig) <heftig@archlinux.org>
+# Maintainer: Fabian Bornschein <fabiscafe@archlinux.org>
+# Contributor: Ionut Biru <ibiru@archlinux.org>
+
+pkgbase=vte3
+# trim: the vte4, vte4-utils, vte3-utils and vte-docs splits are dropped with
+# their build switches (-D gtk4=false, -D app=false, -D docs=false), the
+# gtk4/graphene/gi-docgen makedepends and their staging paths — Class B trim
+# standard (split packages, examples, docs). The GTK3 widget is what the host
+# links; nothing installed uses the GTK4 companion library.
+pkgname=(
+  vte-common
+  vte3
+)
+pkgver=0.84.1
+# the recipe id is vte3 (the stock GTK3 package name) while upstream's tarball
+# and source root are named vte
+_upstream=vte
+# stock packaging stamps pkgrel 1.1, so this build must strictly beat the
+# installed stamp — a delta that merely differs is skipped as not-newer
+# (AGENTS.md §5, `stock+.1` pkgrel delta)
+pkgrel=1.2
+pkgdesc="Virtual Terminal Emulator widget"
+url="https://gitlab.gnome.org/GNOME/vte"
+arch=(x86_64)
+# Library
+license=(LGPL-3.0-or-later)
+depends=(
+  cairo
+  fribidi
+  glib2
+  glibc
+  gnutls
+  icu
+  libgcc
+  libstdc++
+  lz4
+  pango
+  pcre2
+  simdutf
+  systemd
+  systemd-libs
+)
+makedepends=(
+  fast_float
+  fmt
+  glib2-devel
+  gobject-introspection
+  gperf
+  gtk3
+  meson
+  vala
+)
+# !lto is upstream packaging's call for this C++/GObject build; the house LTO
+# line has not been validated against it, so the choice is kept rather than
+# silently changed.
+options=(!lto)
+source=("$_upstream-$pkgver.tar.xz::https://download.gnome.org/sources/$_upstream/${pkgver%.*}/$_upstream-$pkgver.tar.xz")
+b2sums=('4bc482451287faa5194edaee72004d10ec441ed750491b475a6b5b99e5328946d3eee96a992ec33b4b90bda31fe0fac81d8d0f2a7c33c1a7ff2a0030d2e9913c')
+
+build() {
+  local meson_options=(
+    -D docs=false
+    -D gtk4=false
+    -D app=false
+  )
+
+  arch-meson "$_upstream-$pkgver" build "${meson_options[@]}"
+  meson compile -C build -j "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
+}
+
+_pick() {
+  local p="$1" f d; shift
+  for f; do
+    d="$srcdir/$p/${f#$pkgdir/}"
+    mkdir -p "$(dirname "$d")"
+    mv "$f" "$d"
+    rmdir -p --ignore-fail-on-non-empty "$(dirname "$f")"
+  done
+}
+
+package_vte-common() {
+  pkgdesc+=" (common files)"
+  depends=(glibc)
+
+  meson install -C build --destdir "$pkgdir"
+
+  cd "$pkgdir"
+
+  _pick vte3 usr/include/vte-2.91
+  _pick vte3 usr/lib/libvte-2.91.so*
+  _pick vte3 usr/lib/pkgconfig/vte-2.91.pc
+  _pick vte3 usr/lib/girepository-1.0/Vte-2.91.typelib
+  _pick vte3 usr/share/gir-1.0/Vte-2.91.gir
+  _pick vte3 usr/share/glade
+  _pick vte3 usr/share/vala/vapi/vte-2.91.{deps,vapi}
+
+  # license: ship upstream's LGPL-3.0-or-later text
+  install -Dm644 "$srcdir/$_upstream-$pkgver/COPYING.LGPL3" \
+    "$pkgdir/usr/share/licenses/$pkgname/COPYING.LGPL3"
+}
+
+package_vte3() {
+  pkgdesc+=" (GTK3)"
+  depends+=(
+    at-spi2-core
+    gtk3
+    vte-common
+  )
+  provides+=(libvte-2.91.so)
+
+  mv vte3/* "$pkgdir"
+}
+
+# vim:set sw=2 sts=-1 et:

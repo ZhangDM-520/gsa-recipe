@@ -988,6 +988,7 @@ in the engine repository's `AGENTS.md`.
 - **libseccomp-git parked on `#branch=release-2.6`** (2026-10-07): master is a placeholder 0:0:0 build — revisit only when upstream stamps master or a 3.x ABI lands.
 - **libgit2-git parked at `#tag=v1.9.7`** (2026-10-08): `main` declares 1.9.0 and cannot satisfy `-sys` pkg-config floors; unpin when both bounds clear.
 - **llvm-git ↔ rust-git coupled-batch procedure** (2026-10-07): manual today — sweep exact pinners, stage `llvm-git`, build `rust-git` while the old rustc runs, then one `pacman -U`; a later candidate for engine automation.
+- **icu-git runs ahead of the distro's ICU generation** (2026-11-14): the house provider ships `libicuuc.so.80` while the repos still carry `icu 78.3`, so every stock ICU consumer is a victim — `gsa -Qr` names nuspell, qt6-webengine and vte3. `nuspell` and `vte3` are now house recipes (icu-git edges) awaiting their first real build; `qt6-webengine` stays stock by owner decision and carries a package-id row in `config/abi-exclusions.conf`. Decide the long-term shape (own QtWebEngine, or park icu-git at the distro generation) before the next full `pacman -Syu` needs it.
 
 ## 7 · Working here
 

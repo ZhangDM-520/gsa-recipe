@@ -2,11 +2,11 @@
 
 **Idle.** No active task.
 
-Last action: `.logs/action-2026-11-11-openssl-4.1.0-and-libcuda.md`
-(the tree follows core's OpenSSL 4.1.0, the `libcuda.so` exception row, the
-`pacman` core promotion the yay-git edge owed, and the `gsa-pm` metadata
-regeneration).
+Last action: `.logs/action-2026-11-14-abi-gate-icu-wiring.md`
+(the pacman reinstall's ABI-gate abort — icu-git blamed and confirmed by
+`gsa -Qr`; nuspell + vte3 now house recipes wired to icu-git, nine reviewed
+gaps + the `qt6-webengine` package-id row in `config/abi-exclusions.conf`).
 
-Next: `sudo gsa -S gsa-pm` deploys the new ABI gate from the engine checkout;
-the openssl 4.1.0 consumer wave (577 packages) rides the owner's scheduled
-clean full rebuild.
+Next: nothing is committed. Activation is commit+push → `sudo gsa -Sy` (the
+hook reads the store copy) → `sudo gsa -S --leaf nuspell vte3`. The icu
+generation decision for qt6-webengine is queued in AGENTS.md §6.
