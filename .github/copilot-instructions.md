@@ -25,6 +25,14 @@ second file drifts in one of them.
 
 All of these are `bash`; the checkout is the working directory.
 
+**Privilege follows pacman**: `-Q*`, `-Sl`, `-Ma`/`-Md`/`-Mi`/`-Ml`/`-Ms`/`-Mw`,
+every `--dry-run`, every `-Mh` and the hidden read seams
+(`--install-decide`, `--qa-check`, `--print-*`) run as you. `-S`, `-B`, `-U`,
+`-Sw` (and `gsa fetch`), `-Sy`, `-Su`, every `-Mc/-Mcc/-Mccc`, and a write-side
+`-M…` verb refuse early with rc 3 unless root; `-Mm` is the inverse and
+refuses *under* root. `gsa -B` builds archives and installs nothing but still
+needs root — builds themselves always run as your user, never as root.
+
 ### Inspect (read-only, unprivileged — safe to run anywhere)
 
 ```sh
@@ -38,13 +46,21 @@ gsa -Qr                       # revdep report: unresolved DT_NEEDED, exact-pin l
 gsa -Qp <archive>             # probe an archive: .PKGINFO vs its index row, hash/size
 gsa -Qu                       # stale set: tracked version moved past the newest built instance
 gsa -Qb [ref…]                # retained built archives: the side-car's hash-bound index rows
-gsa -Sw @core                 # fetch + verify sources (makepkg --verifysource); builds nothing
 gsa -Ma                       # audit lints: report-only, ALWAYS exits 0 — read it
 ```
 
+`gsa -Sw @core` (alias `gsa fetch`) is the cheap source/signature check —
+`makepkg --verifysource`, no build, no install — and the contract classes it
+**mutating**, so it needs root (a `fetch` populates the shared source cache).
+Prefer it over a rebuild when only `source=()`/`b2sums=()` moved.
+
+`-Ma`'s families are `legacy-layout`, `package-drift`, `toolchain-edge`,
+`stale-artifact`, `recipe-contract`, `recipe-integrity`, `state-integrity`,
+`version-sync-skew` and `installed-pgo`; a `package-drift` row for
+`packages/deprecated/shelly` is the expected standing state.
+
 `gsa -Qi` and `gsa -Qt` are the fastest way to learn what a recipe is wired to
-without opening three files. `gsa -Sw` is the cheap source/signature check:
-prefer it over a rebuild when only `source=()`/`b2sums=()` moved.
+without opening three files.
 
 ### Validate a recipe change
 
@@ -52,7 +68,10 @@ prefer it over a rebuild when only `source=()`/`b2sums=()` moved.
 bash -n packages/<cat>/<pkg>/PKGBUILD    # recipe parse
 GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<pkg> \
   > packages/<cat>/<pkg>/.SRCINFO        # regenerate the COMMITTED .SRCINFO
-gsa -Ma                                  # read the report, not the exit status
+gsa -Ma                                  # audit lints: report-only, ALWAYS exits 0 — read it
+gsa --qa-check declared-deps             # one named metadata gate; also abi-closure,
+                                         # abi-exposure, provides-versioning,
+                                         # purged-tools, stale-ignorepkg, swap-drift
 gsa -Sl                                  # listing re-validates map, graph and sort
 gsa -S --dry-run @git                    # repeat for @stable, @core
 bash tests/run-all.sh                    # whole battery
@@ -60,11 +79,20 @@ bash tests/run-all.sh                    # whole battery
 
 The `.SRCINFO` step is not optional and not a formality: the engine and the
 fixtures read the committed metadata, so a fresh `PKGBUILD` with a stale
-`.SRCINFO` is a real defect. The fixtures that own a recipe regenerate it and
-`diff` the result against the committed file (see the tail of
-`tests/onlyoffice-recipe.sh`), so a stale one fails the battery rather than
-passing review. `GIT_CONFIG_COUNT=0` is required in agent shells — see the
-shell boundary note below.
+`.SRCINFO` is a real defect. Only a few recipes have a local fixture that
+regenerates and `diff`s their own file (`tests/onlyoffice-recipe.sh`,
+`vencord.sh`, `glibc-package.sh`, plus the logseq/texlive/zen/bpftune pair);
+the repo-wide sweep is **engine-side** —
+`tests/srcinfo-freshness.sh` in `gentoo-style-arch`, driven off `gsa -Qt`. Run
+it with the checkout pointed at this tree:
+
+```sh
+cd ../gentoo-style-arch && GSA_RECIPE_CHECKOUT=$PWD/../gsa-recipe \
+  bash tests/srcinfo-freshness.sh
+```
+
+`GIT_CONFIG_COUNT=0` is required in agent shells — see the shell boundary note
+below.
 
 Run the **whole** battery, not only the fixture whose name matches the recipe
 you touched: a map-format change was once caught by two unrelated recipe
@@ -104,13 +132,37 @@ validation block above are the gate, run locally.
 ### Build / install
 
 ```sh
-gsa -S --dry-run @git            # plan + decision rows, no mutation
-gsa -B --leaf glib2-git          # build ONE recipe to archives; installs nothing
-gsa -S glib2-git                 # build + install it AND its consumer closure
-gsa -S @core                     # ABI-coupled core update
-sudo gsa -S @git                 # write-side verbs need root; makepkg still runs as you
-gsa -Sy                          # version sync only — leaves rewrites UNCOMMITTED
+gsa -S --dry-run @git            # plan + decision rows, no mutation (unprivileged)
+sudo gsa -B --leaf glib2-git     # build ONE recipe to archives; installs nothing
+sudo gsa -S glib2-git            # build + install it AND its consumer closure
+sudo gsa -S @core                # ABI-coupled core update
+sudo gsa -Sy                     # version sync only — leaves rewrites UNCOMMITTED
 ```
+
+`makepkg` still runs as you under `sudo`; the engine and pacman run as root.
+An interrupted run emits its record and exits 130.
+
+Maintenance verbs when host state looks wrong:
+
+```sh
+sudo gsa -Md --fix                # doctor: reconcile runtime state, apply named repairs
+sudo gsa -Mi [--prune|--backfill] # IgnorePkg closure drift against pacman.conf
+gsa -Mh [--show <run-id>]         # run history and continuations
+sudo gsa -Ml --keep N             # per-package logs; --keep prunes retention
+sudo gsa -Mc @git                 # prune strength 1 (src/pkg/build/archives)
+```
+
+`-Mcc`/`-Mccc`/`-Mm` are confirmation-gated: without `--noconfirm` they print
+the destroyed set and stop rc 3 `confirmation-required`. `--noconfirm` consents
+only to the engine's own gates, never to a pacman question, and it is **not**
+accepted by every verb (`-Mc` takes only `--state-dir` and answers rc 2 to
+anything else).
+
+`gsa -Mm` is the one verb that **mutates the working tree you are standing
+in** — it rewrites recipe-local source paths into symlinks to the canonical
+mirror. Probe it with no `--noconfirm` (it then only lists its targets); a
+`--noconfirm` run inside the checkout leaves a pile of untracked symlinks to
+revert.
 
 On a machine with no `gsa` yet, or to recover a broken engine, `gsa-pm` is an
 ordinary bootstrap recipe that must build with plain `makepkg`:
@@ -166,20 +218,27 @@ bad usage.
   commits its generator pair (`PKGBUILD.in` + `update.PKGBUILD`, kept in
   lockstep: every manual edit is mirrored into the template). Physical
   categories (`git`, `stable`, `core`, `misc`, and the parked `deprecated`
-  tier) are a filing system, **not** the build order. `misc` is currently an
-  empty roster slot (`packages/misc/` is where a standalone-staged recipe
-  goes), and a `packages/deprecated/` recipe has its topology record commented
-  out, so it appears in no build list.
+  tier) are a filing system, **not** the build order. `misc` is an empty roster
+  group with no directory today — a standalone-staged recipe is created at
+  `packages/misc/` — and `packages/deprecated/shelly` has its topology record
+  commented out, so it appears in no build list (and `gsa -Ma` reports it as
+  `package-drift … unregistered-recipe-dir`, which is expected, not a defect).
 - `config/` — exactly three files. Anything else under `config/` is
-  unreachable state and fails a fixture.
+  unreachable state; the reconciliation gate lives **engine-side**
+  (`tests/project.sh` in `gentoo-style-arch`), so `bash tests/run-all.sh` here
+  will not catch it.
   - `topology.conf` — one record per package, `id|path|groups|edges[|tags]`,
     and the only place that binds an id to a recipe path. `id` is unique
     `[A-Za-z0-9._+-]+`; `path` is relative, contains no `..`, and must hold a
     `PKGBUILD`; `groups` is a comma list over the roster; `edges` is the
     comma list of packages this one consumes (a record ending in a bare `|` is
-    a deliberate **no-edge** record). `tags` carries policy: `abi=must` /
-    `abi=should`, `app-cluster=<name>`, `version-sync=nvchecker`,
-    `toolchain=gcc|clang`.
+    a deliberate **no-edge** record). `tags` is a closed vocabulary the loader
+    validates — `abi=must` / `abi=should` (never both), `abi-rev=<n>` (digits
+    only, at most one per record), `app-cluster=<name>` (at most one),
+    `version-sync=nvchecker`, `toolchain=gcc|clang`; an unknown or repeated tag
+    refuses every command. `toolchain=` is undeclared in the file's own header
+    comment yet is accepted by the loader and used across the tree — count it
+    with `gsa -Qt | grep -c 'toolchain='` rather than trusting a number here.
   - `build-defaults.conf` — `lanes`, `jobs`, `intensity`, the memory budgets
     (`memory_per_job_gib`, `core_memory_per_job_gib`, `reserved_memory_gib`)
     and `store_format` (bump only with a schema change an older engine cannot
@@ -195,6 +254,21 @@ bad usage.
   is never discovered, `tests/lib/` holds `.bash` synthesis helpers.
 - `.logs/` — the active working buffer (`scratchpad.md`, a tracked stub) and
   untracked per-action exports.
+
+Every `PKGBUILD` is arbitrary shell at `makepkg` privilege (`SECURITY.md`):
+review before building, never commit sources/archives/build output.
+
+**The one engine seam this repository ships files for.** `packages/core/gsa-pm`
+is git self-tracking (no `_commit` pin) so a broken engine is always
+recoverable with plain `makepkg`. It also ships the engine's *text* seams —
+`gsa --print-conf {gcc,clang}` → `/etc/gsa/*-makepkg.conf`, and
+`gsa --print-completion {fish,bash,zsh}` → the three completion dirs — written
+from the binary being packaged, so a shipped file can never drift from it.
+Printing is not shipping: `tests/gsa-pm-shipped-files.sh` runs the real
+`package()` against the installed engine and requires every rostered
+`--print-*` seam to land a non-empty file byte-identical to the engine's own
+output. **A new `--print-*` seam fails that fixture by name until its
+seam→path row and its `install` line are added.**
 
 The mental model: **topology, not directory names** — identity, group
 membership and build-order edges are one declarative record, re-validated on
@@ -379,9 +453,10 @@ otherwise). Bump `pkgrel` only *after* the first post-sync build.
 **Investigate a break** — `gsa -Qi <ref>` for the wiring, `gsa -Qa <ref>` for
 the ABI token, `gsa -Qr` for unresolved `DT_NEEDED` and exact-pin leftovers,
 `gsa -Qp <archive>` for a hash/size disagreement, `gsa -Ml` for the per-package
-build log. `ldd` on the shipped ELF is still the ground truth for a soname gap,
-and a dependency edit is verified with `pacman -T` over the regenerated
-metadata plus `readelf -d | grep NEEDED` — makepkg exiting 0 proves neither.
+build log, `gsa --qa-check <name>` for the named metadata gates. `ldd` on the
+shipped ELF is still the ground truth for a soname gap, and a dependency edit
+is verified with `pacman -T` over the regenerated metadata plus
+`readelf -d | grep NEEDED` — makepkg exiting 0 proves neither.
 
 ## Where the truth lives
 
