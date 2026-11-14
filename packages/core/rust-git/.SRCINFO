@@ -1,6 +1,6 @@
 pkgbase = rust-git
 	pkgdesc = Systems programming language focused on safety, speed and concurrency (git version)
-	pkgver = 1.101.0.r345516.g48dfc3a
+	pkgver = 1.102.0.r346415.gb5fc745
 	pkgrel = 2
 	epoch = 1
 	url = https://www.rust-lang.org/
@@ -29,7 +29,7 @@ pkgbase = rust-git
 	depends = zlib
 	options = !emptydirs
 	options = !lto
-	source = git+https://github.com/rust-lang/rust.git#commit=48dfc3a4e0e5ddbb0896c2a37bf51c8505d53450
+	source = git+https://github.com/rust-lang/rust.git#commit=b5fc745fd7cc890cb639fa152c82c965c02b4a15
 	source = 0001-bootstrap-Change-libexec-dir.patch
 	source = 0002-bootstrap-Change-bash-completion-dir.patch
 	source = 0003-bootstrap-Workaround-for-system-stage0.patch
@@ -69,9 +69,9 @@ pkgname = rust-git
 	depends = libssl.so
 	optdepends = gdb: rust-gdb script
 	optdepends = lldb: rust-lldb script
-	provides = cargo=1.101.0.r345516.g48dfc3a
-	provides = rust=1.101.0.r345516.g48dfc3a
-	provides = rustfmt=1.101.0.r345516.g48dfc3a
+	provides = cargo=1.102.0.r346415.gb5fc745
+	provides = rust=1.102.0.r346415.gb5fc745
+	provides = rustfmt=1.102.0.r346415.gb5fc745
 	conflicts = cargo
 	conflicts = rust
 	conflicts = rust-docs<1:1.56.1-3
@@ -84,5 +84,5 @@ pkgname = rust-git
 pkgname = rust-src-git
 	pkgdesc = Source code for the Rust standard library (GIT VERSION)
 	depends = rust-git
-	provides = rust-src=1.101.0.r345516.g48dfc3a
+	provides = rust-src=1.102.0.r346415.gb5fc745
 	conflicts = rust-src

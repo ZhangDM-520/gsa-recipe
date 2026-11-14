@@ -7,8 +7,8 @@ pkgname=(
   udisks2-btrfs
 )
 # udisks2-lvm2 split removed 2026-09-04: no LVM volumes on this machine.
-pkgver=2.11.2
-pkgrel=1.2
+pkgver=2.12.0
+pkgrel=1.1
 pkgdesc="Daemon, tools and libraries to access and manipulate disks, storage devices and technologies"
 arch=(x86_64)
 url="https://www.freedesktop.org/wiki/Software/udisks/"
@@ -41,8 +41,8 @@ makedepends=(
   util-linux-libs
 )
 source=($pkgbase::git+https://github.com/storaged-project/udisks#tag=udisks-$pkgver)
-sha512sums=('862aa3b2365c9772126da84ffa4680d8ceac4b536850629078941b38093c0f7f5b77d8215441745b8e85de5fad239656a90702cab9287e8dd2a06a171ddb540c')
-b2sums=('09b5d0ee35fbc2ee62cfbffb3f0fea91866208f6638654144a3e75e90ca4d470fbca455e78e82609950bfae07847ee2db4c39cb08a79ee67fab4392eb004b4ee')
+sha512sums=('52d2d05d28945aae5c3dd3c639db7a2c12c1233a1770ac021725f17d35d0a540d74b9d8fe178344cdec6e78d651e239aba4b6413c5ce8752b4708086b3ed27e0')
+b2sums=('57ee44328b2c6c8cf40e36457be4d3b451c52063baa8676d6db002c44a7912b94ba579d32f8d07b8137390ae6fca07416a2c6b1146719c311eeb491dc66a798a')
 
 _pick() {
   local p="$1" f d; shift

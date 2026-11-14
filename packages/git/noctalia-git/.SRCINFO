@@ -1,6 +1,6 @@
 pkgbase = noctalia-git
 	pkgdesc = A sleek, customizable desktop shell crafted for Wayland
-	pkgver = 5.4.1.r6148.gcece614d2
+	pkgver = 5.4.1.r6310.g2f3e3c4f6
 	pkgrel = 1
 	url = https://github.com/noctalia-dev/noctalia
 	arch = x86_64
@@ -44,12 +44,12 @@ pkgbase = noctalia-git
 	depends = sdbus-cpp
 	depends = tomlplusplus
 	depends = wayland
-	provides = noctalia=5.4.1.r6148.gcece614d2
+	provides = noctalia=5.4.1.r6310.g2f3e3c4f6
 	conflicts = noctalia
 	conflicts = noctalia-bin
 	options = !debug
 	options = lto
-	source = noctalia::git+https://github.com/noctalia-dev/noctalia.git#commit=cece614d2
+	source = noctalia::git+https://github.com/noctalia-dev/noctalia.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b
 	source = 0001-capture-annotate-zoom-pan.patch
 	sha256sums = SKIP
 	sha256sums = 04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d

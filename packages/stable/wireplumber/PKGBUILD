@@ -11,7 +11,7 @@ pkgname=(
   wireplumber
   libwireplumber
 )
-pkgver=0.5.18
+pkgver=0.5.19
 pkgrel=1.1
 pkgdesc="Session / policy manager implementation for PipeWire"
 url="https://pipewire.pages.freedesktop.org/wireplumber/"
@@ -35,7 +35,7 @@ source=(
   "git+https://gitlab.freedesktop.org/pipewire/$pkgbase.git#tag=$pkgver"
   20-bluez-codecs.conf
 )
-b2sums=('eea6a3e022c0b8918a72b56a9cdb1c02bca4411a9394fc2a8732faad2c0c71d1443b2a37b22e60467aaab62c154150d18b185b2690271d1d4830dee6513e2e8c'
+b2sums=('3cfd6d99d563c08c13948e1c7d48bf25a7255f85ddba576fd3e15acb7d76da20bdaaf4b68dfca88b2a5d6c67d190df377ed358ac236db1168ffd61afaaa4302c'
         '5cafd375bb644177a00ef7092e1db3a48f9164c09bb4b2d714fca54b375de219c8430a8fccfeb8da91ee616a1c0ebdf87c9566043908210a229fd40ae7abc35d')
 
 prepare() {

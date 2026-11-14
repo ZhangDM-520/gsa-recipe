@@ -1,6 +1,6 @@
 pkgbase = frei0r-plugins
 	pkgdesc = Collection of video effect plugins
-	pkgver = 3.7.0
+	pkgver = 3.7.1
 	pkgrel = 1.1
 	url = https://frei0r.dyne.org/
 	arch = x86_64
@@ -14,10 +14,10 @@ pkgbase = frei0r-plugins
 	depends = libglvnd
 	depends = libstdc++
 	depends = opencv
-	source = git+https://github.com/dyne/frei0r#tag=v3.7.0
+	source = git+https://github.com/dyne/frei0r#tag=v3.7.1
 	source = opencv-5.patch
 	validpgpkeys = 6113D89CA825C5CEDD02C87273B35DA54ACB7D10
-	b2sums = fdfec1da431fe41bf883892d6920eaaf3fa97fbaca29f445c4f2fcd15976acf6054350b1b345b428c74b5a85d467317158e2a71317125adb1b9a9f212ae15f6a
+	b2sums = b43e02b01a3069b139d2d85ec70d4a7a2c8734ca4b4cc5f451a45793af5a4f6163e6af8b763c087f15e911cc45e5daf67522a20873a061606d2049de9b68ade1
 	b2sums = 8a4d4b1e87b5c5ba553a687dc74d6d8b7af1566fba5ed59175cc9867894f0776442acfff8d0dbebe5b72a1f23ad8de80bd8853bfc4f024a250e6c666b28b5384
 
 pkgname = frei0r-plugins

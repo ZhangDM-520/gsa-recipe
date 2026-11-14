@@ -16,7 +16,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=mesa-git
 pkgdesc="an open-source implementation of the OpenGL specification, git version"
-pkgver=27.0.0_devel.232847.bd830ce2eea.d41d8cd
+pkgver=27.0.0_devel.233403.586fd4de6e1.d41d8cd
 pkgrel=1.3
 arch=('x86_64')
 makedepends=(
@@ -108,7 +108,7 @@ license=('custom')
 # llvm-git — mesa links libLLVM and the LLVM snapshots have no stable C++
 # ABI (coupled batch, abi=must).
 source=(
-    'mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=bd830ce2eead03d775486234902fe22215e334b8'
+    'mesa::git+https://gitlab.freedesktop.org/mesa/mesa.git#commit=586fd4de6e1959848bc82415973893fb57fc312a'
     'LICENSE'
 )
 sha256sums=('SKIP'

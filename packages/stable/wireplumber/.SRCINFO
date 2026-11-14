@@ -1,6 +1,6 @@
 pkgbase = wireplumber
 	pkgdesc = Session / policy manager implementation for PipeWire
-	pkgver = 0.5.18
+	pkgver = 0.5.19
 	pkgrel = 1.1
 	url = https://pipewire.pages.freedesktop.org/wireplumber/
 	arch = x86_64
@@ -17,14 +17,14 @@ pkgbase = wireplumber
 	makedepends = pipewire
 	makedepends = systemd
 	makedepends = systemd-libs
-	source = git+https://gitlab.freedesktop.org/pipewire/wireplumber.git#tag=0.5.18
+	source = git+https://gitlab.freedesktop.org/pipewire/wireplumber.git#tag=0.5.19
 	source = 20-bluez-codecs.conf
-	b2sums = eea6a3e022c0b8918a72b56a9cdb1c02bca4411a9394fc2a8732faad2c0c71d1443b2a37b22e60467aaab62c154150d18b185b2690271d1d4830dee6513e2e8c
+	b2sums = 3cfd6d99d563c08c13948e1c7d48bf25a7255f85ddba576fd3e15acb7d76da20bdaaf4b68dfca88b2a5d6c67d190df377ed358ac236db1168ffd61afaaa4302c
 	b2sums = 5cafd375bb644177a00ef7092e1db3a48f9164c09bb4b2d714fca54b375de219c8430a8fccfeb8da91ee616a1c0ebdf87c9566043908210a229fd40ae7abc35d
 
 pkgname = wireplumber
 	install = wireplumber.install
-	depends = libwireplumber=0.5.18-1.1
+	depends = libwireplumber=0.5.19-1.1
 	depends = glibc
 	depends = libgcc
 	depends = libglib-2.0.so
@@ -37,7 +37,7 @@ pkgname = wireplumber
 	depends = pipewire
 	depends = systemd-libs
 	optdepends = 
-	provides = pipewire-session-manager=0.5.18
+	provides = pipewire-session-manager=0.5.19
 	conflicts = pipewire-media-session
 
 pkgname = libwireplumber

@@ -1,8 +1,8 @@
 # Maintainer: AndyRTR <andyrtr@archlinux.org>
 
 pkgname=libmythes
-pkgver=1.2.6
-pkgrel=1.2
+pkgver=1.2.7
+pkgrel=1.1
 epoch=1
 pkgdesc="a simple thesaurus"
 arch=('x86_64')
@@ -12,7 +12,7 @@ depends=('glibc' 'libstdc++' 'libgcc' 'perl')
 makedepends=('hunspell')
 provides=('mythes' 'libmythes-1.2.so')
 source=(https://github.com/hunspell/mythes/releases/download/v${pkgver}/mythes-${pkgver}.tar.xz)
-sha256sums=('97bd2ba5738aebdba1bc31f30f1be42f1404386c94105ad5990d839a1311c8a5')
+sha256sums=('861af73ad57ee240647a79a64e31f214de6d63ea53e406d2d4c1f730706dd921')
 
 build() {
   cd "${pkgname/lib/}"-$pkgver

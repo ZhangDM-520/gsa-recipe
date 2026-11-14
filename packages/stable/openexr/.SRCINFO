@@ -1,7 +1,7 @@
 pkgbase = openexr
 	pkgdesc = A high dynamic-range image file format library
-	pkgver = 3.5.3
-	pkgrel = 3.1
+	pkgver = 3.5.4
+	pkgrel = 1.1
 	url = https://www.openexr.com/
 	arch = x86_64
 	license = BSD-3-Clause
@@ -21,7 +21,7 @@ pkgbase = openexr
 	provides = libOpenEXR-3_5.so
 	provides = libOpenEXRCore-3_5.so
 	provides = libOpenEXRUtil-3_5.so
-	source = git+https://github.com/AcademySoftwareFoundation/openexr.git#tag=v3.5.3
-	sha256sums = 3d1b14e7cedc2cf50aec4209cfdc38ce9323050c1315b0c82e257fdfb0b0bd94
+	source = git+https://github.com/AcademySoftwareFoundation/openexr.git#tag=v3.5.4
+	sha256sums = 0a6938feea7fc2dc28972a570b80dc75afd61f26a03a4d6a2a926b69107447fc
 
 pkgname = openexr

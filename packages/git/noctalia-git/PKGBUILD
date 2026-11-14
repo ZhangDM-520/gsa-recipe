@@ -6,7 +6,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=noctalia-git
 _pkgname=noctalia
-pkgver=5.4.1.r6148.gcece614d2
+pkgver=5.4.1.r6310.g2f3e3c4f6
 pkgrel=1
 pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
 arch=('x86_64' 'aarch64')
@@ -71,7 +71,7 @@ conflicts=('noctalia' 'noctalia-bin')
 # annotation_view.h, annotation_view_test.cpp). The patch applies CLEANLY at
 # cece614d2 (the base it was cut against) and both commits carry the same
 # upstream version, 5.4.1. Advance the pin ONLY together with a patch re-cut.
-source=("${_pkgname}::git+${url}.git#commit=cece614d2"
+source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
         0001-capture-annotate-zoom-pan.patch)
 sha256sums=('SKIP'
             '04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d')
