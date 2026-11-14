@@ -3,10 +3,10 @@
 **Idle.** No active task.
 
 Last action: `.logs/action-2026-11-14-abi-gate-icu-wiring.md`
-(the pacman reinstall's ABI-gate abort — icu-git blamed and confirmed by
-`gsa -Qr`; nuspell + vte3 now house recipes wired to icu-git, nine reviewed
-gaps + the `qt6-webengine` package-id row in `config/abi-exclusions.conf`).
+(icu-git was the ABI gate's blame; nuspell + vte3 are now house recipes and
+installed at `-1.2` with `libicuuc.so.80`, `gsa -Qr` down to the single
+deliberately-stock `qt6-webengine`).
 
-Next: nothing is committed. Activation is commit+push → `sudo gsa -Sy` (the
-hook reads the store copy) → `sudo gsa -S --leaf nuspell vte3`. The icu
-generation decision for qt6-webengine is queued in AGENTS.md §6.
+Next: the engine checkout still carries nine files of another lane's
+uncommitted work — do not commit them. Engine defects filed as
+ZhangDM-520/gentoo-style-arch#2.
