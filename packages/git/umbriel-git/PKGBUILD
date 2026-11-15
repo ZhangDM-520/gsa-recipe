@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1579.ae3472d
-pkgrel=1
+pkgrel=2
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -79,7 +79,7 @@ sha256sums=('SKIP'
             'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
             '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad'
-            'f42581c0601c49051a40e9fcb3b8382d08b8730c7b248723d55b691bba482ede'
+            '59d89e53515b197f0a7ab7518f9787e338379508f4c79ebc2553c773b1c8d53c'
             '1fd278add695446c2cc19e737f899475b6b51025db27d4728afa3711b7a0f9bc'
             '8fc103ac3c7b1a9d4036468eaf00623c74ffc0b994acdadcaa236da2f36bc8e3')
 
@@ -356,11 +356,10 @@ prepare() {
   # [cli] shell completion for the action/command grammar: `umbriel completions
   # <bash|zsh|fish>` prints a script and `umbriel complete -- <words>` answers it,
   # candidates coming from the tables the parsers already read so completion cannot
-  # drift from parsing; live values stay inside a 120 ms budget. 30 files
-  # +2396/-151, sha256 f42581c0…; the pins are tests/unit/completion.cpp and
-  # session/action_dispatch. Cut on main@2de13d6a.
-  # (Retire on merge: 0024 -> the shell completion PR, branch `feat/cli-completions`,
-  # still local: no PR opened yet.)
+  # drift from parsing; live values stay inside a 120 ms budget. 31 files
+  # +2681/-152, sha256 59d89e53…; the pins are tests/unit/completion.cpp and
+  # session/action_dispatch. Cut on main@2de13d6a at 7c8b360d.
+  # (Retire on merge: 0024 -> noctalia-dev/umbriel#806.)
   git apply -3 ../0024-cli-shell-completion.patch
 
   # [server] spawn reports a program it cannot launch instead of logging a launch

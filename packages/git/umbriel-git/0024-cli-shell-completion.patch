@@ -108,7 +108,7 @@ index 00000000..37d3fffc
 +} // namespace umbriel
 diff --git a/src/cli/complete.cpp b/src/cli/complete.cpp
 new file mode 100644
-index 00000000..c03355e1
+index 00000000..06f6438d
 --- /dev/null
 +++ b/src/cli/complete.cpp
 @@ -0,0 +1,692 @@
@@ -381,7 +381,7 @@ index 00000000..c03355e1
 +      // `--name` alone.
 +      auto emitWorkspace = [&](const std::vector<std::string>& list) {
 +        for (const std::string& value : list) {
-+          if (!value.starts_with("--") && validWorkspaceSelector(value)) {
++          if (!value.starts_with("--") && !allDigits(value)) {
 +            emit(value, "workspace");
 +          }
 +        }
@@ -806,7 +806,7 @@ index 00000000..c03355e1
 +} // namespace umbriel
 diff --git a/src/cli/complete.h b/src/cli/complete.h
 new file mode 100644
-index 00000000..fa8fa1a5
+index 00000000..6584ecbe
 --- /dev/null
 +++ b/src/cli/complete.h
 @@ -0,0 +1,99 @@
@@ -876,8 +876,8 @@ index 00000000..fa8fa1a5
 +    void fill(EffectKind kind) const;
 +
 +    Filler m_filler;
-+    mutable std::array<KindLists, 5> m_byKind{};
-+    mutable std::array<bool, 5> m_filled{};
++    mutable std::array<KindLists, kEffectKindCount> m_byKind{};
++    mutable std::array<bool, kEffectKindCount> m_filled{};
 +  };
 +
 +  // Configuration-derived entries need no session; the live ones come from a running compositor and are optional.
@@ -911,10 +911,10 @@ index 00000000..fa8fa1a5
 +} // namespace umbriel
 diff --git a/src/cli/completion_script.cpp b/src/cli/completion_script.cpp
 new file mode 100644
-index 00000000..f8e17434
+index 00000000..6dddea10
 --- /dev/null
 +++ b/src/cli/completion_script.cpp
-@@ -0,0 +1,153 @@
+@@ -0,0 +1,213 @@
 +#include "cli/complete.h"
 +
 +namespace umbriel {
@@ -927,38 +927,91 @@ index 00000000..f8e17434
 +#   eval "$(umbriel completions bash)"
 +# The words up to the cursor, as the line spells them: readline splits COMP_WORDS on `COMP_WORDBREAKS`, which
 +# includes `:`, and leaves backslash escapes in place, so neither reaches `umbriel complete` intact otherwise.
++# Sets `_umbriel_words` to those words, `_umbriel_kept` to the part of the last one readline replaces (everything after
++# the last unquoted, unescaped break character, or after a quote still open at the cursor), and `_umbriel_quote` to
++# that open quote.
 +_umbriel_words() {
-+  local line=$1 char word= escaped=0 quote=
++  local line=$1 char word= kept= open= escaped=0 quote=
 +  local -a words=()
 +  local i
++  local breaks=${COMP_WORDBREAKS//[[:space:]\"\'\\]/}
 +  for ((i = 0; i < ${#line}; ++i)); do
 +    char=${line:i:1}
 +    if ((escaped)); then
 +      word+=$char
++      kept+=$char
 +      escaped=0
 +    elif [[ $char == '\' ]]; then
 +      escaped=1
 +    elif [[ -n $quote ]]; then
-+      [[ $char == "$quote" ]] && quote= || word+=$char
++      if [[ $char == "$quote" ]]; then
++        quote=
++      else
++        word+=$char
++        kept+=$char
++        open+=$char
++      fi
 +    elif [[ $char == "'" || $char == '"' ]]; then
 +      quote=$char
++      open=
 +    elif [[ $char == ' ' || $char == $'\t' ]]; then
 +      if [[ -n $word ]]; then
 +        words+=("$word")
 +        word=
 +      fi
++      kept=
++    elif [[ -n $breaks && $breaks == *"$char"* ]]; then
++      word+=$char
++      kept=
 +    else
 +      word+=$char
++      kept+=$char
 +    fi
 +  done
 +  words+=("$word")
-+  printf '%s\n' "${words[@]}"
++  # An open quote is the only break character readline still holds, so what follows it is all it replaces; once the
++  # quote is closed the word it made is what readline replaces whole.
++  if [[ -n $quote ]]; then
++    _umbriel_kept=$open
++  else
++    _umbriel_kept=$kept
++  fi
++  _umbriel_quote=$quote
++  _umbriel_words=("${words[@]}")
++}
++
++# A value as the shell must re-read it: `%q` where the word is unquoted, the quote's own escapes inside an open
++# double quote where a backslash is literal, and single quotes spliced in for the two characters the open quote
++# cannot carry. The word ends closed, because readline adds its own closing quote only to a match that lacks one and
++# then treats the word as finished.
++_umbriel_escape() {
++  local value=$1
++  case "$_umbriel_quote" in
++    '"')
++      value=${value//\\/\\\\}
++      value=${value//\"/\\\"}
++      value=${value//\$/\\$}
++      value=${value//\`/\\\`}
++      # `!` starts history expansion even inside double quotes, and `\!` would keep its backslash.
++      value=${value//!/\"\'!\'\"}
++      [[ $value == *'"' ]] && value+='"'
++      printf '%s' "$value"
++      ;;
++    "'")
++      # An apostrophe would otherwise close the word before its end.
++      value=${value//\'/\'\\\'\'}
++      [[ $value == *"'" ]] && value+="'"
++      printf '%s' "$value"
++      ;;
++    *) printf '%q' "$value" ;;
++  esac
 +}
 +
 +_umbriel() {
 +  local -a words=()
-+  local output code=0 value description current prefix
-+  mapfile -t words < <(_umbriel_words "${COMP_LINE:0:COMP_POINT}")
++  local output code=0 value description
++  _umbriel_words "${COMP_LINE:0:COMP_POINT}"
++  words=("${_umbriel_words[@]}")
 +  output=$(umbriel complete -- "${words[@]:1}" 2>/dev/null) || code=$?
 +  if ((code == 2)); then
 +    compopt -o default 2>/dev/null || true
@@ -969,16 +1022,13 @@ index 00000000..f8e17434
 +    return 0
 +  fi
 +  COMPREPLY=()
-+  # readline replaces only what follows the last `COMP_WORDBREAKS` character, which includes `:`, so the part the line
-+  # already holds is dropped from a candidate before it is quoted for re-entry. Quoting is readline's own job the
-+  # filenames option does for files; done here it also covers a value with no whitespace, and it never appends a slash
-+  # to a value that happens to name a directory.
-+  current=${words[-1]}
-+  prefix=${current%"${current##*:}"}
++  # readline keeps the part of the word before the last unquoted, unescaped break character and replaces the rest, so
++  # a candidate supplies only what is missing.
++  local head=${words[-1]%"$_umbriel_kept"}
 +  while IFS=$'\t' read -r value description; do
 +    [[ -n $value ]] || continue
-+    [[ -n $prefix && $value == "$prefix"* ]] && value=${value#"$prefix"}
-+    COMPREPLY+=("$(printf '%q' "$value")")
++    [[ -n $head && $value == "$head"* ]] && value=${value#"$head"}
++    COMPREPLY+=("$(_umbriel_escape "$value")")
 +  done <<<"$output"
 +  return 0
 +}
@@ -989,11 +1039,21 @@ index 00000000..f8e17434
 +# zsh completion for umbriel: installed by `meson install`, or load it with
 +#   eval "$(umbriel completions zsh)"
 +_umbriel() {
-+  local -a lines values displays
++  local -a lines values displays args
 +  local line value description code=0
 +  # `(Q)` removes the quoting zsh keeps in `words`, and `CURRENT` is the word the cursor is on, so a value with a
 +  # space or a colon continues from where it left off and a cursor moved back completes the word it is on.
-+  lines=("${(@f)$(umbriel complete -- "${(@Q)words[2,CURRENT]}" 2>/dev/null)}") || code=$?
++  args=("${(@Q)words[2,CURRENT]}")
++  # `(Q)` cannot dequote a word whose quote is still open at the cursor, and the binary matches on the word as the
++  # shell reads it, so the one quote it leaves open is dropped; a quote the value carries inside stays.
++  if [[ -n $compstate[quote] ]]; then
++    if [[ $args[-1] == $compstate[quote]* ]]; then
++      args[-1]=${args[-1]#$compstate[quote]}
++    else
++      args[-1]=${args[-1]%$compstate[quote]}
++    fi
++  fi
++  lines=("${(@f)$(umbriel complete -- "${args[@]}" 2>/dev/null)}") || code=$?
 +  if ((code == 2)); then
 +    _path_files
 +    return
@@ -1340,10 +1400,27 @@ index e684932a..bebdd89e 100644
 +
  } // namespace umbriel
 diff --git a/src/config/effects.h b/src/config/effects.h
-index 611d2798..5095e529 100644
+index 611d2798..c693c902 100644
 --- a/src/config/effects.h
 +++ b/src/config/effects.h
-@@ -119,5 +119,11 @@ namespace umbriel {
+@@ -8,6 +8,7 @@
+ #include <optional>
+ #include <string>
+ #include <string_view>
++#include <utility>
+ #include <vector>
+ 
+ namespace umbriel {
+@@ -15,6 +16,8 @@ namespace umbriel {
+   class Section;
+ 
+   enum class EffectKind : std::uint8_t { Animation, Border, Window, Screen, Cursor };
++  // Past the last kind, so a table indexed by kind sizes itself; a new kind after `Cursor` has to move this.
++  inline constexpr std::size_t kEffectKindCount = std::to_underlying(EffectKind::Cursor) + 1;
+   enum class EffectSelectionPolicy : std::uint8_t { UnusedFirst, RoundRobin, Random };
+   enum class EffectReferenceConstraint : std::uint8_t { PresetOnly, PresetOrPool, PoolRequired };
+ 
+@@ -119,5 +122,11 @@ namespace umbriel {
        const Effects& effects, std::string_view name, EffectKind kind, bool allowOff,
        EffectReferenceConstraint constraint = EffectReferenceConstraint::PresetOnly
    );
@@ -1925,22 +2002,35 @@ index 0791c2a3..b535079c 100644
          state->close();
        }
      }
-diff --git a/src/input/input_capture.h b/src/input/input_capture.h
-index f536feac..f6752221 100644
---- a/src/input/input_capture.h
-+++ b/src/input/input_capture.h
-@@ -11,6 +11,9 @@ struct wlr_keyboard;
+diff --git a/src/input/input_capture_permissions.cpp b/src/input/input_capture_permissions.cpp
+index 7080dccc..9f5bf200 100644
+--- a/src/input/input_capture_permissions.cpp
++++ b/src/input/input_capture_permissions.cpp
+@@ -381,7 +381,7 @@ namespace umbriel {
+   }
+ 
+   bool InputCapturePermissions::revoke(std::string_view id) {
+-    const bool all = id == "all";
++    const bool all = id == kRevokeAllWord;
+     if (!all && !hexString(id, 32)) {
+       return false;
+     }
+diff --git a/src/input/input_capture_permissions.h b/src/input/input_capture_permissions.h
+index 8b88cd79..80149369 100644
+--- a/src/input/input_capture_permissions.h
++++ b/src/input/input_capture_permissions.h
+@@ -9,6 +9,9 @@
  
  namespace umbriel {
  
-+  // `revokePermission`'s id that forgets every grant rather than one.
++  // The id both revokes read as "every grant", in place of one hex id.
 +  inline constexpr std::string_view kRevokeAllWord = "all";
 +
-   class Server;
- 
-   // The compositor owns capture permission and event routing. The private
+   struct InputCapturePermission {
+     std::string id;
+     std::string application;
 diff --git a/src/main.cpp b/src/main.cpp
-index d9fa0274..0552a547 100644
+index d9fa0274..52aa2f87 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -1,3 +1,5 @@
@@ -2153,7 +2243,7 @@ index d9fa0274..0552a547 100644
 +      }
 +    });
 +    // A workspace is named either by a `[[workspace]]` rule or by a string inventory on an output; a numeric
-+    // inventory creates anonymous members, which only `--name` and live state can address.
++    // inventory creates anonymous members, which only a positional index reaches — completion never offers them.
 +    values.workspaces = umbriel::CompletionList([=](std::vector<std::string>& target) {
 +      const umbriel::Config& config = completionConfig(*loaded);
 +      configNames(target, [](const umbriel::Config& loadedConfig) -> const auto& {
@@ -2288,14 +2378,14 @@ index d9fa0274..0552a547 100644
 +        return EXIT_SUCCESS;
 +      }
 +      if (argc != 3) {
-+        // A usage error, distinct from the unknown-shell code: 2 is what the scripts reserve for delegation.
++        // Both a missing and an unknown shell are usage errors on 1, clear of the 2 and 3 the scripts delegate on.
 +        std::println(stderr, "error: completions needs a shell: {}", completionShellList(", "));
 +        return EXIT_FAILURE;
 +      }
 +      const auto shell = umbriel::completionShellNamed(argv[2]);
 +      if (!shell) {
 +        std::println(stderr, "error: unknown shell '{}': expected {}", argv[2], completionShellList(", "));
-+        return 2;
++        return EXIT_FAILURE;
 +      }
 +      std::print("{}", umbriel::completionScript(*shell));
 +      return EXIT_SUCCESS;
@@ -2711,13 +2801,14 @@ index 3a780e9f..d7e836ea 100644
    # Reads docs/user/actions.md from the source tree: the doc's tables are generated from the same spec strings the CLI
 diff --git a/tests/unit/completion.cpp b/tests/unit/completion.cpp
 new file mode 100644
-index 00000000..ac83feda
+index 00000000..6d9fc34b
 --- /dev/null
 +++ b/tests/unit/completion.cpp
-@@ -0,0 +1,596 @@
+@@ -0,0 +1,817 @@
 +// Completion is derived from the same tables `umbriel msg` and the CLI dispatch read. The closed vocabularies a
 +// position offers (regions, displays, layout modes, anchors, `skip-confirmation`) are asserted to parse through the
-+// real grammar, so a name renamed in one place fails here.
++// real grammar, so a name renamed in one place fails here. The generated bash script is driven in a real shell
++// against a stub `umbriel`, so what it hands readline is checked as behaviour rather than as text.
 +
 +#include "check.h"
 +#include "cli/cli_words.h"
@@ -2729,9 +2820,16 @@ index 00000000..ac83feda
 +#include "view/window_region.h"
 +
 +#include <algorithm>
++#include <cstdlib>
++#include <fcntl.h>
++#include <filesystem>
++#include <format>
++#include <fstream>
 +#include <print>
 +#include <string>
 +#include <string_view>
++#include <sys/wait.h>
++#include <unistd.h>
 +#include <utility>
 +#include <vector>
 +
@@ -3107,8 +3205,9 @@ index 00000000..ac83feda
 +UMBRIEL_TEST(digitOnlyWorkspaceNamesCompleteOnlyByName) {
 +  CompletionValues values;
 +  values.workspaces = {"0", "2", "web", "--flag"};
-+  // `0` is not a usable index and `--flag` is a flag word, so neither can stand where the grammar expects a selector.
-+  CHECK_EQ(complete({"msg", "workspace-switch", ""}, values), (std::vector<std::string>{"2", "web"}));
++  // A positional word of digits is an index, never the name of the workspace at that index, and `--flag` is a flag
++  // word, so neither can stand where the grammar expects a selector.
++  CHECK_EQ(complete({"msg", "workspace-switch", ""}, values), std::vector<std::string>{"web"});
 +  // Ones given after `--name` are taken verbatim, so every name there is a candidate.
 +  CHECK_EQ(
 +      complete({"msg", "workspace-switch", "--name", ""}, values), (std::vector<std::string>{"0", "2", "web", "--flag"})
@@ -3269,38 +3368,250 @@ index 00000000..ac83feda
 +  CHECK(outcome == CompletionOutcome::Delegate);
 +}
 +
-+UMBRIEL_TEST(scriptsDeferToTheBinary) {
-+  for (const umbriel::CompletionShell shell :
-+       {umbriel::CompletionShell::Bash, umbriel::CompletionShell::Zsh, umbriel::CompletionShell::Fish}) {
-+    const std::string script = umbriel::completionScript(shell);
-+    CHECK(!script.empty());
-+    CHECK(script.contains("umbriel complete"));
++std::vector<std::string> lines(std::string_view text) {
++  std::vector<std::string> result;
++  std::size_t start = 0;
++  while (start < text.size()) {
++    const std::size_t end = text.find('\n', start);
++    if (end == std::string_view::npos) {
++      result.emplace_back(text.substr(start));
++      break;
++    }
++    result.emplace_back(text.substr(start, end - start));
++    start = end + 1;
 +  }
-+  CHECK(umbriel::completionScript(umbriel::CompletionShell::Bash).contains("complete -F _umbriel umbriel"));
++  return result;
++}
++
++// `[a][b]` reads as clearly as an empty list does, where a bare vector would print as unprintable.
++std::string joined(const std::vector<std::string>& values) {
++  std::string text;
++  for (const std::string& value : values) {
++    text += '[' + value + ']';
++  }
++  return text;
++}
++
++// Drives the generated bash script in a real shell. A stub `umbriel` first on PATH records the words it is handed
++// and prints the reply, so an assertion covers what the script gives readline instead of the script's own text.
++class BashCompletion {
++public:
++  struct Case {
++    // `line` is the line up to the cursor (COMP_LINE), `reply` the `<value>\t<description>` lines the real binary
++    // would print, `status` the code it would exit with, and `cursorWord` the COMP_WORDS[COMP_CWORD] the
++    // command-name delegation reads.
++    Case(std::string line, std::string reply, int status = 0, std::string cursorWord = {})
++        : line(std::move(line)), reply(std::move(reply)), status(status), cursorWord(std::move(cursorWord)) {}
++
++    std::string line;
++    std::string reply;
++    int status;
++    std::string cursorWord;
++  };
++
++  struct Result {
++    std::vector<std::string> candidates; // COMPREPLY
++    std::string words;                   // the arguments the stub was called with
++  };
++
++  BashCompletion() {
++    char pattern[] = "/tmp/umbriel-completion-XXXXXX";
++    const char* created = mkdtemp(pattern);
++    CHECK(created != nullptr);
++    if (created == nullptr) {
++      std::abort();
++    }
++    m_directory = created;
++    const char* inherited = std::getenv("PATH");
++    m_path = m_directory.string() + ':' + (inherited != nullptr ? inherited : "/usr/bin:/bin");
++    writeFile("completion.bash", umbriel::completionScript(umbriel::CompletionShell::Bash));
++  }
++
++  ~BashCompletion() {
++    std::error_code ignored;
++    std::filesystem::remove_all(m_directory, ignored);
++  }
++
++  Result complete(const Case& request) {
++    writeFile("reply", request.reply);
++    writeFile(
++        "umbriel",
++        std::format(
++            "#!/bin/sh\nprintf '%s' \"$*\" > '{0}/argv'\ncat '{0}/reply'\nexit {1}\n", m_directory.string(),
++            request.status
++        )
++    );
++    std::filesystem::permissions(m_directory / "umbriel", std::filesystem::perms::owner_all);
++    std::string command = "source '" + (m_directory / "completion.bash").string() + "'";
++    if (!request.cursorWord.empty()) {
++      command += std::format("; COMP_WORDS=(umbriel {}); COMP_CWORD=1", request.cursorWord);
++    }
++    // The count first, so an empty `COMPREPLY` is distinct from one holding an empty candidate.
++    command += R"(; _umbriel; printf '%s\n' "${#COMPREPLY[@]}"; printf '[%s]\n' "${COMPREPLY[@]}")";
++    const std::vector<std::string> output = lines(shell(command, request));
++    const std::size_t count =
++        output.empty() ? 0 : static_cast<std::size_t>(std::strtoul(output.front().c_str(), nullptr, 10));
++    std::vector<std::string> candidates;
++    for (std::size_t index = 1; index < output.size() && candidates.size() < count; ++index) {
++      const std::string& line = output[index];
++      candidates.emplace_back(line.size() >= 2 ? line.substr(1, line.size() - 2) : std::string());
++    }
++    return {candidates, readFile("argv")};
++  }
++
++  // The registration readline dispatches through.
++  std::string registered() const {
++    return shell("source '" + (m_directory / "completion.bash").string() + "'; complete -p umbriel", {"", ""});
++  }
++
++private:
++  std::string shell(const std::string& command, const Case& request) const {
++    int output[2]{-1, -1};
++    if (pipe2(output, O_CLOEXEC) < 0) {
++      return {};
++    }
++    const pid_t child = fork();
++    if (child == 0) {
++      close(output[0]);
++      if (dup2(output[1], STDOUT_FILENO) < 0) {
++        _exit(1);
++      }
++      close(output[1]);
++      setenv("COMP_LINE", request.line.c_str(), 1);
++      setenv("COMP_POINT", std::to_string(request.line.size()).c_str(), 1);
++      setenv("COMP_WORDBREAKS", " \t\n\"'><=;|&(:", 1);
++      setenv("PATH", m_path.c_str(), 1);
++      execlp("bash", "bash", "--norc", "--noprofile", "-c", command.c_str(), nullptr);
++      _exit(1);
++    }
++    close(output[1]);
++    output[1] = -1;
++    if (child < 0) {
++      close(output[0]);
++      return {};
++    }
++    std::string text;
++    char buffer[4096];
++    ssize_t count = 0;
++    while ((count = read(output[0], buffer, sizeof buffer)) > 0) {
++      text.append(buffer, static_cast<std::size_t>(count));
++    }
++    close(output[0]);
++    int status = 0;
++    CHECK_EQ(waitpid(child, &status, 0), child);
++    CHECK(WIFEXITED(status));
++    return text;
++  }
++
++  void writeFile(const std::string& name, const std::string& contents) {
++    std::ofstream stream(m_directory / name, std::ios::binary | std::ios::trunc);
++    stream << contents;
++    CHECK(stream.good());
++  }
++
++  std::string readFile(const std::string& name) const {
++    std::ifstream stream(m_directory / name);
++    std::string text;
++    std::getline(stream, text);
++    return text;
++  }
++
++  std::filesystem::path m_directory;
++  std::string m_path;
++};
++
++UMBRIEL_TEST(scriptsDeferToTheBinary) {
++  // zsh and fish are absent from the image the tests run in, so their deferred positions and format contracts are
++  // pinned by the call each one makes; bash is driven end to end below.
 +  const std::string zsh = umbriel::completionScript(umbriel::CompletionShell::Zsh);
++  CHECK(!zsh.empty());
++  CHECK(zsh.contains("umbriel complete"));
 +  CHECK(zsh.contains("#compdef umbriel"));
 +  // zsh refuses compadd outside a completion function, so an eval must register instead of running the function body.
 +  CHECK(zsh.contains("[[ $funcstack[1] == _umbriel ]]"));
-+  CHECK(umbriel::completionScript(umbriel::CompletionShell::Fish).contains("complete -c umbriel"));
-+  // Each delegated position must reach the shell's own completer: paths for `-c`, command names for `spawn`.
-+  const std::string bash = umbriel::completionScript(umbriel::CompletionShell::Bash);
-+  CHECK(bash.contains("compopt -o default"));
-+  CHECK(bash.contains("compgen -c"));
-+  // readline replaces only what follows the last word-break character, so a value carrying one is split before the
-+  // shell sees it; the script drops that part and quotes the rest itself rather than leaving readline's filenames
-+  // option to append a slash to a value that names a directory.
-+  CHECK(bash.contains("current##*:"));
-+  CHECK(bash.contains("printf '%q'"));
-+  CHECK(!bash.contains("compopt -o filenames"));
 +  CHECK(zsh.contains("_path_files"));
 +  CHECK(zsh.contains("_command_names"));
 +  // `_describe` splits both of its arrays on an unescaped `:`, so a window id would otherwise be cut at its colon.
 +  CHECK(zsh.contains("values+=(\"${value//:/\\\\:}\")"));
 +  const std::string fish = umbriel::completionScript(umbriel::CompletionShell::Fish);
++  CHECK(!fish.empty());
++  CHECK(fish.contains("umbriel complete"));
++  CHECK(fish.contains("complete -c umbriel"));
 +  CHECK(fish.contains("__fish_complete_path"));
 +  CHECK(fish.contains("__fish_complete_command"));
 +  // `-ct` leaves the escape the shell inserted in place, so the current token is unescaped before it is sent.
 +  CHECK(fish.contains("string unescape"));
++  // Path delegation runs through compopt, which exists only inside a completion invocation.
++  CHECK(umbriel::completionScript(umbriel::CompletionShell::Bash).contains("compopt -o default"));
++}
++
++UMBRIEL_TEST(bashScriptReplacesOnlyWhatReadlineDoes) {
++  BashCompletion bash;
++  CHECK_EQ(bash.registered(), "complete -F _umbriel umbriel\n");
++
++  // readline replaces only the part after the last unquoted break character, which includes `:`, so a value supplies
++  // the rest and the prefix the line already holds stays.
++  const BashCompletion::Result plain = bash.complete({"umbriel msg window-focus kitty:h", "kitty:htop\thtop"});
++  CHECK_EQ(joined(plain.candidates), "[htop]");
++  CHECK_EQ(plain.words, "complete -- msg window-focus kitty:h");
++
++  // A quote open at the cursor hides the break characters inside it, so the whole quoted value is replaced.
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus \"kitty:my", "kitty:my title\ttitle"}).candidates),
++      "[kitty:my title]"
++  );
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus 'kitty:my", "kitty:my title\ttitle"}).candidates),
++      "[kitty:my title]"
++  );
++
++  const BashCompletion::Result escaped = bash.complete({"umbriel msg window-focus kitty\\:h", "kitty:htop\thtop"});
++  // An escaped break character is quoted, so readline replaces the whole word and the value has to arrive complete.
++  CHECK_EQ(joined(escaped.candidates), "[kitty:htop]");
++  CHECK_EQ(escaped.words, "complete -- msg window-focus kitty:h");
++
++  // A value the shell would re-read differently is quoted for the context it lands in.
++  CHECK_EQ(joined(bash.complete({"umbriel msg window-focus Don", "Don't\ttitle"}).candidates), "[Don\\'t]");
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus foot:s", "foot:shell one\ttitle"}).candidates), "[shell\\ one]"
++  );
++  CHECK_EQ(joined(bash.complete({"umbriel msg window-focus \"a", "a\"b$c\ttitle"}).candidates), "[a\\\"b\\$c]");
++  // Neither character can be carried by the quote that is open: `!` because it starts history expansion inside
++  // double quotes, and an apostrophe because it would close a single-quoted word early.
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus \"kitty:hello", "kitty:hello!world\ttitle"}).candidates),
++      "[kitty:hello\"'!'\"world]"
++  );
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus 'kitty:Don", "kitty:Don't\ttitle"}).candidates),
++      "[kitty:Don'\\''t]"
++  );
++  // The word has to end closed: readline closes only a match that lacks a closing quote, and then ends the word, so a
++  // value whose last character leaves the quote open would take the space readline appends with it.
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus \"kitty:hel", "kitty:hello!\ttitle"}).candidates),
++      "[kitty:hello\"'!'\"\"]"
++  );
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus 'kitty:Don", "kitty:Don'\ttitle"}).candidates),
++      "[kitty:Don'\\''']"
++  );
++  // A closed quote makes one word of everything inside and after it, so the whole value replaces the word.
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus \"kitty:Don't\"", "kitty:Don't\ttitle"}).candidates),
++      "[kitty:Don\\'t]"
++  );
++  // A second TAB reads the quotes the first one inserted, so the value continues after them.
++  CHECK_EQ(
++      joined(bash.complete({"umbriel msg window-focus \"kitty:hello\"'!'\"",
++                            "kitty:hello!world\ttitle\nkitty:hello!there\ttitle"})
++                 .candidates),
++      "[world][there]"
++  );
++
++  // Exit 2 leaves paths to readline, exit 3 takes the command names from the shell's own list.
++  CHECK(bash.complete({"umbriel config-replace /e", "", 2}).candidates.empty());
++  CHECK(contains(bash.complete({"umbriel spawn umb", "", 3, "umb"}).candidates, "umbriel"));
 +}
 +
 +UMBRIEL_TEST(shellNamesRoundTrip) {
