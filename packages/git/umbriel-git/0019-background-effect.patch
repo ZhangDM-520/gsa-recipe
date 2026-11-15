@@ -55,10 +55,10 @@ index 00000000..9a87b4d1
 +
 +`org_kde_kwin_blur` is not part of wayland-protocols and its XML is LGPL-2.1-or-later; it is not advertised. A client that only speaks that protocol still needs a window or layer rule for blur.
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 39de77e2..e42b68be 100644
+index 7f7066ac..64fdad9e 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
-@@ -252,6 +252,7 @@ The bar is hidden while its window is fullscreen or maximized to the edges. Titl
+@@ -253,6 +253,7 @@ The bar is hidden while its window is fullscreen or maximized to the edges. Titl
  ```toml
  [appearance.blur]
  enabled = true
@@ -66,7 +66,7 @@ index 39de77e2..e42b68be 100644
  optimized = true
  passes = 2
  radius = 5
-@@ -263,16 +264,19 @@ saturation = 1.1
+@@ -264,16 +265,19 @@ saturation = 1.1
  
  `enabled` is the master switch. Individual surfaces still opt in through [window rules](window-rules.md) or [layer rules](layer-rules.md). Blur appears only where a surface is transparent.
  
@@ -97,10 +97,10 @@ index 39de77e2..e42b68be 100644
  Optimized blur samples the background beneath the window stack. Set it to `false` when translucent surfaces should blur the surfaces directly behind them, at a higher rendering cost. The shared background cache follows background layer-shell updates, including animated map and unmap transitions. Unchanged commits that only request frame callbacks reuse the cached blur.
  
 diff --git a/examples/config.toml b/examples/config.toml
-index 2d4beda0..b86f9199 100644
+index 5a87ac24..aa6ab482 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
-@@ -92,6 +92,10 @@ files = []
+@@ -83,6 +83,10 @@ files = []
  [appearance.blur]
  radius = 3
  
@@ -112,7 +112,7 @@ index 2d4beda0..b86f9199 100644
  # [appearance.title_bar]
  # mode = "on" # Follow client decoration preferences.
 diff --git a/meson.build b/meson.build
-index 8ca23c6d..9ddf6494 100644
+index bf831154..0e80fb0c 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -445,6 +445,32 @@ color_management_server_c = custom_target(
@@ -148,7 +148,7 @@ index 8ca23c6d..9ddf6494 100644
  xdg_output_server_h = custom_target(
    'xdg-output-unstable-v1-protocol.h',
    input: wayland_protocols_dep.get_variable(pkgconfig: 'pkgdatadir') / 'unstable/xdg-output/xdg-output-unstable-v1.xml',
-@@ -793,6 +819,7 @@ core_sources = files(
+@@ -794,6 +820,7 @@ core_sources = files(
    'src/layout/drop_target.cpp',
    'src/server/color_manager.cpp',
    'src/server/color_description.cpp',
@@ -156,7 +156,7 @@ index 8ca23c6d..9ddf6494 100644
    'src/server/backend_manager.cpp',
    'src/server/drm_lease.cpp',
    'src/server/allocator.cpp',
-@@ -920,6 +947,8 @@ umbriel_core = static_library(
+@@ -921,6 +948,8 @@ umbriel_core = static_library(
      xdg_shell_client_c,
      color_management_server_h,
      color_management_server_c,
@@ -166,7 +166,7 @@ index 8ca23c6d..9ddf6494 100644
      xdg_output_server_c,
    ],
 diff --git a/src/config/config.h b/src/config/config.h
-index 861c8d49..fe044691 100644
+index de197e3f..0240c3da 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -796,6 +796,10 @@ namespace umbriel {
@@ -181,10 +181,10 @@ index 861c8d49..fe044691 100644
          int passes = 2;
          int radius = 5;
 diff --git a/src/config/fields_general.cpp b/src/config/fields_general.cpp
-index 782f6f00..7b98f019 100644
+index 8b28b36e..7076c899 100644
 --- a/src/config/fields_general.cpp
 +++ b/src/config/fields_general.cpp
-@@ -126,10 +126,15 @@ namespace umbriel {
+@@ -138,10 +138,15 @@ namespace umbriel {
            ),
        };
        static const registry::Fields<A::Blur> blur{
@@ -205,7 +205,7 @@ index 782f6f00..7b98f019 100644
        static const registry::Fields<A::Shadow> shadow{
            boolean("enabled", &A::Shadow::enabled),
 diff --git a/src/layer/layer_surface.cpp b/src/layer/layer_surface.cpp
-index cd22c933..dd681052 100644
+index e8d77a98..718737a0 100644
 --- a/src/layer/layer_surface.cpp
 +++ b/src/layer/layer_surface.cpp
 @@ -11,6 +11,7 @@ extern "C" {
@@ -216,7 +216,7 @@ index cd22c933..dd681052 100644
  #include "server/server.h"
  #include "view/popup.h"
  #include "wlr.h"
-@@ -407,7 +408,15 @@ namespace umbriel {
+@@ -408,7 +409,15 @@ namespace umbriel {
  
    void LayerSurface::updateBlur() {
      const wlr_box box{0, 0, m_layerSurface->surface->current.width, m_layerSurface->surface->current.height};
@@ -233,7 +233,7 @@ index cd22c933..dd681052 100644
    }
  
    void LayerSurface::applyConfig() {
-@@ -596,7 +605,7 @@ namespace umbriel {
+@@ -597,7 +606,7 @@ namespace umbriel {
      auto* popup = static_cast<wlr_xdg_popup*>(data);
      // The popup tree shares the surface origin and stacks above its shell layer's regular surfaces.
      wlr_scene_node_raise_to_top(&m_popupTree->node);
@@ -243,7 +243,7 @@ index cd22c933..dd681052 100644
  
  } // namespace umbriel
 diff --git a/src/overview/overview.cpp b/src/overview/overview.cpp
-index 3adcee65..46388575 100644
+index 37750909..4446184f 100644
 --- a/src/overview/overview.cpp
 +++ b/src/overview/overview.cpp
 @@ -26,6 +26,7 @@ extern "C" {
@@ -772,7 +772,7 @@ index 00000000..d4e91d5a
 +
 +} // namespace umbriel
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index f9ad57be..fe3fe898 100644
+index 93701695..af2010f1 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
 @@ -29,6 +29,7 @@
@@ -787,12 +787,12 @@ index f9ad57be..fe3fe898 100644
      // Security-context clients only receive reviewed, ordinary application
      // protocols. New globals stay unavailable until they are classified here.
      // [[security_context_rule]] widens the set for matching clients.
--    constexpr std::array<std::string_view, 32> kAllowedSecurityContextGlobals{
-+    constexpr std::array<std::string_view, 33> kAllowedSecurityContextGlobals{
+-    constexpr std::array<std::string_view, 33> kAllowedSecurityContextGlobals{
++    constexpr std::array<std::string_view, 34> kAllowedSecurityContextGlobals{
          "wl_shm",
          "wl_drm",
          "zwp_linux_dmabuf_v1",
-@@ -105,6 +106,7 @@ namespace umbriel {
+@@ -106,6 +107,7 @@ namespace umbriel {
          "wl_seat",
          "wp_cursor_shape_manager_v1",
          "zwp_text_input_manager_v3",
@@ -800,7 +800,7 @@ index f9ad57be..fe3fe898 100644
      };
  
      bool isAllowedSecurityContextGlobal(std::string_view interface) {
-@@ -730,6 +732,13 @@ namespace umbriel {
+@@ -720,6 +722,13 @@ namespace umbriel {
          throw std::runtime_error("failed to create color-management manager");
        }
      }
@@ -814,7 +814,7 @@ index f9ad57be..fe3fe898 100644
      const Config::Appearance::Blur& blur = config().appearance.blur;
      wlr_scene_set_blur_data(
          m_scene, blur.passes, blur.radius, static_cast<float>(blur.noise), static_cast<float>(blur.brightness),
-@@ -1111,6 +1120,7 @@ namespace umbriel {
+@@ -1101,6 +1110,7 @@ namespace umbriel {
      wl_display_destroy_clients(m_display);
      m_drmLeaseManager.reset();
      m_colorManager.reset();
@@ -823,18 +823,18 @@ index f9ad57be..fe3fe898 100644
      m_syncobjUnmapRelease.reset();
      m_syncobjSupersededRelease.reset();
 diff --git a/src/server/server.h b/src/server/server.h
-index 06ba4f60..ba302e6c 100644
+index c730c833..7b460f3f 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
 @@ -142,6 +142,7 @@ namespace umbriel {
+   class InputMethodRelay;
    class Gestures;
    class ColorManager;
-   struct ColorDescription;
 +  class BackgroundEffectManager;
+   struct ColorDescription;
    class SyncobjAcquireBarrier;
    class SyncobjSupersededRelease;
-   class SyncobjUnmapRelease;
-@@ -203,6 +204,7 @@ namespace umbriel {
+@@ -204,6 +205,7 @@ namespace umbriel {
      bool outputCaptured(const wlr_output* output) const;
      wlr_tearing_control_manager_v1* tearingControlManager() const { return m_tearingControlManager; }
      ColorManager* colorManager() const { return m_colorManager.get(); }
@@ -842,7 +842,7 @@ index 06ba4f60..ba302e6c 100644
      const ColorDescription* surfaceImageDescription(wlr_surface* surface) const;
      const ColorDescription* surfaceTreeHdrDescription(wlr_surface* surface) const;
      void updateColorPreferences();
-@@ -754,6 +756,7 @@ namespace umbriel {
+@@ -760,6 +762,7 @@ namespace umbriel {
      wlr_content_type_manager_v1* m_contentTypeManager = nullptr;
      wlr_security_context_manager_v1* m_securityContextManager = nullptr;
      std::unique_ptr<ColorManager> m_colorManager;
@@ -851,10 +851,10 @@ index 06ba4f60..ba302e6c 100644
      std::unique_ptr<SyncobjUnmapRelease> m_syncobjUnmapRelease;
      std::unique_ptr<SyncobjSupersededRelease> m_syncobjSupersededRelease;
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index 57a28f25..e43f0141 100644
+index fa549261..ce91e11e 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
-@@ -902,6 +902,8 @@ namespace umbriel {
+@@ -892,6 +892,8 @@ namespace umbriel {
        for (View* view : sortedEffectViews()) {
          view->refreshConfigChrome();
        }
@@ -863,7 +863,7 @@ index 57a28f25..e43f0141 100644
        // Screen and cursor presets take their palette from [colors] too.
        m_effects.applyOutputEffects();
        markDirty(Dirty::Backdrop);
-@@ -1367,7 +1369,9 @@ namespace umbriel {
+@@ -1357,7 +1359,9 @@ namespace umbriel {
      }
    }
  
@@ -874,7 +874,7 @@ index 57a28f25..e43f0141 100644
      auto* popup = static_cast<wlr_xdg_popup*>(data);
      // Layer-shell popups (and any popup without a parent yet) are handled
      // elsewhere; parent can be null when xdg_shell emits new_popup.
-@@ -1375,7 +1379,7 @@ namespace umbriel {
+@@ -1365,7 +1369,7 @@ namespace umbriel {
        return;
      }
      View* owner = View::fromSurface(popup->parent);
@@ -884,10 +884,10 @@ index 57a28f25..e43f0141 100644
  
    void Server::onNewXdgDecoration(wl_listener* listener, void* data) {
 diff --git a/src/view/decoration.cpp b/src/view/decoration.cpp
-index 54d56c06..1129e05c 100644
+index 8b337a6b..15ee5787 100644
 --- a/src/view/decoration.cpp
 +++ b/src/view/decoration.cpp
-@@ -144,10 +144,10 @@ namespace umbriel {
+@@ -145,10 +145,10 @@ namespace umbriel {
    void ViewDecoration::updateBlur(
        wlr_scene_tree* tree, wlr_surface* surface, const wlr_box& nodeBox, const wlr_box& geometry,
        fx_corner_radii corners, const wlr_box* clip, float surfaceOpacity, float blurAlpha,
@@ -914,7 +914,7 @@ index 18621341..51953a87 100644
      void hideBlur();
      void setBlurLive(bool live) { m_blur.setLive(live); }
 diff --git a/src/view/popup.cpp b/src/view/popup.cpp
-index 702a788f..366ca6a5 100644
+index a5e1dec9..ecf6d174 100644
 --- a/src/view/popup.cpp
 +++ b/src/view/popup.cpp
 @@ -3,6 +3,8 @@
@@ -936,7 +936,7 @@ index 702a788f..366ca6a5 100644
      if (parentTree == nullptr) {
        wlr_xdg_surface* parent = wlr_xdg_surface_try_from_wlr_surface(m_popup->parent);
        assert(parent != nullptr);
-@@ -31,9 +34,11 @@ namespace umbriel {
+@@ -33,9 +36,11 @@ namespace umbriel {
      wl_signal_add(&m_popup->base->surface->events.unmap, &m_unmap);
      m_destroy.notify = onDestroy;
      wl_signal_add(&m_popup->events.destroy, &m_destroy);
@@ -948,7 +948,7 @@ index 702a788f..366ca6a5 100644
      if (m_commit.link.next != nullptr) {
        wl_list_remove(&m_commit.link);
        wl_list_remove(&m_reposition.link);
-@@ -68,7 +73,29 @@ namespace umbriel {
+@@ -77,7 +82,29 @@ namespace umbriel {
      self->handleDestroy();
    }
  
@@ -979,7 +979,7 @@ index 702a788f..366ca6a5 100644
      const wlr_box& geometry = m_popup->base->geometry;
      SurfaceBlurOptions blurOptions;
      if (LayerSurface* layer = LayerSurface::fromSurface(m_popup->parent)) {
-@@ -76,10 +103,20 @@ namespace umbriel {
+@@ -85,10 +112,20 @@ namespace umbriel {
      } else if (View* view = View::fromSurface(m_popup->parent)) {
        blurOptions = view->popupBlurOptions();
      }
@@ -1002,7 +1002,7 @@ index 702a788f..366ca6a5 100644
      if (!m_popup->base->initial_commit) {
        return;
      }
-@@ -112,6 +149,9 @@ namespace umbriel {
+@@ -140,6 +177,9 @@ namespace umbriel {
    }
  
    void Popup::handleMap() {
@@ -1013,18 +1013,18 @@ index 702a788f..366ca6a5 100644
      if (m_popup->seat == nullptr) {
        return;
 diff --git a/src/view/popup.h b/src/view/popup.h
-index 66641847..0fb909a1 100644
+index 8d0f8e14..e3db3136 100644
 --- a/src/view/popup.h
 +++ b/src/view/popup.h
-@@ -1,6 +1,7 @@
- #pragma once
+@@ -2,6 +2,7 @@
  #include "scene/surface_blur.h"
  
+ #include <list>
 +#include <vector>
  #include <wayland-server-core.h>
  
  struct wlr_xdg_popup;
-@@ -8,15 +9,28 @@ struct wlr_scene_tree;
+@@ -10,15 +11,28 @@ struct wlr_scene_tree;
  
  namespace umbriel {
  
@@ -1053,17 +1053,17 @@ index 66641847..0fb909a1 100644
 +
      static void onCommit(wl_listener* listener, void* data);
      static void onReposition(wl_listener* listener, void* data);
-     static void onMap(wl_listener* listener, void* data);
-@@ -29,6 +43,7 @@ namespace umbriel {
+     static void onConfigure(wl_listener* listener, void* data);
+@@ -34,6 +48,7 @@ namespace umbriel {
      void handleDestroy();
  
      wlr_xdg_popup* m_popup = nullptr;
 +    Server* m_server = nullptr;
      SurfaceBlur m_blur;
+     std::list<wlr_xdg_popup_configure> m_repositions;
  
-     wl_listener m_commit{};
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index d0d0fb27..14dcc009 100644
+index 96e91569..f781ed7d 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -148,6 +148,7 @@ namespace umbriel {
@@ -1074,7 +1074,7 @@ index d0d0fb27..14dcc009 100644
      wlr_surface* surface = rootSurface();
      m_server->registerAnimatable(this);
      // Register map/unmap listeners BEFORE creating the scene tree so our handlers fire before wlroots' internal unmap
-@@ -290,6 +291,7 @@ namespace umbriel {
+@@ -289,6 +290,7 @@ namespace umbriel {
    }
  
    View::~View() {
@@ -1083,11 +1083,10 @@ index d0d0fb27..14dcc009 100644
      if (m_effectSelectionIdle != nullptr) {
        wl_event_source_remove(m_effectSelectionIdle);
 diff --git a/src/view/view.h b/src/view/view.h
-index 51cd169a..bdc43dcb 100644
+index 27edfbdd..51efff9f 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -17,7 +17,8 @@
- #include <cmath>
+@@ -18,6 +18,7 @@
  #include <expected>
  #include <memory>
  #include <optional>
@@ -1095,7 +1094,7 @@ index 51cd169a..bdc43dcb 100644
  #include <string>
  #include <string_view>
  #include <sys/types.h>
-@@ -657,8 +658,13 @@ namespace umbriel {
+@@ -648,8 +649,13 @@ namespace umbriel {
      void refreshConfigChrome();
      void updateBlur();
      void updateBlur(int contentWidth, int contentHeight);
@@ -1109,17 +1108,17 @@ index 51cd169a..bdc43dcb 100644
      SurfaceBlurOptions popupBlurOptions() const { return m_decoration.popupBlurOptions(); }
      void updateShadow();
      void updateShadow(int contentWidth, int contentHeight);
-@@ -1159,6 +1165,8 @@ namespace umbriel {
+@@ -1116,6 +1122,8 @@ namespace umbriel {
      AnimatedValue m_ruleOpacity{1.0};
      AnimatedValue m_ruleBlur{0.0};
      bool m_backgroundRender = false;
 +    bool m_clientBlurRequested = false;
 +    pixman_region32_t m_clientBlurRegion{};
      bool m_allowShortcutsInhibit = true;
-     std::optional<bool> m_appliedSupersampleRule;
      float m_dragOpacity = 1.0F;
+     float m_overviewOpacity = 1.0F;
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 3616a639..b4c45729 100644
+index 5e2b0e1e..54fecea1 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
 @@ -91,7 +91,7 @@ namespace umbriel {
@@ -1208,7 +1207,7 @@ index bd01cb2a..65704dba 100644
    }
  
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 545debcf..5fa72e36 100644
+index 2c67b527..20f04bbf 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
 @@ -175,6 +175,7 @@ namespace umbriel {
@@ -1220,7 +1219,7 @@ index 545debcf..5fa72e36 100644
  
    void View::onViewSurfaceNewSubsurface(wl_listener* listener, void* data) {
 diff --git a/tests/harness/check.sh b/tests/harness/check.sh
-index a3c3b843..ac9e392d 100755
+index c8a99e10..e1859f98 100755
 --- a/tests/harness/check.sh
 +++ b/tests/harness/check.sh
 @@ -177,6 +177,7 @@ export UMBRIEL_SYNCOBJ_CLIENT="$CLIENT_DIR/syncobj-client"
@@ -1689,10 +1688,10 @@ index 00000000..007b478c
 +grim "$RELOADED"
 +expect_same "$RELOADED" "$HIDDEN" "a config reload re-enabled the blur of an unmapped popup"
 diff --git a/tests/harness/checks/protocol/security_context.sh b/tests/harness/checks/protocol/security_context.sh
-index d747deb5..23383b70 100644
+index 88e0e2ac..16f790a4 100644
 --- a/tests/harness/checks/protocol/security_context.sh
 +++ b/tests/harness/checks/protocol/security_context.sh
-@@ -41,6 +41,7 @@ readonly -a NORMAL_GLOBALS=(
+@@ -42,6 +42,7 @@ readonly -a NORMAL_GLOBALS=(
    wl_seat
    wp_cursor_shape_manager_v1
    zwp_text_input_manager_v3
@@ -2236,7 +2235,7 @@ index 40a82c25..36d1c48b 100644
            createPopup(state, std::nullopt);
            std::println("popup-requested");
 diff --git a/tests/meson.build b/tests/meson.build
-index ebdaa2d8..63e51cd2 100644
+index 3a780e9f..8754db7b 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
 @@ -16,6 +16,7 @@ unit_tests = [

@@ -1,0 +1,459 @@
+diff --git a/docs/user/actions.md b/docs/user/actions.md
+index 6355cc17..12e6d62f 100644
+--- a/docs/user/actions.md
++++ b/docs/user/actions.md
+@@ -319,5 +319,5 @@ See [Layout](layout.md) for geometry, directions, and resizing behavior.
+ - `column-focus-tab-next` and `column-focus-tab-previous` wrap unless `layout.tabs.wrap_focus` is off. In the scrolling layout a tab group is one row of its column: `window-focus-up` and `window-focus-down` step over it, and `window-move-up` and `window-move-down` take a tab out of it or a window into it. In a tabbed master area they step through its tabs without wrapping.
+ - Floating and pinned behavior is described in [Layout](layout.md) and [Scratchpads](scratchpad.md).
+ - An action unavailable in the active layout does nothing from a keybind and returns an explanatory error through `umbriel msg`.
+-- `spawn` supplies an activation token and records the pointer-preferred output and its active workspace. The launched application's first window opens there even if you switch workspaces while it starts. Opening on a workspace you left is silent, and explicit `default_output`, `default_workspace`, and `default_scratchpad` window rules take precedence. `focus_on_activate` controls whether an activation request focuses the window, not the recorded launch destination. Autostart commands do not receive a token or recorded placement.
++- `spawn` supplies an activation token and records the pointer-preferred output and its active workspace. The launched application's first window opens there even if you switch workspaces while it starts. Opening on a workspace you left is silent, and explicit `default_output`, `default_workspace`, and `default_scratchpad` window rules take precedence. `focus_on_activate` controls whether an activation request focuses the window, not the recorded launch destination. Autostart commands do not receive a token or recorded placement. A command written as a bare invocation is checked before it runs: a bare program name must be found on `PATH`, and a program naming a path must be executable. When it is not, nothing is launched and the failure is reported to whoever asked — an error through `umbriel msg`, a log line for a keybind or an autostart entry. A command that needs a shell to interpret (quoting, expansion, globbing, redirection, or composition), and one that assigns `PATH`, runs through `/bin/sh`, so its own failures are not reported back.
+ - Bare `session-quit` asks for confirmation. Use `session-quit skip-confirmation` only when an immediate exit is intended.
+diff --git a/meson.build b/meson.build
+index bf831154..4b0547f0 100644
+--- a/meson.build
++++ b/meson.build
+@@ -706,6 +706,7 @@ pure_sources = files(
+   'src/config/value_parse.cpp',
+   'src/config/section.cpp',
+   'src/config/effects.cpp',
++  'src/core/spawn_command.cpp',
+   'src/input/lid_state.cpp',
+   'src/input/modifier_tap.cpp',
+   'src/input/swipe_tracker.cpp',
+diff --git a/src/core/spawn_command.cpp b/src/core/spawn_command.cpp
+new file mode 100644
+index 00000000..b172a02f
+--- /dev/null
++++ b/src/core/spawn_command.cpp
+@@ -0,0 +1,96 @@
++#include "core/spawn_command.h"
++
++#include <algorithm>
++#include <cstddef>
++
++namespace umbriel {
++
++  namespace {
++
++    constexpr std::string_view kShellSyntax = "\"'\\$`*?[{|}()&;<>#!~\n\r";
++
++    // Words the shell interprets itself, so PATH never decides whether the command runs. This is the union of bash's
++    // `enable -a` builtins, dash's builtins, and the reserved words, because `/bin/sh` is not the same shell
++    // everywhere.
++    constexpr std::string_view kShellBuiltins[] = {
++        ".",         ":",        "[",       "alias",   "bg",       "bind",    "break",    "builtin", "caller",
++        "case",      "cd",       "command", "compgen", "complete", "compopt", "continue", "coproc",  "declare",
++        "dirs",      "disown",   "do",      "done",    "echo",     "elif",    "else",     "enable",  "esac",
++        "eval",      "exec",     "exit",    "export",  "false",    "fc",      "fg",       "fi",      "for",
++        "function",  "getopts",  "hash",    "help",    "history",  "if",      "in",       "jobs",    "kill",
++        "let",       "local",    "logout",  "mapfile", "popd",     "printf",  "pushd",    "pwd",     "read",
++        "readarray", "readonly", "return",  "select",  "set",      "shift",   "shopt",    "source",  "suspend",
++        "test",      "then",     "time",    "times",   "trap",     "true",    "type",     "typeset", "ulimit",
++        "umask",     "unalias",  "unset",   "until",   "wait",     "while",   "{",        "}",
++    };
++
++    bool isAlpha(char character) {
++      return (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z');
++    }
++
++    // A shell name: an alphabetic or underscore start followed by alphanumerics and underscores.
++    bool isName(std::string_view word) {
++      if (word.empty() || (!isAlpha(word.front()) && word.front() != '_')) {
++        return false;
++      }
++      return std::ranges::all_of(word, [](char character) {
++        return isAlpha(character) || (character >= '0' && character <= '9') || character == '_';
++      });
++    }
++
++    // The variable an assignment sets, or empty for a word that is not one. `NAME+=value` appends, which bash accepts
++    // and dash treats as an ordinary command word; either way the compositor cannot answer for it.
++    std::string_view assignmentName(std::string_view word) {
++      const std::size_t equals = word.find('=');
++      if (equals == 0 || equals == std::string_view::npos) {
++        return {};
++      }
++      std::string_view name = word.substr(0, equals);
++      if (name.ends_with('+')) {
++        name.remove_suffix(1);
++      }
++      return isName(name) ? name : std::string_view{};
++    }
++
++    // A leading `NAME=value` word is an assignment, not the program.
++    bool isAssignment(std::string_view word) { return !assignmentName(word).empty(); }
++
++    // An assignment to `PATH` changes where the shell looks for the program, so the compositor's PATH cannot answer
++    // for it.
++    bool setsPath(std::string_view word) { return assignmentName(word) == "PATH"; }
++
++    bool isBuiltin(std::string_view word) {
++      return std::ranges::find(kShellBuiltins, word) != std::ranges::end(kShellBuiltins);
++    }
++
++  } // namespace
++
++  SpawnProgram spawnProgram(std::string_view command) {
++    if (command.find_first_of(kShellSyntax) != std::string_view::npos) {
++      return {.program = {}, .shell = true};
++    }
++
++    std::size_t start = command.find_first_not_of(" \t");
++    while (start != std::string_view::npos) {
++      std::size_t end = command.find_first_of(" \t", start);
++      if (end == std::string_view::npos) {
++        end = command.size();
++      }
++      const std::string_view word = command.substr(start, end - start);
++      if (!isAssignment(word)) {
++        if (isBuiltin(word)) {
++          return {.program = {}, .shell = true};
++        }
++        return {.program = std::string(word), .shell = false};
++      }
++      if (setsPath(word)) {
++        return {.program = {}, .shell = true};
++      }
++      start = command.find_first_not_of(" \t", end);
++    }
++
++    // Only assignments, or nothing at all: the shell decides what that means.
++    return {.program = {}, .shell = true};
++  }
++
++} // namespace umbriel
+diff --git a/src/core/spawn_command.h b/src/core/spawn_command.h
+new file mode 100644
+index 00000000..1295bbe1
+--- /dev/null
++++ b/src/core/spawn_command.h
+@@ -0,0 +1,27 @@
++#pragma once
++
++#include <string>
++#include <string_view>
++
++namespace umbriel {
++
++  // The executable a spawn command names, when the command can be checked without running it.
++  struct [[nodiscard]] SpawnProgram {
++    // The program word to resolve. Empty when the command names nothing checkable.
++    std::string program;
++    // The command needs a shell to decide what runs (quoting, expansion, globbing, redirection, composition,
++    // assignment-only, a shell builtin, or an assignment to `PATH`), so its program cannot be resolved ahead of
++    // time.
++    bool shell = false;
++  };
++
++  // Split a spawn command into the program it names and whether a shell is required to interpret it.
++  //
++  // Only a bare invocation is checked: any quoting, expansion, globbing, redirection, composition, or comment
++  // character makes the whole command the shell's business. Leading `NAME=value` and `NAME+=value` words are
++  // assignments and are skipped, unless they assign `PATH`, which changes where the shell resolves the program. A
++  // shell builtin or keyword reports `shell`, because its absence from PATH says nothing about whether the command
++  // runs.
++  SpawnProgram spawnProgram(std::string_view command);
++
++} // namespace umbriel
+diff --git a/src/server/actions.cpp b/src/server/actions.cpp
+index ad83808c..86739156 100644
+--- a/src/server/actions.cpp
++++ b/src/server/actions.cpp
+@@ -508,9 +508,11 @@ namespace umbriel {
+     }
+ 
+     // Session
+-    bool actionSpawn(Server& server, const Keybind& bind, std::string* /*error*/) {
++    bool actionSpawn(Server& server, const Keybind& bind, std::string* error) {
+       const auto* arg = payloadIf<SpawnArg>(bind);
+-      server.spawn(arg != nullptr ? arg->command.c_str() : "", nullptr, true);
++      // The bind matched and meant to launch something, so the chord is spent even when the launch is refused;
++      // returning false would hand the key on to the focused client. A refusal has already filled `error`.
++      server.spawn(arg != nullptr ? arg->command.c_str() : "", nullptr, true, error);
+       return true;
+     }
+ 
+diff --git a/src/server/server.cpp b/src/server/server.cpp
+index 93701695..256019cf 100644
+--- a/src/server/server.cpp
++++ b/src/server/server.cpp
+@@ -8,6 +8,7 @@
+ #include "core/fdlimit.h"
+ #include "core/log.h"
+ #include "core/process.h"
++#include "core/spawn_command.h"
+ #include "core/tracy.h"
+ #include "input/cursor.h"
+ #include "input/eis.h"
+@@ -1543,10 +1544,13 @@ namespace umbriel {
+     return m_shellLayerTrees[layer];
+   }
+ 
+-  void Server::spawn(const char* command, const char* description, bool withActivationToken) {
++  bool Server::spawn(const char* command, const char* description, bool withActivationToken, std::string* error) {
+     if (m_socketName.empty()) {
+       wlr_log(WLR_ERROR, "cannot spawn before the Wayland socket exists");
+-      return;
++      if (error != nullptr) {
++        *error = "cannot spawn before the Wayland socket exists";
++      }
++      return false;
+     }
+ 
+     const bool scopeRequired = m_applicationScopesRequired;
+@@ -1556,12 +1560,29 @@ namespace umbriel {
+             || m_applicationScopeBindsToProperty.empty()
+             || m_applicationScopeAfterProperty.empty())) {
+       kLog.error("cannot launch application because systemd scope isolation is unavailable");
+-      return;
++      if (error != nullptr) {
++        *error = "cannot launch application because systemd scope isolation is unavailable";
++      }
++      return false;
+     }
+     const std::string scopeUnitArgument = scopeRequired
+         ? "--unit=app-umbriel-" + std::to_string(getpid()) + "-" + std::to_string(m_nextApplicationScopeId++) + ".scope"
+         : "";
+ 
++    // A command the shell does not have to interpret names its program in the first word, so a program that cannot
++    // be executed is reported instead of becoming a shell error on the compositor's stderr.
++    const SpawnProgram parsed = spawnProgram(command);
++    if (!parsed.shell && resolveExecutable(parsed.program.c_str()).empty()) {
++      const bool isPath = parsed.program.contains('/');
++      const std::string message = isPath ? std::format("'{}' is not executable", parsed.program)
++                                         : std::format("cannot find '{}' on PATH", parsed.program);
++      kLog.error("cannot launch application: {}", message);
++      if (error != nullptr) {
++        *error = message;
++      }
++      return false;
++    }
++
+     wlr_xdg_activation_token_v1* launchToken = nullptr;
+     std::string launchTokenName;
+     if (withActivationToken && m_xdgActivation != nullptr) {
+@@ -1580,7 +1601,10 @@ namespace umbriel {
+         wlr_xdg_activation_token_v1_destroy(launchToken);
+       }
+       wlr_log(WLR_ERROR, "fork failed");
+-      return;
++      if (error != nullptr) {
++        *error = "fork failed";
++      }
++      return false;
+     }
+     if (pid == 0) {
+       resetChildSignalState();
+@@ -1632,6 +1656,7 @@ namespace umbriel {
+           m_socketName.c_str()
+       );
+     }
++    return true;
+   }
+ 
+   void Server::updateSeatCapabilities() { m_seat->updateCapabilities(!m_keyboards.empty(), !m_touchDevices.empty()); }
+diff --git a/src/server/server.h b/src/server/server.h
+index c730c833..b6808581 100644
+--- a/src/server/server.h
++++ b/src/server/server.h
+@@ -353,7 +353,12 @@ namespace umbriel {
+     void relayoutBanner();
+     void relayoutCheatsheet();
+     void relayoutQuitConfirm();
+-    void spawn(const char* command, const char* description = nullptr, bool withActivationToken = false);
++    // Launches `command` through the shell, after checking that a command needing no shell names a program that
++    // exists. Returns false and fills `error` when nothing was launched.
++    bool spawn(
++        const char* command, const char* description = nullptr, bool withActivationToken = false,
++        std::string* error = nullptr
++    );
+     void completeIpcLaunch(std::string_view tokenName, pid_t pid);
+     void handleConfigReload(const ConfigReloadResult& result);
+     // Re-evaluate application idle inhibitors after a surface's presentation
+diff --git a/tests/harness/checks/session/spawn.sh b/tests/harness/checks/session/spawn.sh
+index 33d3bf7c..35832a1b 100755
+--- a/tests/harness/checks/session/spawn.sh
++++ b/tests/harness/checks/session/spawn.sh
+@@ -44,3 +44,58 @@ if kill -0 "$CHILD" 2>/dev/null; then
+ fi
+ 
+ echo "child signal mask clean, dies on SIGTERM"
++
++# A command that names a program nothing can execute fails the request instead of reporting a launch. Without this
++# the shell's own "command not found" is the only trace, on the compositor's stderr.
++if "$UMBRIEL" msg spawn umbriel-harness-no-such-program-$$ > "$UMBRIEL_RUNTIME_DIR/spawn-missing.err" 2>&1; then
++  echo "spawning a program that does not exist reported success: $(< "$UMBRIEL_RUNTIME_DIR/spawn-missing.err")"
++  exit 1
++fi
++if ! grep -q "umbriel-harness-no-such-program-$$" "$UMBRIEL_RUNTIME_DIR/spawn-missing.err"; then
++  echo "the failure did not name the missing program: $(< "$UMBRIEL_RUNTIME_DIR/spawn-missing.err")"
++  exit 1
++fi
++
++# A command the shell has to interpret still runs; its own failure stays the shell's, so the request succeeds.
++"$UMBRIEL" msg spawn "sh -c 'exit 1'" > /dev/null
++
++echo "a missing program fails the request; a shell command still runs"
++
++# A refused spawn from a keybind is consumed like any other rejected action: the chord must not fall through to the
++# focused client as a plain key.
++readonly KEY_ENTER=28
++readonly OUTPUT_W=1280
++readonly OUTPUT_H=720
++readonly BIND_PROGRAM=umbriel-harness-no-such-bind-program
++readonly OBSERVER="${UMBRIEL_SEAT_LOG_CLIENT:-./build-debug/tests/seat-log-client}"
++readonly POINTER="${UMBRIEL_POINTER_CLIENT:-./build-debug/tests/pointer-client}"
++readonly LEAK_LOG="$UMBRIEL_RUNTIME_DIR/spawn-keybind-leak.log"
++
++printf '\n[keybinds]\n"Mod+Return" = "spawn %s"\n' "$BIND_PROGRAM" >> "$UMBRIEL_CONFIG"
++"$UMBRIEL" msg config-reload > /dev/null
++
++"$OBSERVER" spawn-keybind-leak > "$LEAK_LOG" 2>&1 &
++for _ in $(seq 60); do
++  "$UMBRIEL" windows --json | jq -e 'length == 1' > /dev/null && break
++  sleep 0.1
++done
++
++"$POINTER" "$OUTPUT_W" "$OUTPUT_H" mod logo pause 300 tap "$KEY_ENTER"
++if ! grep -q "cannot find '$BIND_PROGRAM' on PATH" "$UMBRIEL_LOG"; then
++  echo "the refused spawn bind never reached the compositor, so the leg proves nothing"
++  exit 1
++fi
++for _ in $(seq 50); do
++  grep -q "keyboard-enter" "$LEAK_LOG" && break
++  sleep 0.02
++done
++if ! grep -q "keyboard-enter" "$LEAK_LOG"; then
++  echo "the observer never received keyboard focus"
++  exit 1
++fi
++if grep -q "keyboard-key code=$KEY_ENTER" "$LEAK_LOG"; then
++  echo "a refused spawn bind handed its key to the focused client: $(grep "keyboard-key code=$KEY_ENTER" "$LEAK_LOG")"
++  exit 1
++fi
++
++echo "a refused spawn bind keeps its chord"
+diff --git a/tests/meson.build b/tests/meson.build
+index 3a780e9f..33348ed4 100644
+--- a/tests/meson.build
++++ b/tests/meson.build
+@@ -18,6 +18,7 @@ unit_tests = [
+   ['window-opacity-blur', ['unit/window_opacity_blur.cpp'], [umbriel_core_dep]],
+   ['value-parse', ['unit/value_parse.cpp'], []],
+   ['keybind-parse', ['unit/keybind_parse.cpp'], []],
++  ['spawn-command', ['unit/spawn_command.cpp'], []],
+   ['lid-state', ['unit/lid_state.cpp'], []],
+   ['output-enable-overrides', ['unit/output_enable_overrides.cpp'], []],
+   ['modifier-tap', ['unit/modifier_tap.cpp'], []],
+diff --git a/tests/unit/spawn_command.cpp b/tests/unit/spawn_command.cpp
+new file mode 100644
+index 00000000..a0c00ef3
+--- /dev/null
++++ b/tests/unit/spawn_command.cpp
+@@ -0,0 +1,105 @@
++#include "core/spawn_command.h"
++
++#include "check.h"
++
++#include <string_view>
++
++using umbriel::SpawnProgram;
++using umbriel::spawnProgram;
++
++namespace {
++
++  void checkPlain(std::string_view command, std::string_view expected) {
++    const SpawnProgram parsed = spawnProgram(command);
++    CHECK(!parsed.shell);
++    CHECK_EQ(parsed.program, std::string(expected));
++  }
++
++  void checkShell(std::string_view command) {
++    const SpawnProgram parsed = spawnProgram(command);
++    CHECK(parsed.shell);
++    CHECK(parsed.program.empty());
++  }
++
++} // namespace
++
++UMBRIEL_TEST(aBareProgramIsResolved) {
++  checkPlain("kitty", "kitty");
++  checkPlain("/usr/bin/kitty", "/usr/bin/kitty");
++  checkPlain("./launch.sh", "./launch.sh");
++}
++
++UMBRIEL_TEST(argumentsAfterTheProgramDoNotMatter) {
++  checkPlain("kitty --single-instance", "kitty");
++  checkPlain("foot -e tmux new -A -s main", "foot");
++  checkPlain("  kitty   --hold  ", "kitty");
++}
++
++UMBRIEL_TEST(leadingAssignmentsAreSkipped) {
++  checkPlain("GDK_SCALE=2 kitty", "kitty");
++  checkPlain("A=1 B_2=three kitty -e sh", "kitty");
++  // A word with an invalid name is the program, not an assignment.
++  checkPlain("2kitty=1 kitty", "2kitty=1");
++}
++
++UMBRIEL_TEST(shellSyntaxDefersToTheShell) {
++  checkShell("grim -g \"$(slurp)\" shot.png");
++  checkShell("kitty -e sh -c 'echo hi'");
++  checkShell("sh -c $COMMAND");
++  checkShell("kitty *.png");
++  checkShell("a | b");
++  checkShell("a && b");
++  checkShell("a; b");
++  checkShell("kitty > /tmp/out");
++  checkShell("kitty &");
++  checkShell("kitty # note");
++  checkShell("$(which kitty)");
++  checkShell("kitty ~/file");
++  checkShell("kitty `date`");
++  checkShell("kitty\necho next");
++}
++
++UMBRIEL_TEST(aPathAssignmentDefersToTheShell) {
++  // The shell resolves the program against the assignment, so the compositor's PATH cannot answer for it.
++  checkShell("PATH=/tmp/bin kitty");
++  checkShell("PATH=/opt/bin:/usr/bin foo-app");
++  checkShell("PATH+=/opt/bin kitty");
++  checkShell("PATH+=-wrapped kitty");
++  // Any other assignment leaves PATH alone and the program stays checkable.
++  checkPlain("FOO=1 PATH_BACKUP=/tmp kitty", "kitty");
++  checkPlain("PATHX+=/tmp kitty", "kitty");
++}
++
++UMBRIEL_TEST(aBuiltinIsTheShellsBusiness) {
++  checkShell("echo hello");
++  checkShell("true");
++  checkShell("cd /tmp");
++  checkShell("exec kitty");
++  checkShell("coproc sleep 5");
++  // Builtins and reserved words that are absent from PATH: refusing them would break commands that used to work.
++  checkShell("umask 022");
++  checkShell("export FOO=1");
++  checkShell("set -e");
++  checkShell("source ~/.profile");
++  checkShell(". /etc/profile");
++  checkShell("[ -d /tmp ]");
++  checkShell("readonly X=1");
++  checkShell("trap '' TERM");
++  checkShell("wait");
++  checkShell("times");
++  checkShell("shift");
++  checkShell("ulimit -n");
++  checkShell("type kitty");
++  checkShell("hash -r");
++  checkShell("kill -TERM 1234");
++  checkShell("let x=1");
++  checkShell("declare -r X=1");
++}
++
++UMBRIEL_TEST(anEmptyOrAssignmentOnlyCommandNamesNothing) {
++  checkShell("");
++  checkShell("   ");
++  checkShell("FOO=bar");
++}
++
++int main() { return RUN_TESTS(); }

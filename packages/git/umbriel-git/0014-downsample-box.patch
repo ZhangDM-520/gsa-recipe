@@ -26,7 +26,7 @@ index 7f7066ac..9763fd9c 100644
  
  Borders render outside window content and are included in layout spacing. `corner_radius = 0` keeps every contour square. A [window rule](window-rules.md#decoration) can override `border_width`, `outer_border_width`, and `corner_radius` for the windows it matches.
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index 5c7dfae8..b1305d8a 100644
+index 0bbf38b3..e745065b 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
 @@ -145,7 +145,7 @@ Omit `position` to place outputs automatically from left to right. Explicitly po
@@ -39,7 +39,7 @@ index 5c7dfae8..b1305d8a 100644
  Native-resolution X11 applications use the physical output scale by default. To opt them into `render_scale`, see [`force_x11_supersample`](configuration.md#general).
  
 diff --git a/examples/config.toml b/examples/config.toml
-index 24cf0f2a..0d2377dd 100644
+index 56a9c82a..90869b24 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -83,6 +83,12 @@ files = []
@@ -110,7 +110,7 @@ index 3d9806e1..2e1437f3 100644
            || layerEffects
            || animation
 diff --git a/src/config/config.h b/src/config/config.h
-index 87a6c96d..0ccc7f89 100644
+index 7ce3483d..5e6e3ebf 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -35,6 +35,8 @@ namespace umbriel {
@@ -122,7 +122,7 @@ index 87a6c96d..0ccc7f89 100644
    enum class TitleBarButtonGlyph : uint8_t { Always, Hover, Never };
  
    enum class ModifierKey {
-@@ -847,8 +849,23 @@ namespace umbriel {
+@@ -858,8 +860,23 @@ namespace umbriel {
        } tabBar;
        bool preferNoCsd = true;
  
@@ -166,10 +166,10 @@ index c2ffb2e5..275f3f6e 100644
            boolean("opaque_fullscreen", &A::opaqueFullscreen),
            registry::table("blur", &A::blur, blur),
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index bcbf51ba..a906f12d 100644
+index b1bc4d41..b7c6cf11 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -719,6 +719,8 @@ namespace umbriel {
+@@ -724,6 +724,8 @@ namespace umbriel {
          },
          this
      );
@@ -179,10 +179,10 @@ index bcbf51ba..a906f12d 100644
        wlr_scene_set_linux_dmabuf_v1(m_scene, linuxDmabuf);
      }
 diff --git a/src/server/server.h b/src/server/server.h
-index 8e10fc7d..857932f2 100644
+index c730c833..0ba1bb46 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
-@@ -451,6 +451,10 @@ namespace umbriel {
+@@ -453,6 +453,10 @@ namespace umbriel {
      // Re-send every surface's output scale (views, layer surfaces, popups). Run after anything that changes an output's
      // scale or moves surfaces between outputs outside setWorkspace; the notifies dedup, so extra calls are cheap.
      void refreshSurfaceScales();
@@ -244,7 +244,7 @@ index 3525bb25..53d09410 100644
      for (const auto& output : m_outputs) {
        output->updateVrr();
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index b83523ab..d30c93f7 100644
+index bab6e581..817e6d74 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -199,6 +199,7 @@ namespace umbriel {
@@ -487,10 +487,10 @@ index 00000000..a40b027a
 +
 +echo "capped box grid spans the full minification footprint"
 diff --git a/tests/unit/config_change.cpp b/tests/unit/config_change.cpp
-index d034a4fb..0e090bbc 100644
+index cfdc2a5b..2fe4e59b 100644
 --- a/tests/unit/config_change.cpp
 +++ b/tests/unit/config_change.cpp
-@@ -397,6 +397,19 @@ UMBRIEL_TEST(identicalConfigsProduceNoRuntimeEffects) {
+@@ -398,6 +398,19 @@ UMBRIEL_TEST(identicalConfigsProduceNoRuntimeEffects) {
    CHECK(!ConfigEffects::between(before, after).any());
  }
  
@@ -510,7 +510,7 @@ index d034a4fb..0e090bbc 100644
  UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
    const ConfigEffects effects = ConfigEffects::everything();
    CHECK(effects.outputState);
-@@ -405,6 +418,7 @@ UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
+@@ -406,6 +419,7 @@ UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
    CHECK(effects.workspaceInventory);
    CHECK(effects.workspaceLayout);
    CHECK(effects.sceneBlur);
@@ -519,7 +519,7 @@ index d034a4fb..0e090bbc 100644
    CHECK(effects.layerEffects);
    CHECK(effects.animation);
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 93380fe0..324a0195 100644
+index 8738eb70..c6520c36 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
 @@ -863,6 +863,34 @@ render_scale = 1.0
@@ -691,7 +691,7 @@ index 971d6bfb..a41016ec 100644
  struct output_shader {
    GLuint program;
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index bc576aeb..67504842 100644
+index bc9c6162..350ada86 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
 @@ -231,6 +231,7 @@ if build_tests
@@ -702,7 +702,7 @@ index bc576aeb..67504842 100644
      'gamma22-to-srgb',
      'pq-roundtrip',
      'bt2020-to-srgb',
-@@ -274,6 +275,22 @@ if build_tests
+@@ -275,6 +276,22 @@ if build_tests
      suite: 'umbrielfx',
    )
  
@@ -726,7 +726,7 @@ index bc576aeb..67504842 100644
      'umbrielfx-scale-hints-test',
      'tests/scale_hints.c',
 diff --git a/umbrielfx/render/fx_renderer/fx_pass.c b/umbrielfx/render/fx_renderer/fx_pass.c
-index 4b230ad1..d8ba7c36 100644
+index 0781c1ed..e35efd00 100644
 --- a/umbrielfx/render/fx_renderer/fx_pass.c
 +++ b/umbrielfx/render/fx_renderer/fx_pass.c
 @@ -1950,22 +1950,35 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
@@ -1188,7 +1188,7 @@ index 3cf119d5..967994fd 100644
    wl_signal_emit_mutable(&surface.events.destroy, &surface);
    wlr_scene_node_destroy(&desktop->tree.node);
 diff --git a/umbrielfx/tests/color.c b/umbrielfx/tests/color.c
-index 566c1ce1..eb1d2c51 100644
+index 740c285e..db87eb65 100644
 --- a/umbrielfx/tests/color.c
 +++ b/umbrielfx/tests/color.c
 @@ -1144,6 +1144,111 @@ static bool test_implicit_srgb_target(struct fixture* fixture) {
@@ -1303,7 +1303,7 @@ index 566c1ce1..eb1d2c51 100644
  static bool test_gamma22_to_srgb(struct fixture* fixture) {
    const uint8_t dark_input[4] = {24, 24, 49, 255};
    const uint8_t dark_expected[4] = {17, 17, 45, 255};
-@@ -3480,6 +3585,8 @@ int main(int argc, char* argv[]) {
+@@ -3556,6 +3661,8 @@ int main(int argc, char* argv[]) {
      ok = test_optimized_blur_size_change(&fixture);
    } else if (strcmp(argv[1], "optimized-blur-copy-failure") == 0) {
      ok = test_optimized_blur_copy_failure(&fixture);

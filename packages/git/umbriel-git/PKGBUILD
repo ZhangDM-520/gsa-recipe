@@ -8,7 +8,7 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1569.88ba829
+pkgver=0.1.0.r1577.2de13d6
 pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
@@ -65,17 +65,19 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0020-adaptive-title-bar.patch'
         '0021-minimize-animation.patch'
         '0022-scratchpad-close-animation.patch'
-        '0023-scratchpad-show-no-recentre.patch')
+        '0023-scratchpad-show-no-recentre.patch'
+        '0025-spawn-report-failure.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            '04ea6557764587d6019198ae381ea013282ddec615e4e642683251b8fab540b5'
-            '7bce12ce163428e1bb6c6759142ad8eaa6a732b41305d9b54ae21f84a4552d1c'
+            '10867e434ac9f78d39567d548f0f9b7cf27a8913c50b263a65098447497a81d8'
+            '1b5bcdabbb116e791dcaabcca0d5753bf77c1726b5611227c8bb19a318b2fc9b'
             'da533d362314d028cf575128ace45b1781e39d9385478fd648f5e9bffffaf621'
-            'd022f608352c8b5c533965195a830b100d613b5ef450ffd27808ef9303396a7b'
+            '3741d322aac7cd4757e8b8e5defa79605f813262a91dc55998299d77ad52243e'
             '40b552f162bd91c7dab334cc773672b65d1607127a068422df3bb9121541d9e3'
             'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
-            '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad')
+            '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad'
+            '1fd278add695446c2cc19e737f899475b6b51025db27d4728afa3711b7a0f9bc')
 
 pkgver() {
   cd "${_pkgname}"
@@ -170,6 +172,15 @@ prepare() {
   # main: c2e29215 reflowed window-rules' settings table and added layer-client's
   # popup-color option, so the table and usage string are cut merged (46 files
   # +1379/-82, sha256 04ea6557…). The patch no longer conflicts.
+  # Re-cut 2026-11-14 on main@33a782dc after the PR merged that main: 33a782dc
+  # added upstream's popup-resize line to layer-client's header beside this
+  # branch's log-scale/hold-map lines, which is the only conflict (46 files
+  # +1379/-82, sha256 258682f9…).
+  # Re-cut 2026-11-15 on main@2de13d6a after the PR merged that main itself, so
+  # the patch is its own resolution rather than a conflict to replay: #795
+  # renamed vrrModes() to outputVrrModes() on the line below the render_scale
+  # registration, and the merge keeps both (46 files +1379/-82,
+  # sha256 10867e43…).
   git apply -3 ../0012-per-output-render-scale.patch
 
   # 0013 retired 2026-11-11: PR #585 merged upstream as d3c85928 (ICC/EDID output
@@ -200,6 +211,11 @@ prepare() {
   # patch is the PR's own work only (29 files +849/-36, sha256 7bce12ce…). It
   # now carries the `appearance.downsample` sentence in outputs.md, which the
   # flattened form had dropped.
+  # Re-cut 2026-11-14 as the delta from 0012's 33a782dc re-cut, so the same
+  # layer-client header resolution carries through (29 files +849/-36,
+  # sha256 91536dd3…).
+  # Re-cut 2026-11-15 as the delta from 0012's 2de13d6a re-cut (29 files
+  # +849/-36, sha256 1b5bcdab…).
   git apply -3 ../0014-downsample-box.patch
 
   # [layout] underfull_strip: a scrolling strip narrower than the viewport
@@ -245,6 +261,14 @@ prepare() {
   # Re-cut 2026-11-12 on main@0c1f1255: that main added `#include <expected>` to
   # view.h above the <pixman.h> insertion, so hunk 1's context and counts follow
   # it; the remaining hunks are unchanged (34 files +1778/-68, sha256 d022f608…).
+  # Re-cut 2026-11-14 on main@33a782dc: that main's popup reposition queue needs
+  # <list> in popup.h beside this branch's <vector>, and popup.cpp uses both
+  # (34 files +1778/-68, sha256 7b0cc398…).
+  # Re-cut 2026-11-15 on main@2de13d6a after the PR merged that main, which
+  # matters beyond context: #784 and this branch both grew the security-context
+  # allowlist from 32, and the textual merge left the bound at 33 with 34
+  # entries, which does not compile. The patch now carries the size 34 that
+  # holds both new globals (34 files +1778/-68, sha256 3741d322…).
   git apply -3 ../0019-background-effect.patch
 
   # [appearance.title_bar] color_source: the bar paints itself with a 1-4 row
@@ -324,6 +348,15 @@ prepare() {
   # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
   # (head 16bd15d4, 3 files +342/-23, sha256 99ff9ed7…).
   git apply -3 ../0023-scratchpad-show-no-recentre.patch
+
+
+  # [server] spawn reports a program it cannot launch instead of logging a launch
+  # that never happened: a shell-free command's first word is resolved before the
+  # fork, `Server::spawn` returns bool plus an error the IPC reply already carries,
+  # and a refused bind still consumes its chord. Ten files +325/-8; sha256
+  # 1fd278ad…; the pins are tests/unit/spawn_command.cpp and session/spawn.
+  # (Retire on merge: 0025 -> noctalia-dev/umbriel#801.)
+  git apply -3 ../0025-spawn-report-failure.patch
 }
 
 build() {

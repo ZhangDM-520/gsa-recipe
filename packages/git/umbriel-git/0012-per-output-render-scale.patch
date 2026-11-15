@@ -59,7 +59,7 @@ index 35b0fbb3..03c17010 100644
  Layer-shell blur is off by default. Every matching rule contributes its settings, and later values take precedence.
  
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index cb2d2048..5c7dfae8 100644
+index 93b11f5a..0bbf38b3 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
 @@ -37,31 +37,32 @@ Locking the session or switching away from its active VT revokes outstanding lea
@@ -154,7 +154,7 @@ index cb2d2048..5c7dfae8 100644
  
  Accepted values are `normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, and `flipped-270`.
 diff --git a/examples/config.toml b/examples/config.toml
-index 62fa3f77..24cf0f2a 100644
+index 5a87ac24..56a9c82a 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -28,6 +28,8 @@ files = []
@@ -200,10 +200,10 @@ index 05833ba2..4d7a6c23 100644
            && lhs.vrr == rhs.vrr
            && lhs.hdr == rhs.hdr
 diff --git a/src/config/config.h b/src/config/config.h
-index 36c3c1bc..87a6c96d 100644
+index de197e3f..7ce3483d 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -325,6 +325,9 @@ namespace umbriel {
+@@ -336,6 +336,9 @@ namespace umbriel {
      std::optional<OutputMode> mode;
      std::optional<std::array<int, 2>> position;
      std::optional<double> scale;
@@ -213,7 +213,7 @@ index 36c3c1bc..87a6c96d 100644
      std::optional<int> transform;
      VrrMode vrr = VrrMode::Disabled;
      bool focusAtStartup = false;
-@@ -486,6 +489,10 @@ namespace umbriel {
+@@ -497,6 +500,10 @@ namespace umbriel {
      // Overrides the client's tearing-control hint. Omitted follows the hint,
      // true forces async preference, and false vetoes it.
      std::optional<bool> allowTearing;
@@ -224,7 +224,7 @@ index 36c3c1bc..87a6c96d 100644
      std::optional<HdrMode> hdr;
      std::optional<double> dimBehind;
      std::optional<double> opacity; // 0.0-1.0
-@@ -553,6 +560,7 @@ namespace umbriel {
+@@ -564,6 +571,7 @@ namespace umbriel {
            && allowShortcutsInhibit == other.allowShortcutsInhibit
            && backgroundRender == other.backgroundRender
            && blockCapture == other.blockCapture
@@ -232,7 +232,7 @@ index 36c3c1bc..87a6c96d 100644
            && vrr == other.vrr
            && allowTearing == other.allowTearing
            && hdr == other.hdr
-@@ -606,6 +614,7 @@ namespace umbriel {
+@@ -617,6 +625,7 @@ namespace umbriel {
      std::optional<bool> blockCapture;
      std::optional<VrrMode> vrr;
      std::optional<bool> allowTearing;
@@ -240,7 +240,7 @@ index 36c3c1bc..87a6c96d 100644
      std::optional<HdrMode> hdr;
      std::optional<double> dimBehind;
      std::optional<double> opacity;
-@@ -644,6 +653,9 @@ namespace umbriel {
+@@ -655,6 +664,9 @@ namespace umbriel {
      std::optional<double> dimBehind;
      std::optional<double> ignoreAlpha;
      std::optional<bool> optimized;
@@ -250,7 +250,7 @@ index 36c3c1bc..87a6c96d 100644
  
      // See WindowRule: the regexes are derived from the patterns.
      bool operator==(const LayerRule& other) const {
-@@ -654,7 +666,8 @@ namespace umbriel {
+@@ -665,7 +677,8 @@ namespace umbriel {
            && blurPopups == other.blurPopups
            && dimBehind == other.dimBehind
            && ignoreAlpha == other.ignoreAlpha
@@ -260,7 +260,7 @@ index 36c3c1bc..87a6c96d 100644
      }
    };
  
-@@ -664,6 +677,7 @@ namespace umbriel {
+@@ -675,6 +688,7 @@ namespace umbriel {
      std::optional<double> dimBehind;
      std::optional<double> ignoreAlpha;
      std::optional<bool> optimized;
@@ -268,7 +268,7 @@ index 36c3c1bc..87a6c96d 100644
      bool operator==(const ResolvedLayerRule&) const = default;
    };
  
-@@ -1119,6 +1133,8 @@ namespace umbriel {
+@@ -1130,6 +1144,8 @@ namespace umbriel {
        // Present outputs to X11 clients at their physical resolution, so they render at native size instead of being
        // upscaled on scaled outputs. Requires restart.
        bool xwaylandNativeResolution = false;
@@ -290,7 +290,7 @@ index 8b28b36e..c2ffb2e5 100644
            registry::text("xwayland_primary_output", &G::xwaylandPrimaryOutput),
            boolean("nvidia_sync_workaround", &G::nvidiaSyncWorkaround),
 diff --git a/src/config/fields_output.cpp b/src/config/fields_output.cpp
-index d4fedefd..6c702e88 100644
+index c191dfeb..2c1504c1 100644
 --- a/src/config/fields_output.cpp
 +++ b/src/config/fields_output.cpp
 @@ -214,6 +214,7 @@ namespace umbriel {
@@ -298,7 +298,7 @@ index d4fedefd..6c702e88 100644
            ),
            registry::real("scale", 0.25, 4.0, &O::scale),
 +          registry::real("render_scale", 0.25, 4.0, &O::renderScale),
-           registry::choice("vrr", &O::vrr, vrrModes()),
+           registry::choice("vrr", &O::vrr, outputVrrModes()),
            registry::choice("hdr", &O::hdr, hdrModes()),
            registry::real("sdr_white", 80.0, 1000.0, &O::sdrWhite),
 @@ -285,6 +286,16 @@ namespace umbriel {
@@ -494,10 +494,10 @@ index 5cf72036..08575895 100644
      void refreshStartupRuleEffects();
      void applyFadeAlpha();
 diff --git a/src/output/output.cpp b/src/output/output.cpp
-index ce9e82e5..31fec994 100644
+index 3fc6e73e..5b60d450 100644
 --- a/src/output/output.cpp
 +++ b/src/output/output.cpp
-@@ -656,6 +656,28 @@ namespace umbriel {
+@@ -663,6 +663,28 @@ namespace umbriel {
      return rule == nullptr || rule->directScanout;
    }
  
@@ -526,7 +526,7 @@ index ce9e82e5..31fec994 100644
    bool Output::configuredTearingAllowed() const {
      const OutputRule* rule = findOutputRule(config(), identity());
      return rule != nullptr && rule->allowTearing;
-@@ -1178,8 +1200,9 @@ namespace umbriel {
+@@ -1188,8 +1210,9 @@ namespace umbriel {
      m_server->updateIdleInhibit();
      if (enabled) {
        kLog.info(
@@ -538,7 +538,7 @@ index ce9e82e5..31fec994 100644
        );
      } else if (!desktopEnabled()) {
        const OutputRule* rule = findOutputRule(config(), identity());
-@@ -1535,8 +1558,26 @@ namespace umbriel {
+@@ -1546,8 +1569,26 @@ namespace umbriel {
      if (surface == nullptr || self == nullptr || self->m_output == nullptr) {
        return;
      }
@@ -568,10 +568,10 @@ index ce9e82e5..31fec994 100644
  
    Output::~Output() {
 diff --git a/src/output/output.h b/src/output/output.h
-index c195ab9d..ab54798c 100644
+index f84afcc0..fda08bf1 100644
 --- a/src/output/output.h
 +++ b/src/output/output.h
-@@ -152,6 +152,16 @@ namespace umbriel {
+@@ -154,6 +154,16 @@ namespace umbriel {
      int configuredBitDepth() const;
      const std::string& bitDepthFallbackReason() const { return m_bitDepthFallbackReason; }
      bool configuredDirectScanoutEnabled() const;
@@ -609,10 +609,10 @@ index a2ea5879..2a59a6cc 100644
            {"hdr_active", output->hdrActive()},
            {"direct_scanout", std::move(directScanout)},
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index aa4d1e0a..bcbf51ba 100644
+index 93701695..b1bc4d41 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -706,6 +706,19 @@ namespace umbriel {
+@@ -711,6 +711,19 @@ namespace umbriel {
        throw std::runtime_error(std::string("umbrielfx scene helpers are not linked correctly: ") + mismatch);
      }
      m_scene = wlr_scene_create();
@@ -648,7 +648,7 @@ index fa549261..d90324c4 100644
      if (effects.tearingPolicy) {
        for (const auto& output : m_outputs) {
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index 05efa4c7..b83523ab 100644
+index 96e91569..bab6e581 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -976,12 +976,27 @@ namespace umbriel {
@@ -715,10 +715,10 @@ index 27edfbdd..657a82eb 100644
      float m_overviewOpacity = 1.0F;
      std::vector<std::unique_ptr<ViewSurfaceWatch>> m_viewSurfaceWatches;
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 8c030835..bff21c8f 100644
+index 2c67b527..c134381f 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
-@@ -855,6 +855,8 @@ namespace umbriel {
+@@ -858,6 +858,8 @@ namespace umbriel {
      }
      m_contentType = next;
      m_server->scheduleIpcWindowsEvent();
@@ -728,7 +728,7 @@ index 8c030835..bff21c8f 100644
        if (!m_initialContentTypeRulesSettled && next != ContentType::None) {
          m_initialContentTypeRulesSettled = true;
 diff --git a/src/view/view_role.cpp b/src/view/view_role.cpp
-index 9364d8df..8fa88198 100644
+index 0b05b5d9..8cc87df6 100644
 --- a/src/view/view_role.cpp
 +++ b/src/view/view_role.cpp
 @@ -126,6 +126,10 @@ namespace umbriel {
@@ -893,7 +893,7 @@ index a5411159..d52cbbdd 100644
      // Stands in when no output is in the layout: a plain translation to the X origin.
      XwaylandRegion m_fallback;
 diff --git a/src/xwayland/xwayland.cpp b/src/xwayland/xwayland.cpp
-index 776b7c97..043d0ae1 100644
+index fbf8e7da..35b31394 100644
 --- a/src/xwayland/xwayland.cpp
 +++ b/src/xwayland/xwayland.cpp
 @@ -4,6 +4,7 @@
@@ -1562,20 +1562,20 @@ index 559596de..1a1739c2 100644
      if (!controlled) {
        if (wl_display_dispatch(state.display) < 0) {
 diff --git a/tests/harness/clients/layer_client.cpp b/tests/harness/clients/layer_client.cpp
-index 405c1bd7..daf12e95 100644
+index ad12a6be..e38a91ea 100644
 --- a/tests/harness/clients/layer_client.cpp
 +++ b/tests/harness/clients/layer_client.cpp
-@@ -7,6 +7,9 @@
- // `popup-color=<ARGB>` paints that menu in a premultiplied colour, so a translucent menu can show what lies below it.
+@@ -8,6 +8,9 @@
  // LAYER_CONTROL enables stdin commands: frames LABEL COUNT, color LABEL AARRGGBB, child-color LABEL AARRGGBB,
  // child-move LABEL X Y, and margins LABEL TOP RIGHT BOTTOM LEFT. Each prints done after its frame callbacks arrive.
+ // popup-resize LABEL WIDTH HEIGHT overlaps two reposition requests and waits for its own token before redrawing.
 +// `log-scale` prints "scale N/120" for every preferred fractional scale the surface receives. `hold-map` creates the
 +// surface without committing it and prints "held"; the control command `map` commits it, so a check can change the
 +// rules the surface maps under.
  
  #include <wayland-client.h>
  
-@@ -14,6 +17,7 @@
+@@ -15,6 +18,7 @@
  #include "wlr-layer-shell-unstable-v1-client-protocol.h"
  #undef namespace
  
@@ -1583,7 +1583,7 @@ index 405c1bd7..daf12e95 100644
  #include "xdg-shell-client-protocol.h"
  
  #include <algorithm>
-@@ -53,6 +57,11 @@ namespace {
+@@ -54,6 +58,11 @@ namespace {
      wl_shm* shm = nullptr;
      wl_subcompositor* subcompositor = nullptr;
      zwlr_layer_shell_v1* layerShell = nullptr;
@@ -1595,7 +1595,7 @@ index 405c1bd7..daf12e95 100644
      wl_seat* seat = nullptr;
      wl_keyboard* keyboard = nullptr;
      wl_pointer* pointer = nullptr;
-@@ -174,6 +183,16 @@ namespace {
+@@ -191,6 +200,16 @@ namespace {
    }
  
    void handleCommand(State& state, const std::string& line) {
@@ -1612,7 +1612,7 @@ index 405c1bd7..daf12e95 100644
      std::istringstream command(line);
      std::string action;
      command >> action >> state.commandLabel;
-@@ -485,6 +504,12 @@ namespace {
+@@ -551,6 +570,12 @@ namespace {
        .name = seatName,
    };
  
@@ -1625,7 +1625,7 @@ index 405c1bd7..daf12e95 100644
    void registryGlobal(void* data, wl_registry* registry, uint32_t name, const char* interface, uint32_t version) {
      auto& state = *static_cast<State*>(data);
      if (std::strcmp(interface, wl_compositor_interface.name) == 0) {
-@@ -501,6 +526,10 @@ namespace {
+@@ -567,6 +592,10 @@ namespace {
        state.layerShell = static_cast<zwlr_layer_shell_v1*>(
            wl_registry_bind(registry, name, &zwlr_layer_shell_v1_interface, std::min(version, 4U))
        );
@@ -1636,7 +1636,7 @@ index 405c1bd7..daf12e95 100644
      } else if (std::strcmp(interface, xdg_wm_base_interface.name) == 0) {
        state.wmBase =
            static_cast<xdg_wm_base*>(wl_registry_bind(registry, name, &xdg_wm_base_interface, std::min(version, 6U)));
-@@ -530,7 +559,7 @@ int main(int argc, char** argv) {
+@@ -596,7 +625,7 @@ int main(int argc, char** argv) {
          "usage: layer-client <output> <exclusive-height-or-zero-background> [bottom-layer|overlay-layer] "
          "[log-configures] "
          "[keyboard=none|on-demand|exclusive] [release-on-escape] [popup-on-click|popup-on-release] "
@@ -1645,7 +1645,7 @@ index 405c1bd7..daf12e95 100644
      );
      return EXIT_FAILURE;
    }
-@@ -559,6 +588,10 @@ int main(int argc, char** argv) {
+@@ -625,6 +654,10 @@ int main(int argc, char** argv) {
        state.keyboardInteractivity = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_EXCLUSIVE;
      } else if (option == "release-on-escape") {
        state.releaseOnEscape = true;
@@ -1656,7 +1656,7 @@ index 405c1bd7..daf12e95 100644
      } else if (option == "log-configures") {
        state.logConfigures = true;
      } else if (option == "popup-on-click") {
-@@ -605,6 +638,7 @@ int main(int argc, char** argv) {
+@@ -671,6 +704,7 @@ int main(int argc, char** argv) {
        || state.shm == nullptr
        || state.layerShell == nullptr
        || ((state.popupOnClick || state.popupOnRelease) && (state.wmBase == nullptr || state.seat == nullptr))
@@ -1664,7 +1664,7 @@ index 405c1bd7..daf12e95 100644
        || selected == state.outputs.end()) {
      std::println(stderr, "layer-client: missing protocol or output '{}'", outputName);
      return EXIT_FAILURE;
-@@ -636,6 +670,11 @@ int main(int argc, char** argv) {
+@@ -702,6 +736,11 @@ int main(int argc, char** argv) {
        state.layerShell, state.surface, (*selected)->resource, layer, "umbriel-output-restore-regression"
    );
    zwlr_layer_surface_v1_add_listener(state.layerSurface, &kLayerSurfaceListener, &state);
@@ -1676,7 +1676,7 @@ index 405c1bd7..daf12e95 100644
    if (state.keyboardInteractivity != ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE) {
      zwlr_layer_surface_v1_set_keyboard_interactivity(state.layerSurface, state.keyboardInteractivity);
    }
-@@ -656,7 +695,12 @@ int main(int argc, char** argv) {
+@@ -722,7 +761,12 @@ int main(int argc, char** argv) {
      }
    }
    zwlr_layer_surface_v1_set_anchor(state.layerSurface, anchors);
@@ -1690,7 +1690,7 @@ index 405c1bd7..daf12e95 100644
  
    const bool control = std::getenv("LAYER_CONTROL") != nullptr;
    while (!state.closed && wl_display_dispatch_pending(state.display) >= 0) {
-@@ -704,6 +748,12 @@ int main(int argc, char** argv) {
+@@ -770,6 +814,12 @@ int main(int argc, char** argv) {
    if (state.wmBase != nullptr) {
      xdg_wm_base_destroy(state.wmBase);
    }
@@ -1728,10 +1728,10 @@ index 00000000..29b49448
 +  fi
 +}
 diff --git a/tests/meson.build b/tests/meson.build
-index 78c6bab7..82186619 100644
+index 3a780e9f..8bdcdb54 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -217,6 +217,8 @@ layer_client = executable(
+@@ -218,6 +218,8 @@ layer_client = executable(
      layer_shell_client_c,
      xdg_shell_client_h,
      xdg_shell_client_c,
@@ -1740,7 +1740,7 @@ index 78c6bab7..82186619 100644
    ],
    dependencies: [wayland_client_dep],
  )
-@@ -326,6 +328,8 @@ fractional_client = executable(
+@@ -327,6 +329,8 @@ fractional_client = executable(
      legacy_decoration_client_c,
      xdg_decoration_client_h,
      xdg_decoration_client_c,
@@ -1750,10 +1750,10 @@ index 78c6bab7..82186619 100644
    dependencies: [wayland_client_dep],
  )
 diff --git a/tests/unit/config_change.cpp b/tests/unit/config_change.cpp
-index f74c4f9b..d034a4fb 100644
+index 60560127..cfdc2a5b 100644
 --- a/tests/unit/config_change.cpp
 +++ b/tests/unit/config_change.cpp
-@@ -204,6 +204,22 @@ UMBRIEL_TEST(eachSectionIsReportedOnItsOwn) {
+@@ -205,6 +205,22 @@ UMBRIEL_TEST(eachSectionIsReportedOnItsOwn) {
    }
  }
  
@@ -1777,7 +1777,7 @@ index f74c4f9b..d034a4fb 100644
    Config before;
    Config after = before;
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index d144bf55..93380fe0 100644
+index 418fc46f..8738eb70 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
 @@ -822,6 +822,47 @@ center_focused = true
@@ -1828,7 +1828,7 @@ index d144bf55..93380fe0 100644
  UMBRIEL_TEST(outputWorkspaceAxisAcceptsOnlyItsTwoNames) {
    const TempConfig file;
    ConfigStore& store = umbriel::configStore();
-@@ -2391,6 +2432,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
+@@ -2402,6 +2443,12 @@ UMBRIEL_TEST(layerMatchersLoadLayerAndStartup) {
    file.write("[[layer_rule]]\nmatch.layer = \"sideways\"\nblur = true\n");
    CHECK(store.reload().success);
    CHECK(store.config().layerRules.empty());
@@ -1841,7 +1841,7 @@ index d144bf55..93380fe0 100644
  }
  
  UMBRIEL_TEST(windowStateMatchersLoadBooleans) {
-@@ -2701,6 +2748,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
+@@ -2712,6 +2759,23 @@ UMBRIEL_TEST(nvidiaSyncWorkaroundReloadsAndDefaultsOn) {
    CHECK(!containsDiagnostic(store, "unknown key general.nvidia_sync_workaround"));
  }
  
@@ -2129,10 +2129,10 @@ index d3ed2cb5..4e26133e 100644
   * Add a node displaying nothing but its children.
   */
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index 4be9ac3b..bc576aeb 100644
+index 6743c218..bc9c6162 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -274,6 +274,22 @@ if build_tests
+@@ -275,6 +275,22 @@ if build_tests
      suite: 'umbrielfx',
    )
  
