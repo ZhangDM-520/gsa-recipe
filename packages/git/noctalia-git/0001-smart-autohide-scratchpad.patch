@@ -1,0 +1,677 @@
+diff --git a/docs/user/bar/index.mdx b/docs/user/bar/index.mdx
+index f459e0cbf..aaba81b58 100644
+--- a/docs/user/bar/index.mdx
++++ b/docs/user/bar/index.mdx
+@@ -193,6 +193,8 @@ Set auto-hide to **Smart** in bar settings (or `smart_auto_hide = true` with `au
+ 
+ Windows reported as minimised by Umbriel, KDE Plasma, or labwc do not hide the bar. Minimising the last visible window keeps the bar visible; workspace occupancy and window counts still include minimised windows.
+ 
++An open scratchpad holding a non-minimised window counts as content, because it is on screen without being a member of the active workspace. Summoning one on an empty workspace hides the bar; hiding it brings the bar back.
++
+ On labwc, workspace occupancy is inferred from focus because the compositor does not report each window's workspace (see the [workspaces widget](widgets/workspaces)).
+ 
+ - Mutually exclusive with pointer auto-hide (`auto_hide = true`); if both are set in config, smart auto-hide takes precedence.
+diff --git a/docs/user/dock/index.mdx b/docs/user/dock/index.mdx
+index 5d1040d6f..97f9613d4 100644
+--- a/docs/user/dock/index.mdx
++++ b/docs/user/dock/index.mdx
+@@ -179,11 +179,13 @@ Set auto-hide to **Smart** in dock settings (or `smart_auto_hide = true` with `a
+ 
+ Windows reported as minimised by Umbriel, KDE Plasma, or labwc do not hide the dock. Minimising the last visible window keeps the dock visible; workspace occupancy and window counts still include minimised windows.
+ 
++An open scratchpad holding a non-minimised window counts as content, because it is on screen without being a member of the active workspace. Summoning one on an empty workspace hides the dock; hiding it brings the dock back.
++
+ - Mutually exclusive with pointer auto-hide; if both are set in config, smart auto-hide takes precedence.
+ - Uses the same slide animation and edge reveal strip while hidden.
+ - On compositors that report overview state (Niri, Umbriel), the dock is kept visible while overview is open.
+ 
+-`reserve_space` controls whether the dock keeps a compositor exclusive zone. With both auto-hide modes off, `reserve_space = true` keeps windows pushed away; `reserve_space = false` overlays the dock on top of full-screen clients. With pointer or smart auto-hide active, `reserve_space = false` retracts the dock as an overlay (no gap); `reserve_space = true` keeps the gap while the dock slides out of view.
++`reserve_space` controls whether the dock keeps a compositor exclusive zone. With both auto-hide modes off, `reserve_space = true` keeps windows pushed away; `reserve_space = false` overlays the dock on top of full-screen clients. With pointer or smart auto-hide active, `reserve_space = false` retracts the dock as an overlay (no gap); `reserve_space = true` keeps the gap while the dock slides out of view. A reserving dock keeps its strip while smart auto-hide has it hidden, so a scratchpad on that monitor is laid out inside the gap rather than under the dock.
+ 
+ `layer` selects the Wayland layer-shell stacking layer (`top` or `overlay`). Use `overlay` so the dock stays reachable above fullscreen apps, the same idea as the bar's Wayland Layer setting.
+ 
+diff --git a/meson.build b/meson.build
+index ef01ef189..18fb03587 100644
+--- a/meson.build
++++ b/meson.build
+@@ -1307,6 +1307,7 @@ if build_tests
+     'secret_store',
+     'security_primitives',
+     'settings_search',
++    'smart_auto_hide',
+     'state_store',
+     'surface_blur_region',
+     'sway_workspace_backend',
+diff --git a/src/compositors/compositor_platform.cpp b/src/compositors/compositor_platform.cpp
+index 99849202c..9b78e241b 100644
+--- a/src/compositors/compositor_platform.cpp
++++ b/src/compositors/compositor_platform.cpp
+@@ -1599,6 +1599,13 @@ std::vector<std::string> CompositorPlatform::openOverlayWorkspaceKeys(wl_output*
+   return m_workspaces != nullptr ? m_workspaces->openOverlayWorkspaceKeys(outputFilter) : std::vector<std::string>{};
+ }
+ 
++bool CompositorPlatform::hasOnScreenOverlay(wl_output* outputFilter) const {
++  // Only a backend that hides an overlay from its workspace list answers here: the overlay's windows
++  // carry no workspace key, so no workspace list or assignment list shows them.
++  return m_workspaceMetadataBackend != nullptr
++      && m_workspaceMetadataBackend->hasOnScreenOverlay(connectorNameForOutput(outputFilter));
++}
++
+ TaskbarAssignmentMode CompositorPlatform::taskbarAssignmentMode() const noexcept {
+   return m_workspaces != nullptr ? m_workspaces->taskbarAssignmentMode() : TaskbarAssignmentMode::Generic;
+ }
+diff --git a/src/compositors/compositor_platform.h b/src/compositors/compositor_platform.h
+index 1f25cce76..200e9409e 100644
+--- a/src/compositors/compositor_platform.h
++++ b/src/compositors/compositor_platform.h
+@@ -180,6 +180,11 @@ public:
+   // Workspace keys of the overlay workspaces currently open on `outputFilter`
+   // (nullptr = every output). Empty unless the active workspace backend tracks them.
+   std::vector<std::string> openOverlayWorkspaceKeys(wl_output* outputFilter = nullptr) const;
++  // True while an overlay that is hidden from the workspace lists holds a visible window on
++  // `outputFilter` — an Umbriel scratchpad. An overlay with nothing in it leaves the output empty.
++  // Overlay *workspaces*, which the workspace backend names instead (openOverlayWorkspaceKeys), are a
++  // separate concept and are not covered.
++  bool hasOnScreenOverlay(wl_output* outputFilter = nullptr) const;
+ 
+   // Workspace alerts: user-requested "attention" markers overlaid onto the
+   // workspace model by reusing Workspace::id (no new per-backend identifier).
+diff --git a/src/compositors/umbriel/umbriel_workspace_backend.cpp b/src/compositors/umbriel/umbriel_workspace_backend.cpp
+index 3ddcb0590..67218e86a 100644
+--- a/src/compositors/umbriel/umbriel_workspace_backend.cpp
++++ b/src/compositors/umbriel/umbriel_workspace_backend.cpp
+@@ -110,6 +110,15 @@ void UmbrielWorkspaceBackend::apply(std::vector<Workspace>& workspaces, const st
+   m_workspacesByOutput.emplace_back(outputName, std::move(refreshed));
+ }
+ 
++bool UmbrielWorkspaceBackend::hasOnScreenOverlay(const std::string& outputName) const {
++  return std::ranges::any_of(m_windows, [&outputName](const auto& entry) {
++    const Window& window = entry.second;
++    // `visible` is Umbriel's own answer for "the user can see this", which excludes hidden tabs,
++    // minimised windows and members of a hidden pad.
++    return !window.scratchpad.empty() && window.visible && (outputName.empty() || window.output == outputName);
++  });
++}
++
+ std::vector<std::string> UmbrielWorkspaceBackend::workspaceKeys(const std::string& outputName) const {
+   std::vector<std::string> result;
+   if (!outputName.empty()) {
+@@ -253,6 +262,9 @@ void UmbrielWorkspaceBackend::handleEvent(std::string_view event, const nlohmann
+       window.workspaceId = jsonString(entry, "workspace");
+       window.appId = jsonString(entry, "app_id");
+       window.title = jsonString(entry, "title");
++      window.scratchpad = jsonString(entry, "scratchpad");
++      window.output = jsonString(entry, "output");
++      window.visible = entry.value("visible", false);
+       window.active = entry.value("active", false);
+       window.x = entry.value("x", 0);
+       window.y = entry.value("y", 0);
+diff --git a/src/compositors/umbriel/umbriel_workspace_backend.h b/src/compositors/umbriel/umbriel_workspace_backend.h
+index e5d57cde2..b0ba2a77d 100644
+--- a/src/compositors/umbriel/umbriel_workspace_backend.h
++++ b/src/compositors/umbriel/umbriel_workspace_backend.h
+@@ -44,6 +44,7 @@ public:
+   void handleStreamReset() override;
+   void apply(std::vector<Workspace>& workspaces, const std::string& outputName = {}) const override;
+   std::vector<std::string> workspaceKeys(const std::string& outputName = {}) const override;
++  bool hasOnScreenOverlay(const std::string& outputName = {}) const override;
+   std::unordered_map<std::string, std::vector<std::string>>
+   appIdsByWorkspace(const std::string& outputName = {}) const override;
+   std::vector<WorkspaceWindow> workspaceWindows(const std::string& outputName = {}) const override;
+@@ -60,6 +61,11 @@ private:
+     std::string workspaceId;
+     std::string appId;
+     std::string title;
++    // Empty unless the window belongs to a scratchpad; members carry no workspace id.
++    std::string scratchpad;
++    std::string output;
++    // On screen: pinned, on the active workspace, or presented by a visible scratchpad.
++    bool visible = false;
+     bool active = false;
+     std::int32_t x = 0;
+     std::int32_t y = 0;
+diff --git a/src/compositors/workspace_backend.h b/src/compositors/workspace_backend.h
+index 462f29469..b783f787f 100644
+--- a/src/compositors/workspace_backend.h
++++ b/src/compositors/workspace_backend.h
+@@ -157,6 +157,11 @@ namespace compositors {
+     virtual void dispatchPoll(short /*revents*/) {}
+     virtual void apply(std::vector<Workspace>& /*workspaces*/, const std::string& /*outputName*/ = {}) const {}
+     virtual std::vector<std::string> workspaceKeys(const std::string& /*outputName*/ = {}) const { return {}; }
++    // Overlays this backend hides from all()/forOutput() report their presence here instead of through a
++    // workspace key: they hold windows without being workspace members. Umbriel's scratchpad answers
++    // here; a Hyprland special workspace does not, so a backend that reports neither leaves its overlays
++    // invisible to smart auto-hide.
++    virtual bool hasOnScreenOverlay(const std::string& /*outputName*/ = {}) const { return false; }
+     virtual std::unordered_map<std::string, std::vector<std::string>>
+     appIdsByWorkspace(const std::string& /*outputName*/ = {}) const {
+       return {};
+diff --git a/src/shell/bar/bar.cpp b/src/shell/bar/bar.cpp
+index eac2b9692..673dddf01 100644
+--- a/src/shell/bar/bar.cpp
++++ b/src/shell/bar/bar.cpp
+@@ -20,6 +20,7 @@
+ #include "shell/bar/widgets/taskbar_widget.h"
+ #include "shell/bar/widgets/tray_widget.h"
+ #include "shell/panel/panel_manager.h"
++#include "shell/smart_auto_hide.h"
+ #include "shell/tooltip/tooltip_manager.h"
+ #include "shell/tooltip/tooltip_placement.h"
+ #include "shell/wayland/layer_shell.h"
+@@ -74,61 +75,7 @@ namespace {
+     return instance.barConfig.autoHide;
+   }
+ 
+-  bool workspaceKeyMatchesAssignment(std::string_view assignmentKey, const Workspace& workspace) {
+-    if (assignmentKey.empty()) {
+-      return false;
+-    }
+-    if (!workspace.id.empty() && assignmentKey == workspace.id) {
+-      return true;
+-    }
+-    if (!workspace.name.empty() && assignmentKey == workspace.name) {
+-      return true;
+-    }
+-    if (workspace.index > 0 && assignmentKey == std::to_string(workspace.index)) {
+-      return true;
+-    }
+-    return false;
+-  }
+-
+-  bool activeWorkspaceHasWindows(const CompositorPlatform& platform, wl_output* output) {
+-    const auto workspaces = platform.workspaces(output);
+-    const Workspace* active = nullptr;
+-    for (const auto& workspace : workspaces) {
+-      if (workspace.active) {
+-        active = &workspace;
+-        break;
+-      }
+-    }
+-    if (active == nullptr) {
+-      return false;
+-    }
+-
+-    const auto assignments = platform.workspaceWindowAssignments(output);
+-    for (const auto& assignment : assignments) {
+-      if (assignment.minimizeState.has_value() && assignment.minimizeState->minimized) {
+-        continue;
+-      }
+-      if (workspaceKeyMatchesAssignment(assignment.workspaceKey, *active)) {
+-        return true;
+-      }
+-    }
+-    if (!assignments.empty()) {
+-      return false;
+-    }
+-    if (platform.hasUnminimizedToplevels(output) == false) {
+-      return false;
+-    }
+-    return active->occupied;
+-  }
+-
+-  bool smartAutoHideWantsPinnedVisible(const CompositorPlatform& platform, wl_output* output) {
+-    if (platform.hasOverviewState() && platform.isOverviewOpen()) {
+-      return true;
+-    }
+-    return !activeWorkspaceHasWindows(platform, output);
+-  }
+-
+-  int barAutoHideEdgeGutter(const BarConfig& cfg) noexcept {
++  [[nodiscard]] int barAutoHideEdgeGutter(const BarConfig& cfg) noexcept {
+     if (!barConfigUsesSlideSurface(cfg) || cfg.marginEdge <= 0) {
+       return 0;
+     }
+@@ -1801,7 +1748,7 @@ void Bar::reevaluateSmartAutoHide() {
+       continue;
+     }
+ 
+-    const bool wantsPinned = smartAutoHideWantsPinnedVisible(*m_platform, instance->output);
++    const bool wantsPinned = shell::smart_auto_hide::smartWantsPinnedVisible(*m_platform, instance->output);
+     const bool pinnedChanged = wantsPinned != instance->smartAutoHidePinnedVisible;
+     instance->smartAutoHidePinnedVisible = wantsPinned;
+ 
+@@ -3594,7 +3541,8 @@ void Bar::buildScene(BarInstance& instance, std::uint32_t width, std::uint32_t h
+     });
+ 
+     if (instance.barConfig.smartAutoHide && m_platform != nullptr) {
+-      instance.smartAutoHidePinnedVisible = smartAutoHideWantsPinnedVisible(*m_platform, instance.output);
++      instance.smartAutoHidePinnedVisible =
++          shell::smart_auto_hide::smartWantsPinnedVisible(*m_platform, instance.output);
+     }
+     if (barConfigUsesSlideSurface(instance.barConfig)) {
+       instance.slideRoot->setOpacity(1.0F);
+diff --git a/src/shell/dock/dock.cpp b/src/shell/dock/dock.cpp
+index 69fb0d28c..048d10ec0 100644
+--- a/src/shell/dock/dock.cpp
++++ b/src/shell/dock/dock.cpp
+@@ -15,6 +15,7 @@
+ #include "shell/dock/dock_model.h"
+ #include "shell/dock/pinned_apps.h"
+ #include "shell/panel/panel_manager.h"
++#include "shell/smart_auto_hide.h"
+ #include "shell/wayland/layer_surface.h"
+ #include "shell/wayland/wayland_toplevels.h"
+ #include "system/desktop_entry.h"
+@@ -245,60 +246,6 @@ namespace {
+     return {"dock", "pinned"};
+   }
+ 
+-  bool workspaceKeyMatchesAssignment(std::string_view assignmentKey, const Workspace& workspace) {
+-    if (assignmentKey.empty()) {
+-      return false;
+-    }
+-    if (!workspace.id.empty() && assignmentKey == workspace.id) {
+-      return true;
+-    }
+-    if (!workspace.name.empty() && assignmentKey == workspace.name) {
+-      return true;
+-    }
+-    if (workspace.index > 0 && assignmentKey == std::to_string(workspace.index)) {
+-      return true;
+-    }
+-    return false;
+-  }
+-
+-  bool activeWorkspaceHasWindows(const CompositorPlatform& platform, wl_output* output) {
+-    const auto workspaces = platform.workspaces(output);
+-    const Workspace* active = nullptr;
+-    for (const auto& workspace : workspaces) {
+-      if (workspace.active) {
+-        active = &workspace;
+-        break;
+-      }
+-    }
+-    if (active == nullptr) {
+-      return false;
+-    }
+-
+-    const auto assignments = platform.workspaceWindowAssignments(output);
+-    for (const auto& assignment : assignments) {
+-      if (assignment.minimizeState.has_value() && assignment.minimizeState->minimized) {
+-        continue;
+-      }
+-      if (workspaceKeyMatchesAssignment(assignment.workspaceKey, *active)) {
+-        return true;
+-      }
+-    }
+-    if (!assignments.empty()) {
+-      return false;
+-    }
+-    if (platform.hasUnminimizedToplevels(output) == false) {
+-      return false;
+-    }
+-    return active->occupied;
+-  }
+-
+-  bool dockSmartAutoHideWantsPinnedVisible(const CompositorPlatform& platform, wl_output* output) {
+-    if (platform.hasOverviewState() && platform.isOverviewOpen()) {
+-      return true;
+-    }
+-    return !activeWorkspaceHasWindows(platform, output);
+-  }
+-
+ } // namespace
+ 
+ // ── Lifecycle ─────────────────────────────────────────────────────────────────
+@@ -765,7 +712,7 @@ void Dock::reevaluateSmartAutoHide() {
+       m_hoveredInstance = instance;
+     }
+ 
+-    const bool wantsPinned = dockSmartAutoHideWantsPinnedVisible(*m_platform, instance->output);
++    const bool wantsPinned = shell::smart_auto_hide::smartWantsPinnedVisible(*m_platform, instance->output);
+     const bool pinnedChanged = wantsPinned != instance->smartAutoHidePinnedVisible;
+     instance->smartAutoHidePinnedVisible = wantsPinned;
+ 
+diff --git a/src/shell/dock/dock_instance.cpp b/src/shell/dock/dock_instance.cpp
+index 8f3f8c79d..bea3a63a3 100644
+--- a/src/shell/dock/dock_instance.cpp
++++ b/src/shell/dock/dock_instance.cpp
+@@ -9,6 +9,7 @@
+ #include "render/scene/node.h"
+ #include "shell/dock/dock_geometry.h"
+ #include "shell/dock/dock_items.h"
++#include "shell/smart_auto_hide.h"
+ #include "shell/tooltip/tooltip_manager.h"
+ #include "shell/wayland/layer_surface.h"
+ #include "ui/builders.h"
+@@ -34,54 +35,6 @@ namespace shell::dock {
+ 
+     bool dockUsesAnyAutoHide(const DockConfig& cfg) noexcept { return cfg.autoHide || cfg.smartAutoHide; }
+ 
+-    bool workspaceKeyMatchesAssignment(std::string_view assignmentKey, const Workspace& workspace) {
+-      if (assignmentKey.empty()) {
+-        return false;
+-      }
+-      if (!workspace.id.empty() && assignmentKey == workspace.id) {
+-        return true;
+-      }
+-      if (!workspace.name.empty() && assignmentKey == workspace.name) {
+-        return true;
+-      }
+-      if (workspace.index > 0 && assignmentKey == std::to_string(workspace.index)) {
+-        return true;
+-      }
+-      return false;
+-    }
+-
+-    bool activeWorkspaceHasWindows(const CompositorPlatform& platform, wl_output* output) {
+-      const auto workspaces = platform.workspaces(output);
+-      const Workspace* active = nullptr;
+-      for (const auto& workspace : workspaces) {
+-        if (workspace.active) {
+-          active = &workspace;
+-          break;
+-        }
+-      }
+-      if (active == nullptr) {
+-        return false;
+-      }
+-
+-      const auto assignments = platform.workspaceWindowAssignments(output);
+-      for (const auto& assignment : assignments) {
+-        if (workspaceKeyMatchesAssignment(assignment.workspaceKey, *active)) {
+-          return true;
+-        }
+-      }
+-      if (!assignments.empty()) {
+-        return false;
+-      }
+-      return active->occupied;
+-    }
+-
+-    bool smartAutoHideWantsPinnedVisible(const CompositorPlatform& platform, wl_output* output) {
+-      if (platform.hasOverviewState() && platform.isOverviewOpen()) {
+-        return true;
+-      }
+-      return !activeWorkspaceHasWindows(platform, output);
+-    }
+-
+     void applyDockScrollOffset(DockInstance& instance, const DockConfig& cfg) {
+       if (instance.row == nullptr) {
+         return;
+@@ -306,7 +259,7 @@ namespace shell::dock {
+ 
+       if (dockUsesAnyAutoHide(cfg)) {
+         instance.smartAutoHidePinnedVisible =
+-            cfg.smartAutoHide && smartAutoHideWantsPinnedVisible(deps.platform, instance.output);
++            cfg.smartAutoHide && shell::smart_auto_hide::smartWantsPinnedVisible(deps.platform, instance.output);
+         instance.slideRoot->setOpacity(1.0F);
+         const bool startHidden = cfg.smartAutoHide ? !instance.smartAutoHidePinnedVisible : cfg.autoHide;
+         instance.hideOpacity = startHidden ? 0.0F : 1.0F;
+diff --git a/src/shell/smart_auto_hide.h b/src/shell/smart_auto_hide.h
+new file mode 100644
+index 000000000..d91e8e3cd
+--- /dev/null
++++ b/src/shell/smart_auto_hide.h
+@@ -0,0 +1,84 @@
++#pragma once
++
++#include "compositors/compositor_platform.h"
++#include "compositors/workspace_backend.h"
++#include "shell/switcher/window_switcher_membership.h"
++
++#include <algorithm>
++#include <optional>
++#include <utility>
++#include <vector>
++
++// Smart auto-hide pins a bar or dock visible while the output has nothing on screen and lets it hide
++// once something appears. "Something on screen" is the active workspace's unminimised windows plus any
++// overlay the compositor presents over it — an overlay (Umbriel's scratchpad) is on screen without being
++// a workspace member, so the workspace alone cannot answer. The rule is pure so each backend's answer is
++// testable, and the bar and dock reach the same verdict.
++namespace shell::smart_auto_hide {
++
++  struct OutputContent {
++    std::vector<Workspace> workspaces;
++    std::vector<WorkspaceWindowAssignment> assignments;
++    // The compositor presents an overlay holding at least one window on this output.
++    bool overlayPresented = false;
++  };
++
++  // `anyUnminimizedToplevel` answers for backends that publish no per-workspace assignments. It is
++  // only called in that case: the answer costs a walk of every running application.
++  template <typename AnyUnminimizedToplevel>
++  [[nodiscard]] bool outputHasContent(const OutputContent& content, AnyUnminimizedToplevel&& anyUnminimizedToplevel) {
++    const auto active =
++        std::ranges::find_if(content.workspaces, [](const Workspace& workspace) { return workspace.active; });
++    if (active == content.workspaces.end()) {
++      // No reported active workspace (hotplug, transition): answer "empty", which keeps the surface
++      // revealed instead of flapping.
++      return false;
++    }
++    if (content.overlayPresented) {
++      return true;
++    }
++    for (const auto& assignment : content.assignments) {
++      if (assignment.minimizeState.has_value() && assignment.minimizeState->minimized) {
++        continue;
++      }
++      if (switcher_membership::workspaceKeyMatchesAssignment(assignment.workspaceKey, *active)) {
++        return true;
++      }
++    }
++    if (!content.assignments.empty()) {
++      return false;
++    }
++    // An unknown toplevel state still falls through to the workspace's own occupancy.
++    const std::optional<bool> toplevels = anyUnminimizedToplevel();
++    if (toplevels.has_value() && !*toplevels) {
++      return false;
++    }
++    return active->occupied;
++  }
++
++  // `anyUnminimizedToplevel` stays a callable so the content checks above can answer without it.
++  template <typename AnyUnminimizedToplevel>
++  [[nodiscard]] bool
++  wantsPinnedVisible(const OutputContent& content, bool overviewOpen, AnyUnminimizedToplevel&& anyUnminimizedToplevel) {
++    if (overviewOpen) {
++      return true;
++    }
++    return !outputHasContent(content, std::forward<AnyUnminimizedToplevel>(anyUnminimizedToplevel));
++  }
++
++  [[nodiscard]] inline OutputContent outputContent(const CompositorPlatform& platform, wl_output* output) {
++    return OutputContent{
++        .workspaces = platform.workspaces(output),
++        .assignments = platform.workspaceWindowAssignments(output),
++        .overlayPresented = platform.hasOnScreenOverlay(output),
++    };
++  }
++
++  [[nodiscard]] inline bool smartWantsPinnedVisible(const CompositorPlatform& platform, wl_output* output) {
++    const bool overviewOpen = platform.hasOverviewState() && platform.isOverviewOpen();
++    return wantsPinnedVisible(outputContent(platform, output), overviewOpen, [&platform, output] {
++      return platform.hasUnminimizedToplevels(output);
++    });
++  }
++
++} // namespace shell::smart_auto_hide
+diff --git a/tests/smart_auto_hide_test.cpp b/tests/smart_auto_hide_test.cpp
+new file mode 100644
+index 000000000..da3c0f2a5
+--- /dev/null
++++ b/tests/smart_auto_hide_test.cpp
+@@ -0,0 +1,181 @@
++// Smart auto-hide pins the bar or dock visible while the output has nothing on screen. An overlay is
++// on screen without being a workspace member, so it has to count as content even though the active
++// workspace stays empty.
++
++#include "compositors/umbriel/umbriel_runtime.h"
++#include "compositors/umbriel/umbriel_workspace_backend.h"
++#include "shell/smart_auto_hide.h"
++#include "tests/test_check.h"
++
++#include <cstdint>
++#include <nlohmann/json.hpp>
++#include <optional>
++#include <string>
++#include <utility>
++#include <vector>
++
++namespace {
++
++  using shell::smart_auto_hide::OutputContent;
++  using shell::smart_auto_hide::outputHasContent;
++  using shell::smart_auto_hide::wantsPinnedVisible;
++
++  constexpr auto kAnyToplevel = [] { return std::optional<bool>{true}; };
++  constexpr auto kNoToplevel = [] { return std::optional<bool>{false}; };
++  constexpr auto kUnknownToplevel = [] { return std::optional<bool>{}; };
++
++  Workspace workspace(std::string id, std::string name, std::uint32_t index, bool active, bool occupied) {
++    return Workspace{
++        .id = std::move(id),
++        .name = std::move(name),
++        .coordinates = {},
++        .index = index,
++        .active = active,
++        .occupied = occupied,
++    };
++  }
++
++  WorkspaceWindowAssignment assignment(std::string workspaceKey, bool minimized = false) {
++    WorkspaceWindowAssignment entry{.windowId = "w1", .workspaceKey = std::move(workspaceKey)};
++    if (minimized) {
++      entry.minimizeState = WindowMinimizeState{.minimized = true, .minimizable = true};
++    }
++    return entry;
++  }
++
++  OutputContent contentOf(
++      std::vector<Workspace> workspaces, std::vector<WorkspaceWindowAssignment> assignments,
++      bool overlayPresented = false
++  ) {
++    return OutputContent{
++        .workspaces = std::move(workspaces),
++        .assignments = std::move(assignments),
++        .overlayPresented = overlayPresented,
++    };
++  }
++
++  void testEmptyWorkspaceHasNoContent() {
++    const auto content = contentOf({workspace("1", "1", 1, true, false)}, {});
++    TEST_CHECK(!outputHasContent(content, kAnyToplevel));
++    TEST_CHECK(wantsPinnedVisible(content, false, kAnyToplevel));
++  }
++
++  void testWindowOnTheActiveWorkspaceIsContent() {
++    const auto content = contentOf({workspace("1", "1", 1, true, true)}, {assignment("1")});
++    TEST_CHECK(outputHasContent(content, kNoToplevel));
++    TEST_CHECK(!wantsPinnedVisible(content, false, kNoToplevel));
++  }
++
++  void testWindowOnAnotherWorkspaceLeavesThisOneEmpty() {
++    const auto content =
++        contentOf({workspace("1", "1", 1, true, false), workspace("2", "2", 2, false, true)}, {assignment("2")});
++    TEST_CHECK(!outputHasContent(content, kUnknownToplevel));
++    TEST_CHECK(wantsPinnedVisible(content, false, kUnknownToplevel));
++  }
++
++  void testMinimizedWindowLeavesTheWorkspaceEmpty() {
++    const auto content = contentOf({workspace("1", "1", 1, true, true)}, {assignment("1", true)});
++    TEST_CHECK(!outputHasContent(content, kAnyToplevel));
++    TEST_CHECK(wantsPinnedVisible(content, false, kAnyToplevel));
++  }
++
++  // A scratchpad floats over an otherwise empty workspace. Its members carry no workspace assignment,
++  // so the overlay flag is the only evidence that something is on screen.
++  void testPresentedOverlayHidesOnAnEmptyWorkspace() {
++    const auto content = contentOf({workspace("1", "1", 1, true, false)}, {}, true);
++    TEST_CHECK(outputHasContent(content, kAnyToplevel));
++    TEST_CHECK(!wantsPinnedVisible(content, false, kAnyToplevel));
++  }
++
++  void testOverviewKeepsTheSurfaceVisible() {
++    const auto content = contentOf({workspace("1", "1", 1, true, true)}, {assignment("1")}, true);
++    TEST_CHECK(wantsPinnedVisible(content, true, kAnyToplevel));
++  }
++
++  void testToplevelFallbackWhenTheBackendPublishesNoAssignments() {
++    const auto empty = contentOf({workspace("1", "1", 1, true, false)}, {});
++    TEST_CHECK(!outputHasContent(empty, kNoToplevel));
++    const auto occupied = contentOf({workspace("1", "1", 1, true, true)}, {});
++    TEST_CHECK(outputHasContent(occupied, kAnyToplevel));
++  }
++
++  void testUnknownToplevelStateFallsBackToOccupancy() {
++    TEST_CHECK(!outputHasContent(contentOf({workspace("1", "1", 1, true, false)}, {}), kUnknownToplevel));
++    TEST_CHECK(outputHasContent(contentOf({workspace("1", "1", 1, true, true)}, {}), kUnknownToplevel));
++  }
++
++  // A presented scratchpad member carries no workspace, so the backend has to read `scratchpad` and
++  // `visible` for the overlay to exist at all.
++  nlohmann::json
++  windowEntry(std::string id, std::string workspace, std::string scratchpad, bool visible, std::string output) {
++    return nlohmann::json{
++        {"id", std::move(id)},
++        {"workspace", std::move(workspace)},
++        {"scratchpad", std::move(scratchpad)},
++        {"visible", visible},
++        {"output", std::move(output)},
++        {"app_id", "foot"},
++        {"title", "shell"},
++        {"active", false},
++        {"x", 0},
++        {"y", 0},
++        {"minimized", false},
++        {"minimizable", true},
++    };
++  }
++
++  void testUmbrielReportsAPresentedScratchpadAsAnOverlay() {
++    compositors::umbriel::UmbrielRuntime runtime;
++    UmbrielWorkspaceBackend backend(runtime);
++
++    backend.handleEvent("windows", nlohmann::json::array({windowEntry("w1", "", "notes", true, "eDP-1")}));
++    TEST_CHECK(backend.hasOnScreenOverlay("eDP-1"));
++    TEST_CHECK(!backend.hasOnScreenOverlay("HDMI-A-1"));
++    // The taskbar's contract is unchanged: members are not workspace windows.
++    TEST_CHECK(backend.workspaceWindows("eDP-1").empty());
++
++    // Hiding the pad flips `visible`, which is the transition Umbriel already reports.
++    backend.handleEvent("windows", nlohmann::json::array({windowEntry("w2", "", "notes", false, "eDP-1")}));
++    TEST_CHECK(!backend.hasOnScreenOverlay("eDP-1"));
++
++    // A workspace window is not an overlay.
++    backend.handleEvent("windows", nlohmann::json::array({windowEntry("w3", "eDP-1:1", "", true, "eDP-1")}));
++    TEST_CHECK(!backend.hasOnScreenOverlay("eDP-1"));
++    TEST_CHECK(backend.workspaceWindows("eDP-1").size() == 1);
++  }
++
++  void testOverlayWithoutAnActiveWorkspaceKeepsTheSurfaceVisible() {
++    // Hotplug and transitions report no active workspace; an overlay flag alone must not move the surface.
++    TEST_CHECK(!outputHasContent(contentOf({}, {}, true), kAnyToplevel));
++    TEST_CHECK(wantsPinnedVisible(contentOf({}, {}, true), false, kAnyToplevel));
++  }
++
++  void testNumberedWorkspaceNamesMatchTheirNumber() {
++    // Sway publishes "1: web" as both id and name while assignments use "1"; the shared matcher covers it.
++    const auto content = contentOf({workspace("1: web", "1: web", 0, true, true)}, {assignment("1")});
++    TEST_CHECK(outputHasContent(content, kNoToplevel));
++  }
++
++  void testOutputWithoutAnActiveWorkspaceHasNoContent() {
++    const auto content = contentOf({workspace("1", "1", 1, false, true)}, {assignment("1")});
++    TEST_CHECK(!outputHasContent(content, kAnyToplevel));
++    TEST_CHECK(wantsPinnedVisible(content, false, kAnyToplevel));
++  }
++
++} // namespace
++
++int main() {
++  testEmptyWorkspaceHasNoContent();
++  testWindowOnTheActiveWorkspaceIsContent();
++  testWindowOnAnotherWorkspaceLeavesThisOneEmpty();
++  testMinimizedWindowLeavesTheWorkspaceEmpty();
++  testPresentedOverlayHidesOnAnEmptyWorkspace();
++  testOverviewKeepsTheSurfaceVisible();
++  testToplevelFallbackWhenTheBackendPublishesNoAssignments();
++  testUnknownToplevelStateFallsBackToOccupancy();
++  testOutputWithoutAnActiveWorkspaceHasNoContent();
++  testOverlayWithoutAnActiveWorkspaceKeepsTheSurfaceVisible();
++  testNumberedWorkspaceNamesMatchTheirNumber();
++  testUmbrielReportsAPresentedScratchpadAsAnOverlay();
++  return 0;
++}

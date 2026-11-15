@@ -7,7 +7,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=noctalia-git
 _pkgname=noctalia
 pkgver=5.4.1.r6310.g2f3e3c4f6
-pkgrel=1
+pkgrel=2
 pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
 arch=('x86_64' 'aarch64')
 url='https://github.com/noctalia-dev/noctalia'
@@ -71,8 +71,10 @@ conflicts=('noctalia' 'noctalia-bin')
 # annotation_view.h, annotation_view_test.cpp). The patch applies CLEANLY at
 # cece614d2 (the base it was cut against) and both commits carry the same
 # upstream version, 5.4.1. Advance the pin ONLY together with a patch re-cut.
-source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b")
-sha256sums=('80738ff24130c655bc8abe0bd0d0da9ca71b653227de4b43145d4610f38695b3')
+source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
+        '0001-smart-autohide-scratchpad.patch')
+sha256sums=('80738ff24130c655bc8abe0bd0d0da9ca71b653227de4b43145d4610f38695b3'
+            '304a87918876122bbf2a6547de41d38580b0c255194ce4366f8c4335b2e0634e')
 
 pkgver() {
   cd "${_pkgname}"
@@ -91,11 +93,10 @@ pkgver() {
 prepare() {
   cd "${_pkgname}"
 
-  # Zoom and pan for the screenshot annotation editor (upstream PR
-  # noctalia-dev/noctalia#5111). Re-cut 2026-11-02 onto main@cece614d2 after
-  # drift: annotation_overlay.h hand-merged as a union with upstream's newer
-  # nearestSizePreset declaration ([[nodiscard]] superset kept).
-  # git apply -3 ../0001-capture-annot -> [RETIRED]
+  # Smart auto-hide counts a presented scratchpad as content (issue
+  # noctalia-dev/umbriel#821). Cut from the pinned commit, so it applies
+  # without fuzz; re-cut it whenever the pin advances.
+  git apply -3 ../0001-smart-autohide-scratchpad.patch
 }
 
 # Run the PGO training workload: exercise the real shell under a headless sway
