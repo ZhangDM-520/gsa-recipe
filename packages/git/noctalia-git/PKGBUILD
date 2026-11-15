@@ -74,7 +74,7 @@ conflicts=('noctalia' 'noctalia-bin')
 source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
         0001-capture-annotate-zoom-pan.patch)
 sha256sums=('SKIP'
-            '04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d')
+            'eda00814d6265d0be1911618c0c4c80639998b02a3545dddcf5c6b1cd52dd122')
 
 pkgver() {
   cd "${_pkgname}"

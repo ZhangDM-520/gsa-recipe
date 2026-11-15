@@ -35,8 +35,6 @@ satellite-titlebar height reduction from `update_surface_viewport` into the
 configure arm; the height conversion now rounds half-up there, and the
 `client_side_decorations_fractional_scale` test that #496 added (which pinned
 the truncating expectations) is updated to the same half-up rounding.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  src/server/event.rs |  28 +++++++++----
  src/server/tests.rs | 110 +++++++++++++++++++++++++++++++++++++++++++-

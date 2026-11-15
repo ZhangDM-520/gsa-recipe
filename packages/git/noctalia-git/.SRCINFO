@@ -52,6 +52,6 @@ pkgbase = noctalia-git
 	source = noctalia::git+https://github.com/noctalia-dev/noctalia.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b
 	source = 0001-capture-annotate-zoom-pan.patch
 	sha256sums = SKIP
-	sha256sums = 04fe62be6b2dc15ec71d57d6cd3f1d43ebddbf638f78361a21cc9e474bb6c14d
+	sha256sums = eda00814d6265d0be1911618c0c4c80639998b02a3545dddcf5c6b1cd52dd122
 
 pkgname = noctalia-git

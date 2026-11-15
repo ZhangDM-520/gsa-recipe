@@ -7,8 +7,6 @@ Subject: [PATCH 1/5] feat(layout)!: place an underfull scrolling strip at
 `layout.scrolling.center_underfull_strip` could only center a strip narrower than the viewport or start-align it. `underfull_strip` replaces it with three placements, so a workspace holding one or two windows can rest against either edge. The old names map onto the new ones: true is "center" (the default) and false is "start".
 
 An end-aligned strip keeps its trailing edge pinned; while the strip fits, its windows resize from their leading edges, because dragging the trailing edge would push the strip past the edge it is anchored to. The names are axis-neutral: on a vertical strip start is the top edge and end the bottom one.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  docs/user/layout.md                           | 24 +++--
  docs/user/workspaces.md                       |  2 +-
@@ -805,8 +803,6 @@ with a stale scroll, drawing the strip up to half a viewport off. The layout
 config apply path now treats that change as a reason to reconcile.
 
 Also pins "center" parsing and the invalid-value diagnostic.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  src/layout/scrolling.cpp                      | 51 ++++++++++++++++---
  src/workspace/workspace.cpp                   |  4 +-
@@ -1062,8 +1058,6 @@ gated on end alignment.
 
 Also: pin the replaced boolean key's unknown-key warning, reword the docs'
 end-alignment paragraph, and trim the harness check to the live-only legs.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  docs/user/layout.md                           |  2 +-
  src/layout/scrolling.cpp                      | 90 +++++++++---------
@@ -1434,8 +1428,6 @@ Subject: [PATCH 4/5] test(layout): bind the survivor loop by reference
 
 -Werror=range-loop-construct rejects copying the pair from the initializer
 list, which broke the musl CI leg.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  tests/unit/scrolling_layout.cpp | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -1470,8 +1462,6 @@ runs as it does for every other edge combination.
 
 Pinned by a two-window column drag that asserts both the width trade and the
 height split; restoring the return reds only the cross-axis assertions.
-
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ---
  src/layout/scrolling.cpp        | 32 ++++++++++++++++----------------
  tests/unit/scrolling_layout.cpp | 29 +++++++++++++++++++++++++++++

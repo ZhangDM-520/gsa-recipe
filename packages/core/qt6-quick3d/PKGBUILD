@@ -42,7 +42,7 @@ _snapshot_ref=dev
 source=(git+https://code.qt.io/qt/$_pkgfn#commit=da959e75ceafcc500c6c9fa9bedf6182af36f113
         qtquick3d-srb-variant-adapt.patch)
 sha256sums=('SKIP'
-            'dcd44cb80f121d0187eeb85dd560b9dce8304177819e08e5ed3cc09d853d627d')
+            'cfcaf299a4bfaf3b9ef0fd6e92ec7201218f17056727f49b388113edaf409120')
 
 prepare() {
   # [rhi] SRB variant port — hand-port of the four QRhiShaderResourceBinding::Data
@@ -55,7 +55,7 @@ prepare() {
   # (u.emplace<Type>(Data::XxxData{...})); semantic-preserving.  Upstream
   # expects it ("Qt Quick 3D needs a corresponding patch"; qtquick3d dev
   # eaf90eeb8 predates any adaptation).  qtquick3d-srb-variant-adapt.patch
-  # (sha256 dcd44cb8…).  RETIRE when upstream adapts qssgrhicontext.cpp to the
+  # (sha256 cfcaf299…).  RETIRE when upstream adapts qssgrhicontext.cpp to the
   # variant API — watch for a qssgrhicontext.cpp commit after 2026-09-17; drop
   # the patch and this ledger then.  --fuzz=0 keeps the patch a drift tripwire:
   # any upstream movement in the touched lines aborts prepare() for re-review.

@@ -28,6 +28,6 @@ pkgbase = qt6-quick3d
 	source = git+https://code.qt.io/qt/qtquick3d#commit=da959e75ceafcc500c6c9fa9bedf6182af36f113
 	source = qtquick3d-srb-variant-adapt.patch
 	sha256sums = SKIP
-	sha256sums = dcd44cb80f121d0187eeb85dd560b9dce8304177819e08e5ed3cc09d853d627d
+	sha256sums = cfcaf299a4bfaf3b9ef0fd6e92ec7201218f17056727f49b388113edaf409120
 
 pkgname = qt6-quick3d

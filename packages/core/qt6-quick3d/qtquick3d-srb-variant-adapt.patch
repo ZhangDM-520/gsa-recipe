@@ -1,4 +1,4 @@
-From: Copilot <223556219+Copilot@users.noreply.github.com>
+From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Mon, 02 Nov 2026 23:30:00 +0800
 Subject: [PATCH] rhi: adapt QSSGRhiShaderResourceBindingList to the std::variant
  SRB data

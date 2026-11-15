@@ -26,7 +26,7 @@ conflicts=($_pkgname)
 source=(git+$url.git
         0001-round-half-up.patch)
 b2sums=('SKIP'
-        '3afff9384b64bf8f949b0dc2df5e34aaba191d570eca8d4d5888bad49088346143913cf9bb1c1ac455fbd7fb5d17ca88423d4305c6826c5fb6607f0b42ffee1e')
+        '6ac253c4a177fe85c0366f52397a534eefed72c22910cf86ca0ec2c765e39db5455722138b76db397b595fd11a095cd201952956bcb166ed7ac32966770eaf2b')
 
 pkgver() {
 	cd $_pkgname
