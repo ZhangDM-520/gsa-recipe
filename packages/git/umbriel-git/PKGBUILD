@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1579.ae3472d
-pkgrel=2
+pkgrel=3
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -67,7 +67,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0022-scratchpad-close-animation.patch'
         '0023-scratchpad-show-no-recentre.patch'
         '0024-cli-shell-completion.patch'
-        '0025-spawn-report-failure.patch'
+        '0025-spawn-launch-record.patch'
         '0026-config-log-diagnostics.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
@@ -80,7 +80,7 @@ sha256sums=('SKIP'
             '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
             '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad'
             '59d89e53515b197f0a7ab7518f9787e338379508f4c79ebc2553c773b1c8d53c'
-            '1fd278add695446c2cc19e737f899475b6b51025db27d4728afa3711b7a0f9bc'
+            '5edecb8814dd02274d25f69651d6ae95677307455aeb40b2422aa9266b03596b'
             '8fc103ac3c7b1a9d4036468eaf00623c74ffc0b994acdadcaa236da2f36bc8e3')
 
 pkgver() {
@@ -362,13 +362,17 @@ prepare() {
   # (Retire on merge: 0024 -> noctalia-dev/umbriel#806.)
   git apply -3 ../0024-cli-shell-completion.patch
 
-  # [server] spawn reports a program it cannot launch instead of logging a launch
-  # that never happened: a shell-free command's first word is resolved before the
-  # fork, `Server::spawn` returns bool plus an error the IPC reply already carries,
-  # and a refused bind still consumes its chord. Ten files +325/-8; sha256
-  # 1fd278ad…; the pins are tests/unit/spawn_command.cpp and session/spawn.
-  # (Retire on merge: 0025 -> noctalia-dev/umbriel#801.)
-  git apply -3 ../0025-spawn-report-failure.patch
+  # [server] a launch names the process it created: one record replaces
+  # `spawned '<cmd>'` and the pid-less scoped line, carrying label, `fork()` pid,
+  # owning scope unit, and the command when it differs from the label, with the
+  # label and command bounded by bytes so a long one cannot push the pid past the
+  # 8 KiB log line cap. The two early failures move to kLog so they reach
+  # `umbriel.log`. 4 files +72/-17; sha256 5edecb88…; the pin is session/spawn.
+  # (Retire on merge: 0025 -> noctalia-dev/umbriel#820.)
+  # History: 0025 carried the #801 status-plumbing fix until that PR was closed
+  # as out of scope (a spawn handoff success is the shell's business); this
+  # in-scope traceability change replaces it at the same index.
+  git apply -3 ../0025-spawn-launch-record.patch
 
   # [config] a configuration diagnostic reaches `umbriel.log` on the paths that
   # decide a load's outcome: `ConfigStore::logDiagnostics` runs from `load()` and

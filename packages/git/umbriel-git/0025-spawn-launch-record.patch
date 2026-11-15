@@ -1,0 +1,156 @@
+diff --git a/docs/user/actions.md b/docs/user/actions.md
+index 6355cc17..1762b93d 100644
+--- a/docs/user/actions.md
++++ b/docs/user/actions.md
+@@ -319,5 +319,5 @@ See [Layout](layout.md) for geometry, directions, and resizing behavior.
+ - `column-focus-tab-next` and `column-focus-tab-previous` wrap unless `layout.tabs.wrap_focus` is off. In the scrolling layout a tab group is one row of its column: `window-focus-up` and `window-focus-down` step over it, and `window-move-up` and `window-move-down` take a tab out of it or a window into it. In a tabbed master area they step through its tabs without wrapping.
+ - Floating and pinned behavior is described in [Layout](layout.md) and [Scratchpads](scratchpad.md).
+ - An action unavailable in the active layout does nothing from a keybind and returns an explanatory error through `umbriel msg`.
+-- `spawn` supplies an activation token and records the pointer-preferred output and its active workspace. The launched application's first window opens there even if you switch workspaces while it starts. Opening on a workspace you left is silent, and explicit `default_output`, `default_workspace`, and `default_scratchpad` window rules take precedence. `focus_on_activate` controls whether an activation request focuses the window, not the recorded launch destination. Autostart commands do not receive a token or recorded placement.
++- `spawn` supplies an activation token and records the pointer-preferred output and its active workspace. The launched application's first window opens there even if you switch workspaces while it starts. Opening on a workspace you left is silent, and explicit `default_output`, `default_workspace`, and `default_scratchpad` window rules take precedence. `focus_on_activate` controls whether an activation request focuses the window, not the recorded launch destination. Autostart commands do not receive a token or recorded placement. A `spawn` reports only that the shell received the command, so a program that starts nothing still answers `{"ok": null}`; Umbriel records the launch in its own log, naming the command and the process it created, and [Logs](installation.md#logs) describes the queries that find a launch and whatever the program wrote.
+ - Bare `session-quit` asks for confirmation. Use `session-quit skip-confirmation` only when an immediate exit is intended.
+diff --git a/docs/user/installation.md b/docs/user/installation.md
+index 0cbd85cd..eedbe8cd 100644
+--- a/docs/user/installation.md
++++ b/docs/user/installation.md
+@@ -340,3 +340,22 @@ Umbriel writes its main log to `$XDG_CACHE_HOME/umbriel/umbriel.log`. If `XDG_CA
+ Messages from wlroots appear with the `[wlr]` tag at info level and above. To include wlroots debug output when reporting a rendering or display problem, start Umbriel with `UMBRIEL_WLR_DEBUG=1` set in its environment.
+ 
+ When standard output or standard error is connected to a TTY, raw writes from Umbriel and its child processes are redirected to `$XDG_CACHE_HOME/umbriel/umbriel-stderr.log`, or `~/.cache/umbriel/umbriel-stderr.log` when `XDG_CACHE_HOME` is unset.
++
++A `spawn` action, an autostart entry, and the `-s` startup command hand their command to `/bin/sh`, so what they report is the handoff and nothing about the program. Each launch is recorded in Umbriel's own log, naming the command and the process it forked, and the scope unit that owns that process when the session runs applications in their own scopes:
++
++```text
++launch requested for 'kitty' (pid 4210, unit app-umbriel-1180-3.scope) on WAYLAND_DISPLAY=wayland-0
++launch requested for 'events.lid_close' (pid 4211, unit app-umbriel-1180-4.scope, command 'umbriel msg output-disable eDP-1') on WAYLAND_DISPLAY=wayland-0
++```
++
++The command appears in the record when Umbriel launched it on behalf of something else with a name of its own, such as a lid-close event or a scratchpad's `spawn_when_empty`. A session that does not run applications in their own scopes has no unit.
++
++`journalctl --user -u umbriel.service | grep 'launch requested'` lists every launch the compositor performed in a session started through `start-umbriel`: it writes that record from its own process, so it appears whether or not the program does anything. A session started any other way has no journal entry, and its record is in `umbriel.log`.
++
++What the program itself wrote is reachable with the identifier query, including a shell diagnostic for a name that resolves to nothing:
++
++```text
++journalctl --user -t umbriel
++```
++
++journald resolves the unit from the process that writes, so a program that is still running when it writes is attributed to the scope unit the launch record named: `journalctl --user -u app-umbriel-1180-3.scope`. A program that writes and exits at once, which is what a missing command does, may be recorded with the `umbriel` identifier and no unit, because there is no process left to look up. Such a record is missed by a unit query and still found by `-t umbriel`. A program that writes nothing, or redirects its own diagnostics away, leaves only the launch record. Under a TTY the child's own output also reaches `umbriel-stderr.log`.
+diff --git a/src/server/server.cpp b/src/server/server.cpp
+index 93701695..efc079d9 100644
+--- a/src/server/server.cpp
++++ b/src/server/server.cpp
+@@ -1545,7 +1545,7 @@ namespace umbriel {
+ 
+   void Server::spawn(const char* command, const char* description, bool withActivationToken) {
+     if (m_socketName.empty()) {
+-      wlr_log(WLR_ERROR, "cannot spawn before the Wayland socket exists");
++      kLog.error("cannot spawn before the Wayland socket exists");
+       return;
+     }
+ 
+@@ -1558,9 +1558,10 @@ namespace umbriel {
+       kLog.error("cannot launch application because systemd scope isolation is unavailable");
+       return;
+     }
+-    const std::string scopeUnitArgument = scopeRequired
+-        ? "--unit=app-umbriel-" + std::to_string(getpid()) + "-" + std::to_string(m_nextApplicationScopeId++) + ".scope"
++    const std::string scopeUnitName = scopeRequired
++        ? "app-umbriel-" + std::to_string(getpid()) + "-" + std::to_string(m_nextApplicationScopeId++) + ".scope"
+         : "";
++    const std::string scopeUnitArgument = scopeRequired ? "--unit=" + scopeUnitName : "";
+ 
+     wlr_xdg_activation_token_v1* launchToken = nullptr;
+     std::string launchTokenName;
+@@ -1579,7 +1580,7 @@ namespace umbriel {
+       if (launchToken != nullptr) {
+         wlr_xdg_activation_token_v1_destroy(launchToken);
+       }
+-      wlr_log(WLR_ERROR, "fork failed");
++      kLog.error("cannot launch application: fork failed");
+       return;
+     }
+     if (pid == 0) {
+@@ -1621,17 +1622,30 @@ namespace umbriel {
+     if (launchToken != nullptr) {
+       trackActivationToken(launchToken, true, pid);
+     }
+-    if (scopeRequired) {
+-      wlr_log(
+-          WLR_INFO, "launch requested for '%s' on WAYLAND_DISPLAY=%s", description == nullptr ? command : description,
+-          m_socketName.c_str()
+-      );
+-    } else {
+-      wlr_log(
+-          WLR_INFO, "spawned '%s' on WAYLAND_DISPLAY=%s", description == nullptr ? command : description,
+-          m_socketName.c_str()
+-      );
+-    }
++    // Bound the label and the command so a long one cannot push the pid and unit past the log line cap; those two
++    // are the only trace a program that starts nothing leaves. Bytes, not display width: a run of zero-width
++    // characters has no width to count but still fills the line.
++    constexpr std::size_t kMaxLabelBytes = 1024;
++    const auto bounded = [](const char* text) {
++      std::string_view view = text;
++      if (view.size() <= kMaxLabelBytes) {
++        return std::string(view);
++      }
++      std::size_t end = kMaxLabelBytes;
++      while (end > 0 && (static_cast<unsigned char>(view[end]) & 0xC0U) == 0x80U) {
++        --end;
++      }
++      return std::string(view.substr(0, end));
++    };
++    const char* label = description == nullptr ? command : description;
++    const std::string boundedLabel = bounded(label);
++    const std::string commandField =
++        description == nullptr ? std::string() : std::format(", command '{}'", bounded(command));
++    const std::string ownerUnit = scopeRequired ? std::format(", unit {}", scopeUnitName) : std::string();
++    kLog.info(
++        "launch requested for '{}' (pid {}{}{}) on WAYLAND_DISPLAY={}", boundedLabel, pid, ownerUnit, commandField,
++        m_socketName
++    );
+   }
+ 
+   void Server::updateSeatCapabilities() { m_seat->updateCapabilities(!m_keyboards.empty(), !m_touchDevices.empty()); }
+diff --git a/tests/harness/checks/session/spawn.sh b/tests/harness/checks/session/spawn.sh
+index 33d3bf7c..2c686ead 100755
+--- a/tests/harness/checks/session/spawn.sh
++++ b/tests/harness/checks/session/spawn.sh
+@@ -1,6 +1,7 @@
+ #!/usr/bin/env bash
+-# A spawned application inherits a clean signal state. The compositor handles SIGINT and SIGTERM on the event loop, which means libwayland blocks both process-wide via sigprocmask. A blocked signal mask survives fork and exec, so without an explicit reset in the child every application launched from a keybind would silently ignore Ctrl+C and systemd's stop signal.
++# A spawned application inherits a clean signal state. The compositor handles SIGINT and SIGTERM on the event loop, which means libwayland blocks both process-wide via sigprocmask. A blocked signal mask survives fork and exec, so without an explicit reset in the child every application launched from a keybind would silently ignore Ctrl+C and systemd's stop signal. The same launch also writes a record naming the process it created, which is what a user can find when a program starts nothing.
+ set -euo pipefail
++source "$UMBRIEL_HARNESS_LIB"
+ 
+ MARKER="umbriel-harness-spawn-$$"
+ CHILD=
+@@ -17,6 +18,27 @@ if [[ -z $CHILD ]]; then
+   exit 1
+ fi
+ 
++# The compositor records the launch itself, naming the command and the process it created. That record is
++# what a user can find when a program starts nothing: it is written by the compositor, so journald attributes
++# it, while the child's own message may arrive unowned.
++await_lines "$UMBRIEL_LOG" ".*launch requested for .*$MARKER.*" 1
++record=$(grep -F 'launch requested for' "$UMBRIEL_LOG" | grep -F "$MARKER" | head -1)
++logged_pid=$(sed -n 's/.*pid \([0-9][0-9]*\)[,)].*/\1/p' <<<"$record")
++if [[ -z $logged_pid ]]; then
++  echo "the launch record does not name the process it created: $record"
++  exit 1
++fi
++# The record is written before the child execs, so its argv still names the compositor until it does.
++for _ in $(seq 40); do
++  logged_cmdline=$(tr '\0' ' ' < "/proc/$logged_pid/cmdline" 2>/dev/null || true)
++  [[ $logged_cmdline == *"$MARKER"* ]] && break
++  sleep 0.1
++done
++if [[ $logged_cmdline != *"$MARKER"* ]]; then
++  echo "the launch record names pid $logged_pid, which is not the command it launched: $record"
++  exit 1
++fi
++
+ # SigBlk is a hex bitmask; signal N occupies bit N-1.
+ blocked=$(awk '/^SigBlk:/ {print $2}' "/proc/$CHILD/status")
+ if [[ -z $blocked ]]; then
