@@ -95,7 +95,7 @@ prepare() {
   # noctalia-dev/noctalia#5111). Re-cut 2026-11-02 onto main@cece614d2 after
   # drift: annotation_overlay.h hand-merged as a union with upstream's newer
   # nearestSizePreset declaration ([[nodiscard]] superset kept).
-  git apply -3 ../0001-capture-annotate-zoom-pan.patch
+  # git apply -3 ../0001-capture-annot -> [RETIRED]
 }
 
 # Run the PGO training workload: exercise the real shell under a headless sway
