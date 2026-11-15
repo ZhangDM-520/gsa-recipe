@@ -71,10 +71,8 @@ conflicts=('noctalia' 'noctalia-bin')
 # annotation_view.h, annotation_view_test.cpp). The patch applies CLEANLY at
 # cece614d2 (the base it was cut against) and both commits carry the same
 # upstream version, 5.4.1. Advance the pin ONLY together with a patch re-cut.
-source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b"
-        0001-capture-annotate-zoom-pan.patch)
-sha256sums=('SKIP'
-            'eda00814d6265d0be1911618c0c4c80639998b02a3545dddcf5c6b1cd52dd122')
+source=("${_pkgname}::git+${url}.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b")
+sha256sums=('80738ff24130c655bc8abe0bd0d0da9ca71b653227de4b43145d4610f38695b3')
 
 pkgver() {
   cd "${_pkgname}"
