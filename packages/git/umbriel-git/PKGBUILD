@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1584.1bbbf15
-pkgrel=3
+pkgrel=4
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -69,7 +69,8 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0024-cli-shell-completion.patch'
         '0025-spawn-launch-record.patch'
         '0027-drag-blur-latency.patch'
-        '0028-drag-physics-scalability.patch')
+        '0028-drag-physics-scalability.patch'
+        '0029-vram-blur-footprint.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
             '10867e434ac9f78d39567d548f0f9b7cf27a8913c50b263a65098447497a81d8'
@@ -83,7 +84,8 @@ sha256sums=('SKIP'
             '59d89e53515b197f0a7ab7518f9787e338379508f4c79ebc2553c773b1c8d53c'
             '5edecb8814dd02274d25f69651d6ae95677307455aeb40b2422aa9266b03596b'
             '0df919fc22c90c93181523f9b96ed27b7437a1ed9ed9945556dba19fa4fbf82a'
-            '92fdfb825e4a97b737687e8fbc09f65e74141bcffac607fc99d04f1ff2b45dfc')
+            'eb8890b7813032cb035433b3272c837e52d5ae96be57f767335208680887e61d'
+            '3e6686cc33c1d94b241dae4182e473407b655ea3dba3d4da6c4a08e35e74ac43')
 
 pkgver() {
   cd "${_pkgname}"
@@ -406,11 +408,26 @@ prepare() {
   # through a dedicated `animation_shadow_blur` pool slot so Stage 3 no longer
   # evicts `animation_buffers[1]` every frame, and composites `out_caster` once
   # over `drawn_box ∩ cached.box` with `output_sample` parity when
-  # `shadow_capture_reusable` holds. Branch `fix/drag-physics-scalability` at
-  # 31690c50 over 7eedfc06 (9 files +789/-137, sha256 cd206c77…); unit pins
-  # are `effects-animation-box-capture` and `effects-animation-shadow-reuse`.
-  # (Retire on merge of follow-up PR over #837.)
+  # `shadow_capture_reusable` holds. Branch `fix/drag-physics-scalability` rebased
+  # onto #837 (`7eedfc06..13336a64`, sha256 eb8890b7…); unit pins are
+  # `effects-animation-box-capture` and `effects-animation-shadow-reuse`.
+  # (Retire on merge: 0028 -> noctalia-dev/umbriel#840.)
   git apply -3 ../0028-drag-physics-scalability.patch
+
+  # [render] size and manage blur offscreen buffers on demand: size
+  # `effects_buffer` to `ceil(W/2) x ceil(H/2)` and `effects_buffer_swapped` to
+  # `ceil(W/4) x ceil(H/4)` when fused (omitting swapped on 1-pass fused blur),
+  # store half-res blur in `optimized_blur_buffer` with `blur_data_calc_size`
+  # kernel halo and odd/even parity tracking, fuse final upsample via
+  # `render_blur_composite`, defer/evict blur scratch when no visible blur
+  # consumer exists, keep `optimized_no_blur_buffer` lazy for `< 1.0` strength,
+  # isolate `capture_exclusion`, and un-cull occluded backdrops via sticky
+  # `optimized_blur_evicted`. Branch `fix/vram-footprint` at 3c7c4d91 on
+  # main@1bbbf155 (stacked onto 0027/0028 `compute_blur_sample_region`/
+  # `animation_backdrop`/`suppress_capture_draws` in `fx_pass.c`; 7 files,
+  # sha256 3e6686cc…); pins `color-blur-ping-pong-size`, `color-blur-scratch-lifecycle`.
+  # (Retire on merge of follow-up VRAM PR.)
+  git apply -3 ../0029-vram-blur-footprint.patch
 }
 
 build() {
