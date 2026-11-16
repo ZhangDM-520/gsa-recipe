@@ -1,4 +1,4 @@
-From d1c4c53bce8ff171bb343e6967ec08e321eee96c Mon Sep 17 00:00:00 2001
+From 5b34b173fc392c7603f549920f6b95e72010363b Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Fri, 6 Nov 2026 14:10:30 +0800
 Subject: [PATCH 1/5] feat(layout)!: place an underfull scrolling strip at
@@ -32,10 +32,10 @@ An end-aligned strip keeps its trailing edge pinned; while the strip fits, its w
  create mode 100755 tests/harness/checks/layout/scrolling_underfull_align.sh
 
 diff --git a/docs/user/layout.md b/docs/user/layout.md
-index 29a8e7b..d4f96fe 100644
+index 98dcbc5d..15392384 100644
 --- a/docs/user/layout.md
 +++ b/docs/user/layout.md
-@@ -104,17 +104,23 @@ The strip is perpendicular to the output's [workspace axis](workspaces.md#worksp
+@@ -111,17 +111,23 @@ The strip is perpendicular to the output's [workspace axis](workspaces.md#worksp
  ```toml
  [layout.scrolling]
  default_extent_fraction = 0.5
@@ -66,7 +66,7 @@ index 29a8e7b..d4f96fe 100644
  
  ### Horizontal and vertical scrolling
  
-@@ -146,7 +152,7 @@ During an application drag-and-drop operation, holding the pointer near either e
+@@ -153,7 +159,7 @@ During an application drag-and-drop operation, holding the pointer near either e
  
  Rearranging a tiled window by dragging it (Mod+left-click or its tab) pans the strip the same way, reaching columns beyond the current scroll extent. The trigger zone, delay, and speed are set in [Drag edge scroll](input.md#drag-edge-scroll).
  
@@ -75,7 +75,7 @@ index 29a8e7b..d4f96fe 100644
  
  Closing a focused column moves focus to the nearest surviving column. When that column contains stacked windows, Umbriel restores its most recently focused member instead of always selecting its first row.
  
-@@ -162,6 +168,8 @@ With horizontal workspaces, screen directions remain literal:
+@@ -169,6 +175,8 @@ With horizontal workspaces, screen directions remain literal:
  
  Configurations using vertical strips usually bind wheel navigation to `window-focus-up` and `window-focus-down` instead of the default left and right actions.
  
@@ -85,23 +85,23 @@ index 29a8e7b..d4f96fe 100644
  
  Dwindle recursively splits tiles into independently sized regions.
 diff --git a/docs/user/workspaces.md b/docs/user/workspaces.md
-index d35aded..47aeae2 100644
+index ef566e28..9818e7eb 100644
 --- a/docs/user/workspaces.md
 +++ b/docs/user/workspaces.md
 @@ -185,7 +185,7 @@ Later values replace earlier ones. Strut edges are resolved independently, so a
- | `layout.client_maximize`                     | Choose `"column"` or `"edges"` for a tiled window's own maximize request; see [Maximize and fullscreen](layout.md#maximize-and-fullscreen). |
- | `layout.stacking.drop_zones`                 | Enable edge and corner drag previews and placement in stacking; defaults to `true`.                                                         |
- | `layout.scrolling.default_extent_fraction`   | Set the initial scrolling-column extent.                                                                                                    |
--| `layout.scrolling.center_underfull_strip`    | Center or start-align an underfull strip.                                                                                                   |
-+| `layout.scrolling.underfull_strip`           | Place an underfull strip at its `"start"`, `"center"`, or `"end"`.                                                                          |
- | `layout.scrolling.center_focused`            | Control when focus changes center a column.                                                                                                 |
- | `layout.scrolling.center_on_overview_select` | Center the column picked in the overview.                                                                                                   |
- | `layout.master.position`                     | Place the master area left, right, or center.                                                                                               |
+ | `layout.client_maximize`                     | Choose `"column"` or `"edges"` for a tiled or stacking window's own maximize request; see [Maximize and fullscreen](layout.md#maximize-and-fullscreen). |
+ | `layout.stacking.drop_zones`                 | Enable edge and corner drag previews and placement in stacking; defaults to `true`.                                                                     |
+ | `layout.scrolling.default_extent_fraction`   | Set the initial scrolling-column extent.                                                                                                                |
+-| `layout.scrolling.center_underfull_strip`    | Center or start-align an underfull strip.                                                                                                               |
++| `layout.scrolling.underfull_strip`           | Place an underfull strip at its `"start"`, `"center"`, or `"end"`.                                                                                      |
+ | `layout.scrolling.center_focused`            | Control when focus changes center a column.                                                                                                             |
+ | `layout.scrolling.center_on_overview_select` | Center the column picked in the overview.                                                                                                               |
+ | `layout.master.position`                     | Place the master area left, right, or center.                                                                                                           |
 diff --git a/src/config/config.h b/src/config/config.h
-index 92d053e..7299d29 100644
+index dea377cb..2ba9b48c 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -100,7 +100,7 @@ namespace umbriel {
+@@ -97,7 +97,7 @@ namespace umbriel {
      std::optional<ClientMaximize> clientMaximize;
      struct Scrolling {
        std::optional<double> defaultExtentFraction;
@@ -110,7 +110,7 @@ index 92d053e..7299d29 100644
        std::optional<CenterFocusedColumn> centerFocused;
        std::optional<bool> centerOnOverviewSelect;
        bool operator==(const Scrolling&) const = default;
-@@ -162,7 +162,7 @@ namespace umbriel {
+@@ -160,7 +160,7 @@ namespace umbriel {
      ClientMaximize clientMaximize = ClientMaximize::Column;
      struct Scrolling {
        std::optional<double> defaultExtentFraction;
@@ -119,7 +119,7 @@ index 92d053e..7299d29 100644
        CenterFocusedColumn centerFocused = CenterFocusedColumn::Never;
        bool centerOnOverviewSelect = false;
        // Axis-agnostic layout state is preserved when config reload changes direction.
-@@ -1021,7 +1021,7 @@ namespace umbriel {
+@@ -1099,7 +1099,7 @@ namespace umbriel {
        ClientMaximize clientMaximize = ClientMaximize::Column;
        struct Scrolling {
          std::optional<double> defaultExtentFraction;
@@ -129,7 +129,7 @@ index 92d053e..7299d29 100644
          // Center the column picked in the overview on close, like column-center, whatever centerFocused says.
          bool centerOnOverviewSelect = false;
 diff --git a/src/config/fields_layout.cpp b/src/config/fields_layout.cpp
-index 30ecb31..1ef4c9f 100644
+index eab5503a..7664b055 100644
 --- a/src/config/fields_layout.cpp
 +++ b/src/config/fields_layout.cpp
 @@ -48,6 +48,15 @@ namespace umbriel {
@@ -158,7 +158,7 @@ index 30ecb31..1ef4c9f 100644
            boolean("center_on_overview_select", &Scrolling::centerOnOverviewSelect),
        };
 diff --git a/src/config/resolve.cpp b/src/config/resolve.cpp
-index 16a64d4..bf7c265 100644
+index 72ef387a..0e509b5e 100644
 --- a/src/config/resolve.cpp
 +++ b/src/config/resolve.cpp
 @@ -105,8 +105,8 @@ namespace umbriel {
@@ -172,7 +172,7 @@ index 16a64d4..bf7c265 100644
        }
        if (overrides.scrolling.centerFocused) {
          resolved.scrolling.centerFocused = *overrides.scrolling.centerFocused;
-@@ -482,7 +482,7 @@ namespace umbriel {
+@@ -501,7 +501,7 @@ namespace umbriel {
      resolved.newExitsFullscreen = config.layout.newExitsFullscreen;
      resolved.clientMaximize = config.layout.clientMaximize;
      resolved.scrolling.defaultExtentFraction = config.layout.scrolling.defaultExtentFraction;
@@ -182,7 +182,7 @@ index 16a64d4..bf7c265 100644
      resolved.scrolling.centerOnOverviewSelect = config.layout.scrolling.centerOnOverviewSelect;
      resolved.dwindle.preserveSplit = config.layout.dwindle.preserveSplit;
 diff --git a/src/layout/layout.h b/src/layout/layout.h
-index 69d5e14..eda0bd3 100644
+index 69d5e14d..eda0bd3c 100644
 --- a/src/layout/layout.h
 +++ b/src/layout/layout.h
 @@ -42,6 +42,14 @@ namespace umbriel {
@@ -201,7 +201,7 @@ index 69d5e14..eda0bd3 100644
      int left = 0;
      int right = 0;
 diff --git a/src/layout/scrolling.cpp b/src/layout/scrolling.cpp
-index 422312f..1bdad48 100644
+index 7b73c523..b547bad3 100644
 --- a/src/layout/scrolling.cpp
 +++ b/src/layout/scrolling.cpp
 @@ -461,23 +461,33 @@ namespace umbriel {
@@ -246,7 +246,7 @@ index 422312f..1bdad48 100644
      for (int i = 0; i < end; ++i) {
        const ColumnBleed bleed = columnBleed(m_columns[static_cast<size_t>(i)], *this);
        x += bleed.before + columnWidth(i, viewportPrimary) + gap + bleed.after;
-@@ -1176,7 +1186,7 @@ namespace umbriel {
+@@ -1181,7 +1191,7 @@ namespace umbriel {
  
      const int gap = m_config->totalGap;
      // columnX() re-sums every prior column each call; keep a running x instead of calling it per column.
@@ -255,7 +255,7 @@ index 422312f..1bdad48 100644
      for (size_t columnIndex = 0; columnIndex < m_columns.size(); ++columnIndex) {
        Column& column = m_columns[columnIndex];
        const ColumnBleed bleed = columnBleed(column, *this);
-@@ -1628,8 +1638,12 @@ namespace umbriel {
+@@ -1637,8 +1647,12 @@ namespace umbriel {
            const double fraction = static_cast<double>(extent + gap) / static_cast<double>(viewportPrimary + gap);
            layout.setWidthFraction(columnIndex, fraction);
          };
@@ -270,7 +270,7 @@ index 422312f..1bdad48 100644
          const double centeredEdgeTravel =
              std::max(0.0, static_cast<double>(viewportPrimary - m_startStripPrimaryPx) / 2.0);
          auto centeredPrimaryDelta = [centeredEdgeTravel](double edgeDelta) {
-@@ -1637,15 +1651,17 @@ namespace umbriel {
+@@ -1646,15 +1660,17 @@ namespace umbriel {
          };
  
          if ((m_edges & primaryEndEdge) != 0) {
@@ -292,7 +292,7 @@ index 422312f..1bdad48 100644
              layout.setScroll(0.0);
            } else {
              layout.setScroll(
-@@ -1680,13 +1696,15 @@ namespace umbriel {
+@@ -1689,13 +1705,15 @@ namespace umbriel {
                );
              }
            } else {
@@ -310,7 +310,7 @@ index 422312f..1bdad48 100644
                layout.setScroll(0.0);
              } else {
                layout.setScroll(
-@@ -1805,8 +1823,17 @@ namespace umbriel {
+@@ -1814,8 +1832,17 @@ namespace umbriel {
  
    uint32_t ScrollingLayout::sanitizeResizeEdges(const View* view, uint32_t edges) const {
      const int columnIndex = columnOf(view);
@@ -331,10 +331,10 @@ index 422312f..1bdad48 100644
      return edges;
    }
 diff --git a/src/layout/scrolling.h b/src/layout/scrolling.h
-index 23e8728..38811ff 100644
+index 2bc9db64..c7cc246d 100644
 --- a/src/layout/scrolling.h
 +++ b/src/layout/scrolling.h
-@@ -124,7 +124,9 @@ namespace umbriel {
+@@ -126,7 +126,9 @@ namespace umbriel {
  
      int totalWidth(int viewportPrimary) const;
      int rawTotalWidth(int viewportPrimary) const;
@@ -346,7 +346,7 @@ index 23e8728..38811ff 100644
      double targetScrollForEnsureVisible(int columnIndex, int viewportPrimary, bool center, bool force = false) const;
      // Which neighbor stands in for the side focus came from. A direction rather than an index: a width change is judged
 diff --git a/tests/harness/checks/animation/tiled_close_no_reflow.sh b/tests/harness/checks/animation/tiled_close_no_reflow.sh
-index 738fdcd..e6fe1ca 100644
+index 738fdcd5..e6fe1caa 100644
 --- a/tests/harness/checks/animation/tiled_close_no_reflow.sh
 +++ b/tests/harness/checks/animation/tiled_close_no_reflow.sh
 @@ -24,7 +24,7 @@ mode = "scrolling"
@@ -359,7 +359,7 @@ index 738fdcd..e6fe1ca 100644
  [animation.windows_in]
  enabled = false
 diff --git a/tests/harness/checks/animation/tiled_close_retained_no_reflow.sh b/tests/harness/checks/animation/tiled_close_retained_no_reflow.sh
-index a93f64c..e1d4cd2 100644
+index a93f64c6..e1d4cd2e 100644
 --- a/tests/harness/checks/animation/tiled_close_retained_no_reflow.sh
 +++ b/tests/harness/checks/animation/tiled_close_retained_no_reflow.sh
 @@ -32,7 +32,7 @@ gap = 0
@@ -372,7 +372,7 @@ index a93f64c..e1d4cd2 100644
  [animation.windows_in]
  enabled = false
 diff --git a/tests/harness/checks/animation/tiled_repeated_close.sh b/tests/harness/checks/animation/tiled_repeated_close.sh
-index ce96a80..8d47220 100644
+index ce96a803..8d47220f 100644
 --- a/tests/harness/checks/animation/tiled_repeated_close.sh
 +++ b/tests/harness/checks/animation/tiled_repeated_close.sh
 @@ -59,7 +59,7 @@ gap = 0
@@ -385,7 +385,7 @@ index ce96a80..8d47220 100644
  [animation.windows_in]
  enabled = false
 diff --git a/tests/harness/checks/effect/animation_tiled_close.sh b/tests/harness/checks/effect/animation_tiled_close.sh
-index b01d4c1..7b7028d 100644
+index b01d4c19..7b7028d8 100644
 --- a/tests/harness/checks/effect/animation_tiled_close.sh
 +++ b/tests/harness/checks/effect/animation_tiled_close.sh
 @@ -55,7 +55,7 @@ default_width_fraction = 0.5
@@ -398,7 +398,7 @@ index b01d4c1..7b7028d 100644
  [animation.windows_in]
  enabled = false
 diff --git a/tests/harness/checks/input/client_resize_grab.sh b/tests/harness/checks/input/client_resize_grab.sh
-index 033062f..35910c3 100755
+index 55c68dff..0c4d22aa 100755
 --- a/tests/harness/checks/input/client_resize_grab.sh
 +++ b/tests/harness/checks/input/client_resize_grab.sh
 @@ -38,7 +38,7 @@ enabled = false
@@ -411,7 +411,7 @@ index 033062f..35910c3 100755
  "$UMBRIEL" msg config-reload > /dev/null
  
 diff --git a/tests/harness/checks/layout/output_scrolling_width.sh b/tests/harness/checks/layout/output_scrolling_width.sh
-index 1ed2b51..42a0639 100755
+index 1ed2b513..42a0639b 100755
 --- a/tests/harness/checks/layout/output_scrolling_width.sh
 +++ b/tests/harness/checks/layout/output_scrolling_width.sh
 @@ -49,7 +49,7 @@ gap = 0
@@ -424,7 +424,7 @@ index 1ed2b51..42a0639 100755
  [output.HEADLESS-1]
  position = [0, 0]
 diff --git a/tests/harness/checks/layout/scrolling_center_float_rest.sh b/tests/harness/checks/layout/scrolling_center_float_rest.sh
-index 853b84e..875cc83 100755
+index 853b84ef..875cc838 100755
 --- a/tests/harness/checks/layout/scrolling_center_float_rest.sh
 +++ b/tests/harness/checks/layout/scrolling_center_float_rest.sh
 @@ -38,7 +38,7 @@ enabled = false
@@ -438,7 +438,7 @@ index 853b84e..875cc83 100755
  match.title = "^F2$"
 diff --git a/tests/harness/checks/layout/scrolling_underfull_align.sh b/tests/harness/checks/layout/scrolling_underfull_align.sh
 new file mode 100755
-index 0000000..ca334ee
+index 00000000..ca334eec
 --- /dev/null
 +++ b/tests/harness/checks/layout/scrolling_underfull_align.sh
 @@ -0,0 +1,92 @@
@@ -535,7 +535,7 @@ index 0000000..ca334ee
 +
 +echo "single-window strip rests at start, center and end; end stays anchored while the window resizes"
 diff --git a/tests/harness/checks/layout/struts.sh b/tests/harness/checks/layout/struts.sh
-index 061036d..2039303 100644
+index 07a8e0b1..2d2041d7 100644
 --- a/tests/harness/checks/layout/struts.sh
 +++ b/tests/harness/checks/layout/struts.sh
 @@ -52,14 +52,14 @@ name = "scroll-h"
@@ -556,7 +556,7 @@ index 061036d..2039303 100644
  [[window_rule]]
  match.title = "^strut-float$"
 diff --git a/tests/harness/checks/transient/parent_mapped_together.sh b/tests/harness/checks/transient/parent_mapped_together.sh
-index fe18ad5..c02b850 100755
+index fe18ad5b..c02b8502 100755
 --- a/tests/harness/checks/transient/parent_mapped_together.sh
 +++ b/tests/harness/checks/transient/parent_mapped_together.sh
 @@ -39,7 +39,7 @@ enabled = false
@@ -569,18 +569,18 @@ index fe18ad5..c02b850 100755
  "$UMBRIEL" msg config-reload > /dev/null
  
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 4925c4c..e0d2619 100644
+index c6520c36..6b2d48db 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -26,6 +26,7 @@ using umbriel::ModifierKey;
- using umbriel::ModRightDoubleClick;
+@@ -30,6 +30,7 @@ using umbriel::ModRightDoubleClick;
+ using umbriel::SdrGamut;
  using umbriel::SdrTransfer;
  using umbriel::TrackLayout;
 +using umbriel::UnderfullStripAlign;
  using umbriel::VrrMode;
  using umbriel::WindowDragToggle;
  
-@@ -271,7 +272,7 @@ mode = "dwindle"
+@@ -280,7 +281,7 @@ mode = "dwindle"
  extent_presets = [0.05, 0.5, 2.0]
  
  [layout.scrolling]
@@ -589,7 +589,7 @@ index 4925c4c..e0d2619 100644
  always_center_single_column = true
  [layout.dwindle]
  preserve_split = true
-@@ -288,7 +289,7 @@ mode = "scrolling"
+@@ -297,7 +298,7 @@ mode = "scrolling"
  extent_presets = [0.25, 0.75]
  
  [workspace.layout.scrolling]
@@ -598,7 +598,7 @@ index 4925c4c..e0d2619 100644
  [workspace.layout.dwindle]
  preserve_split = false
  )");
-@@ -304,7 +305,7 @@ preserve_split = false
+@@ -313,7 +314,7 @@ preserve_split = false
    CHECK_EQ(store.config().layout.extentPresets[1], 0.5);
    // Above 1.0 loads unclamped (scrolling columns may span several viewports); only the 0.1 floor clamps here.
    CHECK_EQ(store.config().layout.extentPresets[2], 2.0);
@@ -607,7 +607,7 @@ index 4925c4c..e0d2619 100644
    CHECK(store.config().layout.dwindle.preserveSplit);
    CHECK(store.config().appearance.preferNoCsd);
    CHECK_EQ(store.config().outputs.size(), size_t{1});
-@@ -314,7 +315,7 @@ preserve_split = false
+@@ -323,7 +324,7 @@ preserve_split = false
    CHECK(store.config().workspaceRules[0].layout.mode == LayoutMode::Scrolling);
    CHECK(store.config().workspaceRules[0].layout.extentPresets.has_value());
    CHECK_EQ(store.config().workspaceRules[0].layout.extentPresets->size(), size_t{2});
@@ -616,7 +616,7 @@ index 4925c4c..e0d2619 100644
    CHECK(store.config().workspaceRules[0].layout.dwindle.preserveSplit == false);
    CHECK(containsDiagnostic(store, "unknown key unknown_root_key"));
    CHECK(containsDiagnostic(store, "output.DP-1.scale = 9"));
-@@ -731,7 +732,7 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
+@@ -765,7 +766,7 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
    ConfigStore& store = umbriel::configStore();
    store.setRootPath(file.path(), true);
  
@@ -625,7 +625,7 @@ index 4925c4c..e0d2619 100644
    CHECK(store.reload().success);
    CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
  
-@@ -745,7 +746,7 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
+@@ -779,7 +780,7 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
    CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
    CHECK(containsDiagnostic(store, "unknown key layout.scrolling.default_width_fraction"));
  
@@ -635,7 +635,7 @@ index 4925c4c..e0d2619 100644
    CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
  }
 diff --git a/tests/unit/scrolling_layout.cpp b/tests/unit/scrolling_layout.cpp
-index c9f3b68..a33376d 100644
+index c9f3b687..a33376da 100644
 --- a/tests/unit/scrolling_layout.cpp
 +++ b/tests/unit/scrolling_layout.cpp
 @@ -19,6 +19,7 @@ using umbriel::LayoutConstraints;
@@ -783,10 +783,10 @@ index c9f3b68..a33376d 100644
    const uint32_t edges = fixture.layout.sanitizeResizeEdges(stub(0), WLR_EDGE_TOP | WLR_EDGE_LEFT);
    CHECK_EQ(edges & WLR_EDGE_TOP, uint32_t{0});
 -- 
-2.56.0.341.gebdc087dc9
+2.56.1.471.g1891de46f7
 
 
-From 7eec2b3b8a6e7987244e47348ca604b8b5b09c19 Mon Sep 17 00:00:00 2001
+From b88fdd46a099d0dffc1044b2487b62dec808f619 Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Fri, 6 Nov 2026 14:53:25 +0800
 Subject: [PATCH 2/5] fix(layout): keep interior strip boundaries draggable and
@@ -812,10 +812,10 @@ Also pins "center" parsing and the invalid-value diagnostic.
  5 files changed, 112 insertions(+), 9 deletions(-)
 
 diff --git a/src/layout/scrolling.cpp b/src/layout/scrolling.cpp
-index 1bdad48..c325595 100644
+index b547bad3..2846cdb5 100644
 --- a/src/layout/scrolling.cpp
 +++ b/src/layout/scrolling.cpp
-@@ -1563,13 +1563,14 @@ namespace umbriel {
+@@ -1572,13 +1572,14 @@ namespace umbriel {
        ScrollingResizeGrab(
            ScrollingLayout* layout, int column, int row, uint32_t edges, bool vertical, bool soloPrimary,
            bool clearedFullWidth, double startScroll, int startColumnX, int startPrimaryPx, int startPrevPrimaryPx,
@@ -833,7 +833,7 @@ index 1bdad48..c325595 100644
  
        bool unmaximizeOnBegin() const override { return m_clearedFullWidth; }
  
-@@ -1651,6 +1652,31 @@ namespace umbriel {
+@@ -1660,6 +1661,31 @@ namespace umbriel {
          };
  
          if ((m_edges & primaryEndEdge) != 0) {
@@ -865,7 +865,7 @@ index 1bdad48..c325595 100644
            // While the strip fits, centering keeps its midpoint fixed: a boundary extent changes by two pointer
            // pixels for each pixel the centered outer edge moves. An aligned rest keeps its anchored edge instead.
            const double extentDelta = symmetricGrowth ? centeredPrimaryDelta(dPrimary) : dPrimary;
-@@ -1803,6 +1829,7 @@ namespace umbriel {
+@@ -1812,6 +1838,7 @@ namespace umbriel {
        int m_startColumnX;
        int m_startPrimaryPx;
        int m_startPrevPrimaryPx;
@@ -873,7 +873,7 @@ index 1bdad48..c325595 100644
        int m_startStripPrimaryPx;
        // First rows of the units either side of the dragged boundary; -1 for the column's edge gap there.
        int m_upperRow;
-@@ -1829,10 +1856,13 @@ namespace umbriel {
+@@ -1838,10 +1865,13 @@ namespace umbriel {
      if (columnIndex == 0 && m_config->scrolling.underfullStrip == UnderfullStripAlign::Start) {
        edges &= ~startEdge;
      }
@@ -891,7 +891,7 @@ index 1bdad48..c325595 100644
        edges &= ~endEdge;
      }
      return edges;
-@@ -1868,6 +1898,10 @@ namespace umbriel {
+@@ -1877,6 +1907,10 @@ namespace umbriel {
      if (column > 0 && !soloPrimary) {
        startPrevPrimaryPx = columnWidth(column - 1, viewportPrimary);
      }
@@ -902,7 +902,7 @@ index 1bdad48..c325595 100644
      const double startScroll = scroll();
  
      // The boundary dragged lies between the unit holding the window, which may be a tab group, and the unit or edge gap
-@@ -1895,7 +1929,8 @@ namespace umbriel {
+@@ -1904,7 +1938,8 @@ namespace umbriel {
  
      return std::make_unique<ScrollingResizeGrab>(
          this, column, row, edges, v, soloPrimary, clearedFullWidth, startScroll, startColumnX, startPrimaryPx,
@@ -913,10 +913,10 @@ index 1bdad48..c325595 100644
    }
  
 diff --git a/src/workspace/workspace.cpp b/src/workspace/workspace.cpp
-index 2652e06..4017b73 100644
+index 4a93a5f7..f0fd1754 100644
 --- a/src/workspace/workspace.cpp
 +++ b/src/workspace/workspace.cpp
-@@ -2625,6 +2625,8 @@ namespace umbriel {
+@@ -2752,6 +2752,8 @@ namespace umbriel {
  
    void Workspace::applyLayoutConfig(ResolvedLayoutConfig layoutConfig) {
      const bool centerFocusedChanged = m_layoutConfig.scrolling.centerFocused != layoutConfig.scrolling.centerFocused;
@@ -925,7 +925,7 @@ index 2652e06..4017b73 100644
      const bool strutsChanged = m_layoutConfig.struts != layoutConfig.struts;
      const bool directionChanged = m_layoutConfig.scrolling.direction != layoutConfig.scrolling.direction;
      // When moving to/from scrolling, the current extents are remembered/restored.
-@@ -2642,7 +2644,7 @@ namespace umbriel {
+@@ -2769,7 +2771,7 @@ namespace umbriel {
        m_layout->setConstraints(&viewLayoutConstraints);
        if (ScrollingLayout* scrolling = scrollingLayout(); scrolling != nullptr) {
          const int focusedColumn = m_focusedView != nullptr ? scrolling->columnOf(m_focusedView) : -1;
@@ -935,7 +935,7 @@ index 2652e06..4017b73 100644
            scrolling->reconcileFocusedColumn(focusedColumn, scrollViewportExtent());
          } else if (reconcile) {
 diff --git a/tests/harness/checks/layout/scrolling_underfull_align.sh b/tests/harness/checks/layout/scrolling_underfull_align.sh
-index ca334ee..e26fd2d 100755
+index ca334eec..e26fd2de 100755
 --- a/tests/harness/checks/layout/scrolling_underfull_align.sh
 +++ b/tests/harness/checks/layout/scrolling_underfull_align.sh
 @@ -89,4 +89,15 @@ geometry=$(await_geometry ".[0].w == $EXPECT_W and .[0].x == $STRIP_RIGHT" \
@@ -955,10 +955,10 @@ index ca334ee..e26fd2d 100755
 +
  echo "single-window strip rests at start, center and end; end stays anchored while the window resizes"
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index e0d2619..585fe15 100644
+index 6b2d48db..c38ea1cc 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -751,6 +751,28 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
+@@ -785,6 +785,28 @@ UMBRIEL_TEST(scrollingDefaultExtentIsOptional) {
    CHECK(!store.config().layout.scrolling.defaultExtentFraction.has_value());
  }
  
@@ -988,7 +988,7 @@ index e0d2619..585fe15 100644
    const TempConfig file;
    ConfigStore& store = umbriel::configStore();
 diff --git a/tests/unit/scrolling_layout.cpp b/tests/unit/scrolling_layout.cpp
-index a33376d..98e793c 100644
+index a33376da..98e793c7 100644
 --- a/tests/unit/scrolling_layout.cpp
 +++ b/tests/unit/scrolling_layout.cpp
 @@ -548,6 +548,39 @@ UMBRIEL_TEST(lastColumnRightEdgeStaysFixedOnAFittingEndAlignedStrip) {
@@ -1032,10 +1032,10 @@ index a33376d..98e793c 100644
    Fixture fixture;
    fixture.config.scrolling.underfullStrip = UnderfullStripAlign::End;
 -- 
-2.56.0.341.gebdc087dc9
+2.56.1.471.g1891de46f7
 
 
-From 33680fa5e7e93761d5fabfbf44670365baccde7f Mon Sep 17 00:00:00 2001
+From 2ed506473b38b31f0596d8af1fe81bf62f31817e Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Fri, 6 Nov 2026 15:15:20 +0800
 Subject: [PATCH 3/5] fix(layout): share the pair resize math and keep centre's
@@ -1067,10 +1067,10 @@ end-alignment paragraph, and trim the harness check to the live-only legs.
  5 files changed, 159 insertions(+), 54 deletions(-)
 
 diff --git a/docs/user/layout.md b/docs/user/layout.md
-index d4f96fe..1f6e6b6 100644
+index 15392384..4c1d68b7 100644
 --- a/docs/user/layout.md
 +++ b/docs/user/layout.md
-@@ -118,7 +118,7 @@ center_on_overview_select = false
+@@ -125,7 +125,7 @@ center_on_overview_select = false
  
  `underfull_strip` places a strip whose columns do not fill the viewport: `"start"` leaves all the leftover space after it, `"center"` splits the leftover space on both sides, and `"end"` leaves all of it before. The default, `"center"`, matches earlier releases that centered such strips. A strip that fills or overflows the viewport always starts at the strip start, so this key only moves the resting position of a workspace holding few or narrow windows.
  
@@ -1080,7 +1080,7 @@ index d4f96fe..1f6e6b6 100644
  On a vertical strip, which horizontal workspaces use, `"start"` is the top edge and `"end"` the bottom one.
  
 diff --git a/src/layout/scrolling.cpp b/src/layout/scrolling.cpp
-index c325595..f677d02 100644
+index 2846cdb5..963fc4c8 100644
 --- a/src/layout/scrolling.cpp
 +++ b/src/layout/scrolling.cpp
 @@ -481,6 +481,8 @@ namespace umbriel {
@@ -1092,7 +1092,7 @@ index c325595..f677d02 100644
      return m_lastViewportPrimary > 0 && rawTotalWidth(m_lastViewportPrimary) < m_lastViewportPrimary;
    }
  
-@@ -1644,7 +1646,32 @@ namespace umbriel {
+@@ -1653,7 +1655,32 @@ namespace umbriel {
          // Centering travels both outer edges around a fixed midpoint. The start and end alignments pin one edge
          // through the alignment offset instead, so only the free edge follows the pointer.
          const bool symmetricGrowth = underfullStrip && align == UnderfullStripAlign::Center;
@@ -1126,7 +1126,7 @@ index c325595..f677d02 100644
          const double centeredEdgeTravel =
              std::max(0.0, static_cast<double>(viewportPrimary - m_startStripPrimaryPx) / 2.0);
          auto centeredPrimaryDelta = [centeredEdgeTravel](double edgeDelta) {
-@@ -1652,26 +1679,17 @@ namespace umbriel {
+@@ -1661,26 +1688,17 @@ namespace umbriel {
          };
  
          if ((m_edges & primaryEndEdge) != 0) {
@@ -1164,7 +1164,7 @@ index c325595..f677d02 100644
                // The pair grew, so the strip re-anchors; nothing else can keep the boundary on the pointer.
                layout.setScroll(0.0);
              }
-@@ -1685,7 +1703,7 @@ namespace umbriel {
+@@ -1694,7 +1712,7 @@ namespace umbriel {
                columnMaxPrimary(m_column)
            );
            setColumnPrimaryPx(m_column, newExtent);
@@ -1173,7 +1173,7 @@ index c325595..f677d02 100644
              // Centering keeps the midpoint; an anchored alignment re-rests on its edge (the layout refuses that
              // boundary while it fits, see sanitizeResizeEdges, so this covers a programmatic resize).
              layout.setScroll(0.0);
-@@ -1697,27 +1715,17 @@ namespace umbriel {
+@@ -1706,27 +1724,17 @@ namespace umbriel {
          } else if ((m_edges & primaryStartEdge) != 0) {
            if (m_column > 0 && !m_soloPrimary) {
              // Shared boundary with the previous lane: keep the pair span fixed.
@@ -1209,7 +1209,7 @@ index c325595..f677d02 100644
                    true
                );
              }
-@@ -1728,7 +1736,7 @@ namespace umbriel {
+@@ -1737,7 +1745,7 @@ namespace umbriel {
                  columnMaxPrimary(m_column)
              );
              setColumnPrimaryPx(m_column, newExtent);
@@ -1219,7 +1219,7 @@ index c325595..f677d02 100644
                // re-derives from the new total width.
                layout.setScroll(0.0);
 diff --git a/tests/harness/checks/layout/scrolling_underfull_align.sh b/tests/harness/checks/layout/scrolling_underfull_align.sh
-index e26fd2d..03578f3 100755
+index e26fd2de..03578f30 100755
 --- a/tests/harness/checks/layout/scrolling_underfull_align.sh
 +++ b/tests/harness/checks/layout/scrolling_underfull_align.sh
 @@ -1,7 +1,8 @@
@@ -1300,10 +1300,10 @@ index e26fd2d..03578f3 100755
  echo "after alignment reload: $(jq -c '.[0] | {x, w}' <<< "$geometry")"
  
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 585fe15..a56b623 100644
+index c38ea1cc..8d63325e 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -771,6 +771,11 @@ UMBRIEL_TEST(scrollingUnderfullStripParsesEveryPlacement) {
+@@ -805,6 +805,11 @@ UMBRIEL_TEST(scrollingUnderfullStripParsesEveryPlacement) {
    // An invalid value leaves the default in place and names the accepted set.
    CHECK(store.config().layout.scrolling.underfullStrip == UnderfullStripAlign::Center);
    CHECK(containsDiagnostic(store, "underfull_strip \"left\" (expected \"start\", \"center\", or \"end\")"));
@@ -1316,7 +1316,7 @@ index 585fe15..a56b623 100644
  
  UMBRIEL_TEST(outputScrollingDefaultExtentUsesNarrowLayoutScope) {
 diff --git a/tests/unit/scrolling_layout.cpp b/tests/unit/scrolling_layout.cpp
-index 98e793c..7521da4 100644
+index 98e793c7..7521da47 100644
 --- a/tests/unit/scrolling_layout.cpp
 +++ b/tests/unit/scrolling_layout.cpp
 @@ -581,6 +581,97 @@ UMBRIEL_TEST(interiorTrailingBoundaryResizesThePairOnAFittingEndAlignedStrip) {
@@ -1418,10 +1418,10 @@ index 98e793c..7521da4 100644
    Fixture fixture;
    fixture.config.scrolling.underfullStrip = UnderfullStripAlign::End;
 -- 
-2.56.0.341.gebdc087dc9
+2.56.1.471.g1891de46f7
 
 
-From b001a860622729450ea5368c4ecd46acd3d0ce4e Mon Sep 17 00:00:00 2001
+From 438675751221a96619747e7ecc2632b5250e447f Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Fri, 6 Nov 2026 15:31:12 +0800
 Subject: [PATCH 4/5] test(layout): bind the survivor loop by reference
@@ -1433,7 +1433,7 @@ list, which broke the musl CI leg.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tests/unit/scrolling_layout.cpp b/tests/unit/scrolling_layout.cpp
-index 7521da4..d13d200 100644
+index 7521da47..d13d2001 100644
 --- a/tests/unit/scrolling_layout.cpp
 +++ b/tests/unit/scrolling_layout.cpp
 @@ -1290,7 +1290,7 @@ UMBRIEL_TEST(onOverflowJudgesTheSurvivorOfAClosedColumnAgainstItsReplacement) {
@@ -1446,10 +1446,10 @@ index 7521da4..d13d200 100644
          std::pair{UnderfullStripAlign::End, 560}}) {
      Fixture fixture;
 -- 
-2.56.0.341.gebdc087dc9
+2.56.1.471.g1891de46f7
 
 
-From 57c27d3dd6fab4f2cd35357942f01b31a7e8c796 Mon Sep 17 00:00:00 2001
+From ed400fec6910f58e79fa6730a91ee872943d13fc Mon Sep 17 00:00:00 2001
 From: ZhangDM-520 <jixianqiang1540@gmail.com>
 Date: Fri, 6 Nov 2026 20:06:12 +0800
 Subject: [PATCH 5/5] fix(layout): let an end-aligned pair drag fall through to
@@ -1468,10 +1468,10 @@ height split; restoring the return reds only the cross-axis assertions.
  2 files changed, 45 insertions(+), 16 deletions(-)
 
 diff --git a/src/layout/scrolling.cpp b/src/layout/scrolling.cpp
-index f677d02..883ee44 100644
+index 963fc4c8..f0b8daa2 100644
 --- a/src/layout/scrolling.cpp
 +++ b/src/layout/scrolling.cpp
-@@ -1693,24 +1693,24 @@ namespace umbriel {
+@@ -1702,24 +1702,24 @@ namespace umbriel {
                // The pair grew, so the strip re-anchors; nothing else can keep the boundary on the pointer.
                layout.setScroll(0.0);
              }
@@ -1513,7 +1513,7 @@ index f677d02..883ee44 100644
          } else if ((m_edges & primaryStartEdge) != 0) {
            if (m_column > 0 && !m_soloPrimary) {
 diff --git a/tests/unit/scrolling_layout.cpp b/tests/unit/scrolling_layout.cpp
-index d13d200..ccf8089 100644
+index d13d2001..ccf80895 100644
 --- a/tests/unit/scrolling_layout.cpp
 +++ b/tests/unit/scrolling_layout.cpp
 @@ -643,6 +643,35 @@ UMBRIEL_TEST(interiorTrailingBoundaryKeepsTrackingPastTheLaneMinimum) {
@@ -1553,5 +1553,5 @@ index d13d200..ccf8089 100644
    Fixture fixture;
    fixture.addColumns(2);
 -- 
-2.56.0.341.gebdc087dc9
+2.56.1.471.g1891de46f7
 
