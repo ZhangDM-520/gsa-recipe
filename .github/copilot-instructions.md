@@ -56,8 +56,9 @@ Prefer it over a rebuild when only `source=()`/`b2sums=()` moved.
 
 `-Ma`'s families are `legacy-layout`, `package-drift`, `toolchain-edge`,
 `stale-artifact`, `recipe-contract`, `recipe-integrity`, `state-integrity`,
-`version-sync-skew` and `installed-pgo`; a `package-drift` row for
-`packages/deprecated/shelly` is the expected standing state.
+`version-sync-skew` and `installed-pgo`; a `package-drift` row for each parked
+recipe directory under `packages/deprecated/` is the expected standing state —
+`gsa -Ma` names them, so compare against that list rather than a count.
 
 `gsa -Qi` and `gsa -Qt` are the fastest way to learn what a recipe is wired to
 without opening three files.
@@ -81,7 +82,7 @@ The `.SRCINFO` step is not optional and not a formality: the engine and the
 fixtures read the committed metadata, so a fresh `PKGBUILD` with a stale
 `.SRCINFO` is a real defect. Only a few recipes have a local fixture that
 regenerates and `diff`s their own file (`tests/onlyoffice-recipe.sh`,
-`vencord.sh`, `glibc-package.sh`, plus the logseq/texlive/zen/bpftune pair);
+`glibc-package.sh`, plus the texlive/zen/bpftune pair);
 the repo-wide sweep is **engine-side** —
 `tests/srcinfo-freshness.sh` in `gentoo-style-arch`, driven off `gsa -Qt`. Run
 it with the checkout pointed at this tree:
@@ -220,8 +221,10 @@ bad usage.
   categories (`git`, `stable`, `core`, `misc`, and the parked `deprecated`
   tier) are a filing system, **not** the build order. `misc` is an empty roster
   group with no directory today — a standalone-staged recipe is created at
-  `packages/misc/` — and `packages/deprecated/shelly` has its topology record
-  commented out, so it appears in no build list (and `gsa -Ma` reports it as
+  `packages/misc/` — and a parked recipe (today `shelly`, `logseq-desktop-git`,
+  `vencord-git`) keeps its directory under `packages/deprecated/` with its
+  topology record commented out and the revival condition beside it, so it
+  appears in no build list (and `gsa -Ma` reports it as
   `package-drift … unregistered-recipe-dir`, which is expected, not a defect).
 - `config/` — exactly three files. Anything else under `config/` is
   unreachable state; the reconciliation gate lives **engine-side**

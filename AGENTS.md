@@ -668,34 +668,14 @@ rule 63, **62** is superseded by engine rule 73.
   schema/terminals patches; `options=(staticlibs)` on lz4/pixman/mimalloc/
   libunwind. Deliberate no-ops: libreoffice-fresh (already `!lto` +
   `--enable-lto` + fortify 3→2 + -g1); blender-git (mold + ccache + !lto).
-- **Electron/JavaScript packages** (vscodium-insiders-git, logseq-desktop-git,
-  vencord-git):
-  nothing is compiler-built except the native Node addons, so the recipes are
-  `!strip !debug !lto` and apply only ccache + the mold probe to those addons.
-  vencord-git carries an extra operational contract: the `/usr/lib/vencord`
-  payload is **inert until injected**, so the recipe also ships
-  `discord-vencord` (re-asserts the patch on every launch — the only thing
-  that survives Discord self-updates), `vencord-inject` (official-compatible
-  asar shim; the official installer cannot be repointed at a pacman payload)
-  and a libalpm hook re-wrapping the stock `discord.desktop` — and its
-  scriptlets define `post_upgrade` because pacman has **no fallback** to
-  `post_install` on upgrades.
-  logseq-desktop-git additionally bundles `master` (2.x) which embeds an
-  OCaml/Melange CLI runtime — the opam switch lives under `$srcdir` and pins
-  OCaml 5.1.1 to match upstream CI.
-  Its `cli/` and `static/` installs MUST pass `--ignore-workspace`: the tree's
-  root `pnpm-workspace.yaml` has no `packages:` field, so a bare `pnpm install`
-  from a subdirectory resolves the ROOT project, exits 0 and creates no
-  `node_modules` — `static/` then failed with
-  `Command "electron-builder" not found` (2026-09-18, JOURNAL). Related: with
-  the flag, pnpm also skips the allowlisted dependency build scripts and
-  `shamefully-hoist`, which is harmless here only because electron-builder
-  fetches the Electron distribution itself and the static `postinstall`
-  rebuilds `keytar`.
-  Its opam switch is created only when absent: `build()` restarts from the top
-  while `$srcdir` persists, and `opam switch create` exits 2 on an installed
-  switch, which errexit turns into an abort before the first bundle (same date,
-  JOURNAL).
+- **Electron/JavaScript packages** (vscodium-insiders-git): nothing is
+  compiler-built except the native Node addons, so the recipe is
+  `!strip !debug !lto` and applies only ccache + the mold probe to those
+  addons. The two Electron recipes this paragraph also covered —
+  `logseq-desktop-git` and `vencord-git` — are parked in
+  `packages/deprecated/` (2026-11-16) because their addon builds never passed
+  the mold probe; their records and revival condition live in
+  `config/topology.conf` comments.
 - **TeX Live data packages** (texlive-texmf): `arch=(any)`, so there is no
   compiler and no ISA/LTO/PGO phase at all. The recipe keeps upstream's
   `!strip`, which also skips the strip/debug tidy pass, and optimises by scope

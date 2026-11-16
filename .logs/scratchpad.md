@@ -2,12 +2,12 @@
 
 **Idle.** No active task.
 
-Last action: `.logs/action-2026-11-15-noctalia-821-patch.md` (noctalia-git pkgrel 2 carries the #821
-patch; live-tested, PR noctalia-dev/noctalia#5381 open).
-(icu-git was the ABI gate's blame; nuspell + vte3 are now house recipes and
-installed at `-1.2` with `libicuuc.so.80`, `gsa -Qr` down to the single
-deliberately-stock `qt6-webengine`).
+Last action: `.logs/action-2026-11-16-battery-cleanup.md` (pgo-transition fixture
+fixed; logseq-desktop-git + vencord-git parked under `packages/deprecated/`).
+Battery: 25 passed, 1 failed — the red is `recipe-sources.sh` over the other
+lane's untracked `packages/git/umbriel-git/0027-drag-blur-latency.patch`
+(expected, out of scope).
 
-Next: the engine checkout still carries nine files of another lane's
-uncommitted work — do not commit them. Engine defects filed as
-ZhangDM-520/gentoo-style-arch#2.
+Next: nothing queued from this round. `packages/deprecated/` now holds shelly,
+logseq-desktop-git and vencord-git; `gsa -Ma` names one `package-drift` row per
+parked directory, which is expected state.
