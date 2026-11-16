@@ -324,6 +324,8 @@ prepare() {
   # `m_backgroundTree` with `underBorder = true` clips, so `m_adaptive` and
   # its close snapshot sit inside `m_backgroundTree`/`backgroundTree` while
   # labels stay in `m_tree` (37 files +2615/-80, sha256 50f89ef7…).
+  # The PR branch merged main@1bbbf155 and resolved the same way, so this patch is
+  # now the branch's own delta again instead of a hand adaptation (head 8a4ab6e0).
   git apply -3 ../0020-adaptive-title-bar.patch
 
   # [animation.windows_minimize]: a minimizing floating window leaves and returns with an animation instead of
