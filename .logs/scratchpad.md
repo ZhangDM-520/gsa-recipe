@@ -3,7 +3,7 @@
 **Idle.** No active task.
 
 Last action: `.logs/action-2026-11-15-noctalia-821-patch.md` (noctalia-git pkgrel 2 carries the #821
-patch; installed and awaiting the owner's live test).
+patch; live-tested, PR noctalia-dev/noctalia#5381 open).
 (icu-git was the ABI gate's blame; nuspell + vte3 are now house recipes and
 installed at `-1.2` with `libicuuc.so.80`, `gsa -Qr` down to the single
 deliberately-stock `qt6-webengine`).
