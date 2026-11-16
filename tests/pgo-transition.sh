@@ -10,8 +10,11 @@ root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 # fails the whole fixture. The fourth argument names the build-system family
 # (meson or autotools): the families stub different build front-ends and bake
 # flags in different places, so the contract pins and the transition
-# assertions branch on it. A direct three-argument invocation sniffs the
-# family from the recipe, keeping the documented interface.
+# assertions branch on it. The project column is the source subdirectory for a
+# meson recipe and `-` for an autotools one, whose extracted release directory
+# is derived from the recipe (a hardcoded copy went stale on the rsync 3.5.2
+# bump). A direct three-argument invocation sniffs the family from the recipe,
+# keeping the documented interface.
 if (($# == 0)); then
     status=0
     while read -r pkg proj recipe style; do
@@ -22,9 +25,9 @@ glib2-git glib packages/core/glib2-git meson
 gtk3-git gtk packages/core/gtk3-git meson
 gtk4-git gtk packages/core/gtk4-git meson
 xorg-xwayland-git xserver packages/git/xorg-xwayland-git meson
-jq jq-1.8.2 packages/stable/jq autotools
-file file-5.48 packages/stable/file autotools
-rsync rsync-3.5.1 packages/stable/rsync autotools
+jq - packages/stable/jq autotools
+file - packages/stable/file autotools
+rsync - packages/stable/rsync autotools
 PAIRS
     exit $status
 fi
@@ -40,6 +43,21 @@ if test -z "$style"; then
         style=meson
     fi
 fi
+
+# An autotools recipe configures inside the extracted release directory,
+# "$pkgname-$pkgver", so derive that name from the recipe rather than repeat it
+# in the row: a hardcoded copy silently pointed the fixture at the previous
+# release after a bump (rsync 3.5.2 vs a row spelling rsync-3.5.1, which died as
+# `cd: rsync-3.5.2: No such file or directory`).
+if test "$style" = autotools; then
+    _pkgname=$(grep -m1 '^pkgname=' "$root/$recipe_path/PKGBUILD" | cut -d= -f2- | tr -d "\"'")
+    _pkgver=$(grep -m1 '^pkgver=' "$root/$recipe_path/PKGBUILD" | cut -d= -f2- | tr -d "\"'")
+    case "$_pkgname" in
+        '' | *' '* | *'('* | *'$'*) ;;
+        *) project_dir="$_pkgname-$_pkgver" ;;
+    esac
+fi
+
 fixture=$(mktemp -d "${TMPDIR:-/tmp}/gsa-pgo-${package_id}.XXXXXX")
 trap 'rm -rf -- "$fixture"' EXIT
 
@@ -111,17 +129,23 @@ case "${1:-}" in
         ;;
     setup)
         shift
-        if test "${1:-}" = --reconfigure; then
-            shift
-            for argument in "$@"; do
-                case "$argument" in
-                    -Dc_args=*) set_option c_args "${argument#-Dc_args=}" ;;
-                    -Dcpp_args=*) set_option cpp_args "${argument#-Dcpp_args=}" ;;
-                    -Dc_link_args=*) set_option c_link_args "${argument#-Dc_link_args=}" ;;
-                    -Dcpp_link_args=*) set_option cpp_link_args "${argument#-Dcpp_link_args=}" ;;
-                esac
-            done
+        # Setup options are position-independent for meson: the PGO phase-3
+        # call names `--buildtype=plain` ahead of `--reconfigure` (dbecce4),
+        # so detecting the flag only in first position silently no-op'd the
+        # reconfigure and let a still-instrumented compile pass as the final
+        # one. Scan the whole argument list, not a slot.
+        reconfigure=0
+        for argument in "$@"; do
+            case "$argument" in
+                --reconfigure) reconfigure=1 ;;
+                -Dc_args=*) set_option c_args "${argument#-Dc_args=}" ;;
+                -Dcpp_args=*) set_option cpp_args "${argument#-Dcpp_args=}" ;;
+                -Dc_link_args=*) set_option c_link_args "${argument#-Dc_link_args=}" ;;
+                -Dcpp_link_args=*) set_option cpp_link_args "${argument#-Dcpp_link_args=}" ;;
+            esac
+        done
 
+        if test "$reconfigure" = 1; then
             if grep -E '^(c_args|cpp_args|c_link_args|cpp_link_args)=' "$cache" |
                 grep -F -- '-fprofile-generate' >/dev/null; then
                 printf 'cached profile-generate flag survived final reconfigure\n' >&2
