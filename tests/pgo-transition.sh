@@ -52,10 +52,17 @@ fi
 if test "$style" = autotools; then
     _pkgname=$(grep -m1 '^pkgname=' "$root/$recipe_path/PKGBUILD" | cut -d= -f2- | tr -d "\"'")
     _pkgver=$(grep -m1 '^pkgver=' "$root/$recipe_path/PKGBUILD" | cut -d= -f2- | tr -d "\"'")
-    case "$_pkgname" in
-        '' | *' '* | *'('* | *'$'*) ;;
-        *) project_dir="$_pkgname-$_pkgver" ;;
-    esac
+    case "$_pkgname" in '' | *' '* | *'('* | *'$'*) _pkgname= ;; esac
+    case "$_pkgver" in '' | *' '* | *'('* | *'$'*) _pkgver= ;; esac
+    if test -n "$_pkgname" && test -n "$_pkgver"; then
+        project_dir="$_pkgname-$_pkgver"
+    elif test "$project_dir" = -; then
+        # A row that says "derive" must not silently configure a literal `-`:
+        # name the recipe here instead, so an array or computed pkgname fails
+        # loudly rather than as a stray `cd`.
+        printf '%s\n' "cannot derive the release directory of $recipe_path: pkgname/pkgver are not plain assignments" >&2
+        exit 1
+    fi
 fi
 
 fixture=$(mktemp -d "${TMPDIR:-/tmp}/gsa-pgo-${package_id}.XXXXXX")
