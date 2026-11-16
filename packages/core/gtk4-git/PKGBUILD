@@ -10,7 +10,7 @@ source "$startdir/../../../lib/pgo.sh"
 _pkgname="gtk4"
 pkgbase="$_pkgname-git"
 pkgver=4.25.r94.gb9cd929
-pkgrel=2
+pkgrel=3
 pkgdesc="GObject-based multi-platform GUI toolkit"
 url="https://gitlab.gnome.org/GNOME/gtk"
 license=('LGPL-2.1-or-later')
@@ -86,6 +86,13 @@ source=(
   # cups<3 compat block (JOURNAL 2026-10-11)
   cups25-legacy-enums.patch
   cups25-legacy-enums-ops.patch
+
+  # House: satisfy the GDBus get_property contract (NULL return implies a
+  # set *error) for org.a11y.atspi.Action on widgets without a GtkActionNode
+  # - a 4.26-dev regression (since 5a6802cae5) that aborts the serving
+  # process on any AT-SPI property walk (JOURNAL 2026-11-16). Drop once
+  # upstream fixes it in a snapshot we build.
+  atspi-action-getproperty-error.patch
 )
 sha256sums=(
   'SKIP'
@@ -95,6 +102,7 @@ sha256sums=(
   '92d08db5aa30bda276bc3d718e7ff9dd01dc40dcab45b359182dcc290054e24e'
   '089aa1ae8318c1b095b84bac2afb34de2955feb4a283fb0adc08b3f53d532deb'
   '305dc96964f7fb94d1ee7f33fa63e484274feed06a9dbfa7de8a33408743e7da'
+  'f928b0a1e63ddba88a91e8479a239b08cccd4314bd04d9e291763090b53c9399'
 )
 
 pkgver() {
@@ -113,10 +121,12 @@ prepare() {
   sed -E -e 's&^(\s*can_use_objcopy_for_resources) = \S+$&\1 = false&' \
     -i "$_pkgsrc/meson.build"
 
-  # House: gate the legacy cups enum aliases on cups <= 2.4 (JOURNAL
-  # 2026-10-11). Idempotent guard — repeat makepkg re-runs prepare().
+  # House patches, idempotent guard - repeat makepkg re-runs prepare():
+  # cups25-* gate the legacy cups enum aliases on cups <= 2.4 (JOURNAL
+  # 2026-10-11); atspi-action-* restores the GDBus get_property contract
+  # (JOURNAL 2026-11-16).
   local _p
-  for _p in cups25-legacy-enums.patch cups25-legacy-enums-ops.patch; do
+  for _p in cups25-legacy-enums.patch cups25-legacy-enums-ops.patch atspi-action-getproperty-error.patch; do
     patch -Np1 -R --dry-run -d "$_pkgsrc" -i "$srcdir"/$_p >/dev/null 2>&1 ||
       patch -Np1 -d "$_pkgsrc" -i "$srcdir"/$_p
   done

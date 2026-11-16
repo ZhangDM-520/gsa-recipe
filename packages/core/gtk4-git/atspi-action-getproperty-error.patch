@@ -1,0 +1,17 @@
+diff --git a/gtk/a11y/gtkatspiaction.c b/gtk/a11y/gtkatspiaction.c
+index 42fe5a5f64..cc7f987558 100644
+--- a/gtk/a11y/gtkatspiaction.c
++++ b/gtk/a11y/gtkatspiaction.c
+@@ -1016,7 +1016,11 @@ widget_handle_get_property (GDBusConnection  *connection,
+   GVariant *res = NULL;
+ 
+   if (node == NULL)
+-    return res;
++    {
++      g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
++                   "No actions for widget of type %s", G_OBJECT_TYPE_NAME (widget));
++      return NULL;
++    }
+ 
+   char **actions = gtk_action_node_list_actions (node, TRUE);
+ 
