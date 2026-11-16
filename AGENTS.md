@@ -671,11 +671,10 @@ rule 63, **62** is superseded by engine rule 73.
 - **Electron/JavaScript packages** (vscodium-insiders-git): nothing is
   compiler-built except the native Node addons, so the recipe is
   `!strip !debug !lto` and applies only ccache + the mold probe to those
-  addons. The two Electron recipes this paragraph also covered —
-  `logseq-desktop-git` and `vencord-git` — are parked in
-  `packages/deprecated/` (2026-11-16) because their addon builds never passed
-  the mold probe; their records and revival condition live in
-  `config/topology.conf` comments.
+  addons. A recipe whose addons cannot be linked through that probe is parked
+  under `packages/deprecated/` with its record commented out (this is how
+  `logseq-desktop-git` and `vencord-git` left the build list on 2026-11-16);
+  the parked set is `gsa -Ma`'s `package-drift` rows, never a list in prose.
 - **TeX Live data packages** (texlive-texmf): `arch=(any)`, so there is no
   compiler and no ISA/LTO/PGO phase at all. The recipe keeps upstream's
   `!strip`, which also skips the strip/debug tidy pass, and optimises by scope

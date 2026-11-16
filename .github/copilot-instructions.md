@@ -221,11 +221,12 @@ bad usage.
   categories (`git`, `stable`, `core`, `misc`, and the parked `deprecated`
   tier) are a filing system, **not** the build order. `misc` is an empty roster
   group with no directory today — a standalone-staged recipe is created at
-  `packages/misc/` — and a parked recipe (today `shelly`, `logseq-desktop-git`,
-  `vencord-git`) keeps its directory under `packages/deprecated/` with its
-  topology record commented out and the revival condition beside it, so it
-  appears in no build list (and `gsa -Ma` reports it as
-  `package-drift … unregistered-recipe-dir`, which is expected, not a defect).
+  `packages/misc/` — and a parked recipe keeps its directory under
+  `packages/deprecated/` with its topology record commented out and the revival
+  condition beside it, so it appears in no build list (and `gsa -Ma` reports it
+  as `package-drift … unregistered-recipe-dir`, which is expected, not a
+  defect). Read the parked set out of `gsa -Ma` or `ls packages/deprecated`,
+  never from a list in prose.
 - `config/` — exactly three files. Anything else under `config/` is
   unreachable state; the reconciliation gate lives **engine-side**
   (`tests/project.sh` in `gentoo-style-arch`), so `bash tests/run-all.sh` here
