@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/readme
+title: README
+type: note
+---
+
 <p align="center"><img src="./banner.svg" alt="gentoo-style-arch banner" width="100%"></p>
 
 # Gentoo_Style_Arch — the recipe half

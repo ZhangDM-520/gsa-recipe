@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/packages/stable/bettbox/readme
+title: README
+type: note
+---
+
 # bettbox
 
 Bettbox is a cross-platform proxy client built on the Mihomo (Clash Meta) core, refactored from an early version of FlClash.

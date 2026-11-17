@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/gtk4-git-upstream-report
+title: gtk4-git-upstream-report
+type: note
+---
+
 # gtk4-git upstream report (ARCHIVED, UNFILED)
 
 Not filed upstream: the owner's decision 2026-11-16 (GitLab auth gate, no

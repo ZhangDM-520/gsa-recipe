@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/maintainer-guide
+title: maintainer-guide
+type: note
+---
+
 # Maintainer guide
 
 The recipe-maintenance manual for the `gsa` era. Commands below use current

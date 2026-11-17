@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/snapshot-expansion
+title: snapshot-expansion
+type: note
+---
+
 # Snapshot expansion — pin the Monday commit, expose the snapshot name
 
 Opened 2026-11-09 (owner decision 2026-11-01, "do it now"; scope and shape

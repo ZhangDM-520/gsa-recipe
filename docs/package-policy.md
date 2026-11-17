@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/package-policy
+title: package-policy
+type: note
+---
+
 # Package policy
 
 Each package directory (`packages/<category>/<package-id>/`) is a small recipe

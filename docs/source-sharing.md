@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/source-sharing
+title: source-sharing
+type: note
+---
+
 # Shared source mirrors
 
 `gsa -Mm` (the former `--link-sources` operation) scans the `git+` entries in

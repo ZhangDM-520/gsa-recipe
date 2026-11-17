@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/packages/stable/zen-browser-pgo/readme
+title: README
+type: note
+---
+
 # zen-browser-pgo
 
 Builds the `zen-browser` package from the upstream release source snapshot with

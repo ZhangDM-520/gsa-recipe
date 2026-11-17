@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/adr/0002-topology-one-record
+title: 0002-topology-one-record
+type: note
+---
+
 # Topology: one record per package
 
 Topology facts were split across four syntaxes (`packages.map`,

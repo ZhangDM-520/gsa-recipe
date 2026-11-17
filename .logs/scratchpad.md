@@ -2,13 +2,15 @@
 
 **Idle.** No active task.
 
-Last action: `.logs/action-2026-11-17-kdenlive.md` (`packages/git/kdenlive-git`
-added to `app`, plus `packages/core/qt6-networkauth` and the seven KF6 recipes
-moved to 6.32.0; built and installed through the engine; battery 24/26 with
-both reds owned by a concurrent lane; srcinfo-freshness PASS 671).
+Last action: `.logs/action-2026-11-17-memory-architecture-recut.md`
+(the memory re-cut landed as commit 2: `AGENTS.md` and
+`.github/copilot-instructions.md` slimmed with bodies in
+`docs/{rules,optimization-playbook,pitfalls,queue}.md` + frontmatter on 36
+docs; three defects fixed — restored the dropped §4/§7 that six in-tree
+citations point at, restored 36 lost trailing newlines, and taught
+`tests/memory-layout.sh` to skip leading frontmatter. Battery PASS 26).
 
-Committed as `4e0c82f` (29 files) and pushed to `origin/main` (0 ahead,
-0 behind). The other lane's staged `packages/git/luciole-git` and its
-untracked `docs/*.md` were left untouched via a private `GIT_INDEX_FILE`.
+Committed: `a0017cc` luciole-git (pushed, repaired the dangling topology
+record `4e0c82f` had swept into HEAD).
 
 Next: nothing in flight.

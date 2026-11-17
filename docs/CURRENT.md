@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/current
+title: CURRENT
+type: note
+---
+
 # Current state — 2026-10-29 01:0x (live snapshot; overwrite, do not append)
 
 ## umbriel: 0013 current (5297413e…) + STACK-WIDE REFACOR DRIFT (2026-10-30)

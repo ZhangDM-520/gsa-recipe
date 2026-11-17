@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/security
+title: SECURITY
+type: note
+---
+
 # Security model
 
 This project is a package-building workspace, not a sandbox. A `PKGBUILD` is

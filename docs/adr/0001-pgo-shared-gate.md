@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/adr/0001-pgo-shared-gate
+title: 0001-pgo-shared-gate
+type: note
+---
+
 # PGO verification: one shared gate, per-recipe calls, both seams stay
 
 The seven per-recipe copies of `verify_no_profile_instrumentation` had already

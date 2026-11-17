@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/docs/glibc-git-research
+title: glibc-git-research
+type: note
+---
+
 # Research: adding `glibc-git` and `lib32-glibc-git`
 
 **Checked:** 2026-10-01. Findings below describe the official Arch packaging

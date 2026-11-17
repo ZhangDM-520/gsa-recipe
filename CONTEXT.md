@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/context
+title: CONTEXT
+type: note
+---
+
 # gentoo-style-arch
 
 A curated Arch Linux package set (recipes + declarative topology) built and

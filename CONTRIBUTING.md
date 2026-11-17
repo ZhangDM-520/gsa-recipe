@@ -1,3 +1,9 @@
+---
+permalink: gsa-recipe/contributing
+title: CONTRIBUTING
+type: note
+---
+
 # Contributing
 
 Contributions should improve a recipe or the `gsa` engine for a clean Arch

@@ -83,9 +83,14 @@ for title in 'What this repository is' \
 done
 
 # The journal is a log, so it opens with its H1 banner and never a bare list.
-first=$(head -1 "$root/docs/JOURNAL.md")
+# A YAML frontmatter block may precede the banner: the doc site reads it, and
+# the banner is what must open the BODY either way. Anything else in front of
+# the H1 is a second header format.
+body_start=$(awk 'NR==1 && /^---$/ { fm=1; next } fm && /^---$/ { fm=0; next } !fm && NF { print NR; exit }' \
+    "$root/docs/JOURNAL.md")
+first=$(sed -n "${body_start}p" "$root/docs/JOURNAL.md")
 [[ $first == '# '* ]] ||
-    fail "docs/JOURNAL.md does not open with an H1 heading: $first"
+    fail "docs/JOURNAL.md body does not open with an H1 heading (line $body_start): $first"
 
 # ─── 4. No live citation of a retired path ─────────────────────────────────
 # Five exclusions, each with a reason. tests/assets/ is the frozen oracle.
