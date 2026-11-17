@@ -1,5 +1,5 @@
 diff --git a/docs/user/appearance.md b/docs/user/appearance.md
-index 7f7066ac..9763fd9c 100644
+index 7f7066ac..7b59a281 100644
 --- a/docs/user/appearance.md
 +++ b/docs/user/appearance.md
 @@ -96,6 +96,7 @@ outer_border_width = 0
@@ -20,13 +20,13 @@ index 7f7066ac..9763fd9c 100644
  
  X11 bounding-shape cutouts show what is behind the window with either `opaque_fullscreen` setting.
  
-+`downsample` picks the sampling method whenever content shrinks: the [render_scale supersample](outputs.md#supersampling-with-render_scale) downsample, a window scaled down while it animates, or a thumbnail. `box` averages each destination pixel's source footprint on a fixed 4x4 grid: exact for integer ratios up to 4:1, every texel weighed up to 8:1, and above that some texels fall between taps. `bilinear` takes one interpolated sample per pixel and `nearest` the closest texel, so both alias more. A reload applies the method immediately, including to a capture already in progress.
++`downsample` picks the sampling method whenever content shrinks: the [render_scale supersample](outputs.md#supersampling-with-render_scale) downsample, a window scaled down while it animates, or a thumbnail. `box` averages each destination pixel's source footprint in linear light. Up to 4:1 on an axis every texel that axis covers counts by its area, at any ratio; beyond that the axis falls back to a fixed grid of bilinear taps, so every texel is weighed up to 8:1 and above that some texels fall between taps. `bilinear` takes one interpolated sample per pixel and `nearest` the closest texel, so both alias more. A reload applies the method immediately, including to a capture already in progress.
 +
  Set `prefer_no_csd = false` to let newly connected applications draw their own decorations. Restart applications after changing it because decoration protocol availability is fixed when an application connects.
  
  Borders render outside window content and are included in layout spacing. `corner_radius = 0` keeps every contour square. A [window rule](window-rules.md#decoration) can override `border_width`, `outer_border_width`, and `corner_radius` for the windows it matches.
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index 0bbf38b3..e745065b 100644
+index 50eda383..7893786f 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
 @@ -145,7 +145,7 @@ Omit `position` to place outputs automatically from left to right. Explicitly po
@@ -36,10 +36,10 @@ index 0bbf38b3..e745065b 100644
 -`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
 +`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. The sampling method is configurable (`appearance.downsample`): the default `box` averages each destination pixel's source footprint. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
  
- Native-resolution X11 applications use the physical output scale by default. To opt them into `render_scale`, see [`force_x11_supersample`](configuration.md#general).
+ Which windows render at `render_scale`:
  
 diff --git a/examples/config.toml b/examples/config.toml
-index 56a9c82a..90869b24 100644
+index 68a72173..179c2890 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -83,6 +83,12 @@ files = []
@@ -56,7 +56,7 @@ index 56a9c82a..90869b24 100644
  radius = 3
  
 diff --git a/src/config/change.cpp b/src/config/change.cpp
-index 4d7a6c23..708495f0 100644
+index 083b6048..87e87b7d 100644
 --- a/src/config/change.cpp
 +++ b/src/config/change.cpp
 @@ -247,9 +247,10 @@ namespace umbriel {
@@ -79,7 +79,7 @@ index 4d7a6c23..708495f0 100644
          .viewChrome = true,
          .layerEffects = true,
          .animation = true,
-@@ -385,6 +387,7 @@ namespace umbriel {
+@@ -388,6 +390,7 @@ namespace umbriel {
      add(workspaceInventory, "workspace inventory");
      add(workspaceLayout, "workspace layout");
      add(sceneBlur, "scene blur");
@@ -88,10 +88,10 @@ index 4d7a6c23..708495f0 100644
      add(internalUi, "internal UI");
      add(animation, "animation state");
 diff --git a/src/config/change.h b/src/config/change.h
-index 3d9806e1..2e1437f3 100644
+index be78d00b..fdbb28d6 100644
 --- a/src/config/change.h
 +++ b/src/config/change.h
-@@ -77,6 +77,9 @@ namespace umbriel {
+@@ -79,6 +79,9 @@ namespace umbriel {
      bool workspaceInventory = false;
      bool workspaceLayout = false;
      bool sceneBlur = false;
@@ -101,7 +101,7 @@ index 3d9806e1..2e1437f3 100644
      bool viewChrome = false;
      bool layerEffects = false;
      bool animation = false;
-@@ -94,6 +97,7 @@ namespace umbriel {
+@@ -96,6 +99,7 @@ namespace umbriel {
            || workspaceInventory
            || workspaceLayout
            || sceneBlur
@@ -110,7 +110,7 @@ index 3d9806e1..2e1437f3 100644
            || layerEffects
            || animation
 diff --git a/src/config/config.h b/src/config/config.h
-index 7ce3483d..5e6e3ebf 100644
+index d4c7bf50..66b875e6 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -35,6 +35,8 @@ namespace umbriel {
@@ -122,14 +122,15 @@ index 7ce3483d..5e6e3ebf 100644
    enum class TitleBarButtonGlyph : uint8_t { Always, Hover, Never };
  
    enum class ModifierKey {
-@@ -858,8 +860,23 @@ namespace umbriel {
+@@ -858,8 +860,24 @@ namespace umbriel {
        } tabBar;
        bool preferNoCsd = true;
  
 +      // Sampling method for sources the scene shrinks into their destination:
 +      // the render_scale supersample downsample, scaled-down windows, and
-+      // thumbnails. Box averages the source's texel footprint on a fixed 4x4
-+      // grid; the others take one sample per pixel.
++      // thumbnails. Box averages the source's texel footprint in linear light,
++      // exactly up to 4:1 on each axis and on a tap grid above it; the others
++      // take one sample per pixel.
 +      DownsampleMode downsample = DownsampleMode::Box;
 +
        int totalBorderWidth() const { return borderWidth + outerBorderWidth; }
@@ -166,10 +167,10 @@ index c2ffb2e5..275f3f6e 100644
            boolean("opaque_fullscreen", &A::opaqueFullscreen),
            registry::table("blur", &A::blur, blur),
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index b1bc4d41..b7c6cf11 100644
+index 3885a755..e9722341 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -724,6 +724,8 @@ namespace umbriel {
+@@ -806,6 +806,8 @@ namespace umbriel {
          },
          this
      );
@@ -179,10 +180,10 @@ index b1bc4d41..b7c6cf11 100644
        wlr_scene_set_linux_dmabuf_v1(m_scene, linuxDmabuf);
      }
 diff --git a/src/server/server.h b/src/server/server.h
-index c730c833..0ba1bb46 100644
+index a1a08d45..4f464e93 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
-@@ -453,6 +453,10 @@ namespace umbriel {
+@@ -458,6 +458,10 @@ namespace umbriel {
      // Re-send every surface's output scale (views, layer surfaces, popups). Run after anything that changes an output's
      // scale or moves surfaces between outputs outside setWorkspace; the notifies dedup, so extra calls are cheap.
      void refreshSurfaceScales();
@@ -194,10 +195,10 @@ index c730c833..0ba1bb46 100644
      void refreshOutputPolicies();
      wlr_output* preferredOutput() const;
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index d90324c4..f7458805 100644
+index 796a4aea..1f4b2e10 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
-@@ -809,6 +809,12 @@ namespace umbriel {
+@@ -810,6 +810,12 @@ namespace umbriel {
          output->markDirty(Dirty::LayerArrange);
        }
      }
@@ -244,7 +245,7 @@ index 3525bb25..53d09410 100644
      for (const auto& output : m_outputs) {
        output->updateVrr();
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index bab6e581..817e6d74 100644
+index 74bd1036..76ad36ac 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -199,6 +199,7 @@ namespace umbriel {
@@ -269,7 +270,7 @@ index bab6e581..817e6d74 100644
      moveToWorkspace(workspace, attachToLayout, LayoutAttachOrigin::ExistingView);
    }
 diff --git a/src/view/view.h b/src/view/view.h
-index 657a82eb..07683115 100644
+index 15f6d4f0..4cbebe95 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -143,6 +143,10 @@ namespace umbriel {
@@ -285,10 +286,10 @@ index 657a82eb..07683115 100644
      pid_t pid() const;
 diff --git a/tests/harness/checks/render/downsample_box.sh b/tests/harness/checks/render/downsample_box.sh
 new file mode 100755
-index 00000000..a40b027a
+index 00000000..52d3e916
 --- /dev/null
 +++ b/tests/harness/checks/render/downsample_box.sh
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,244 @@
 +#!/usr/bin/env bash
 +# harness: outputs=1
 +# appearance.downsample picks how the scene samples a minified source. A client
@@ -486,11 +487,58 @@ index 00000000..a40b027a
 +expect_pair "capped box spans the footprint" 175 118 118 175
 +
 +echo "capped box grid spans the full minification footprint"
++
++# Non-integer ratio: render_scale 1.5 on a scale-1.0 output draws 1.5 texels
++# into every pixel, the ratio of a 4/3 output supersampled at 2.0. Each pixel
++# covers green and blue texels only, so an area average in light makes the two
++# channels' linear values add up to one whatever the pixel's phase, with
++# neither pure. Bilinear taps blend encoded neighbours and lose that sum.
++mapped_before=$(grep -c '^mapped ' "$CLIENT_LOG")
++sed -i 's/scale = 0.8/scale = 1.0/; s/render_scale = 4.0/render_scale = 1.5/' "$UMBRIEL_CONFIG"
++"$UMBRIEL" msg config-reload > /dev/null
++await_lines "$CLIENT_LOG" 'mapped ' "$((mapped_before + 1))" 0.05
++presented=$(grep '^mapped ' "$CLIENT_LOG" | tail -1)
++if [[ $presented != *"scale 180/120"* ]]; then
++  echo "the client did not render at render_scale 1.5 ($presented)"
++  exit 1
++fi
++"$UMBRIEL" settle > /dev/null
++IMAGE="$UMBRIEL_RUNTIME_DIR/downsample-box-fraction.png"
++GRIM=(grim -o HEADLESS-1)
++# Linear light of one 8-bit sRGB channel, in thousandths.
++linear_milli() {
++  awk -v c="$1" 'BEGIN { v = c / 255; v = v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ^ 2.4; printf "%d", v * 1000 + 0.5 }'
++}
++area_conserved() {
++  local px=$1 red green blue g b
++  read -r red green blue < <("$UMBRIEL_PIXEL_PROBE" "$IMAGE" pixel "$px" 190)
++  [[ $green =~ ^[0-9]+$ && $blue =~ ^[0-9]+$ ]] || return 1
++  g=$(linear_milli "$green")
++  b=$(linear_milli "$blue")
++  # The exact average sums to one texel of light; the pair reads 997 here, so a
++  # 1% band leaves room for one readback rounding step. A tap blend reports the
++  # encoded mix instead and misses it by 40%.
++  ((g + b >= 990 && g + b <= 1010 && g >= 300 && b >= 300))
++}
++conserved=false
++for _ in $(seq 30); do
++  "${GRIM[@]}" "$IMAGE"
++  if area_conserved 200 && area_conserved 201 && area_conserved 202; then
++    conserved=true
++    break
++  fi
++  sleep 0.1
++done
++if [[ $conserved != true ]]; then
++  echo "box at 1.5:1 does not conserve light: px 200..202 show $(pixel 200 190) / $(pixel 201 190) / $(pixel 202 190)"
++  exit 1
++fi
++echo "box conserves light at a non-integer ratio"
 diff --git a/tests/unit/config_change.cpp b/tests/unit/config_change.cpp
-index cfdc2a5b..2fe4e59b 100644
+index 5e941066..cb8f1cc1 100644
 --- a/tests/unit/config_change.cpp
 +++ b/tests/unit/config_change.cpp
-@@ -398,6 +398,19 @@ UMBRIEL_TEST(identicalConfigsProduceNoRuntimeEffects) {
+@@ -410,6 +410,19 @@ UMBRIEL_TEST(identicalConfigsProduceNoRuntimeEffects) {
    CHECK(!ConfigEffects::between(before, after).any());
  }
  
@@ -510,7 +558,7 @@ index cfdc2a5b..2fe4e59b 100644
  UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
    const ConfigEffects effects = ConfigEffects::everything();
    CHECK(effects.outputState);
-@@ -406,6 +419,7 @@ UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
+@@ -418,6 +431,7 @@ UMBRIEL_TEST(firstLoadInvalidatesEveryRuntimeConsumer) {
    CHECK(effects.workspaceInventory);
    CHECK(effects.workspaceLayout);
    CHECK(effects.sceneBlur);
@@ -519,7 +567,7 @@ index cfdc2a5b..2fe4e59b 100644
    CHECK(effects.layerEffects);
    CHECK(effects.animation);
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 8738eb70..c6520c36 100644
+index 493aaa15..042b0c14 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
 @@ -863,6 +863,34 @@ render_scale = 1.0
@@ -558,17 +606,18 @@ index 8738eb70..c6520c36 100644
    const TempConfig file;
    ConfigStore& store = umbriel::configStore();
 diff --git a/umbrielfx/include/umbrielfx/render/pass.h b/umbrielfx/include/umbrielfx/render/pass.h
-index c7d0d17a..33fa7bda 100644
+index c7d0d17a..5a85b5a9 100644
 --- a/umbrielfx/include/umbrielfx/render/pass.h
 +++ b/umbrielfx/include/umbrielfx/render/pass.h
-@@ -141,6 +141,11 @@ struct fx_render_texture_options {
+@@ -141,6 +141,12 @@ struct fx_render_texture_options {
    // decode when one of these is set.
    float transfer_function_power;
    struct wlr_color_transform* decode_transform;
 +  // Area (box) averaging for a minified source instead of the single-tap
-+  // fetch. The pass derives the per-axis tap grid from the source and
-+  // destination extents; taps land on texel centers so integer minification
-+  // ratios average exactly. Only set when the draw is actually minifying.
++  // fetch. The pass derives the per-axis footprint from the source and
++  // destination extents; up to 4:1 on an axis every texel that axis covers is
++  // weighted by its area in linear light. Only set when the draw is actually
++  // minifying.
 +  bool downsample_box;
  };
  
@@ -664,14 +713,16 @@ index 1fce6195..91a5c62d 100644
  
      struct box_shadow_shader box_shadow;
 diff --git a/umbrielfx/internal/render/fx_renderer/shaders.h b/umbrielfx/internal/render/fx_renderer/shaders.h
-index 971d6bfb..a41016ec 100644
+index 971d6bfb..9be89ed5 100644
 --- a/umbrielfx/internal/render/fx_renderer/shaders.h
 +++ b/umbrielfx/internal/render/fx_renderer/shaders.h
-@@ -153,6 +153,11 @@ struct tex_shader {
+@@ -153,6 +153,13 @@ struct tex_shader {
    GLint discard_transparent;
    GLint sample_bounds;
  
 +  // Only used for the downsample (box) variants
++  GLint box_ratio;
++  GLint box_texture_size;
 +  GLint taps;
 +  GLint tap_step;
 +  GLint box_tf;
@@ -679,7 +730,7 @@ index 971d6bfb..a41016ec 100644
    // Only used for the effects shader
    struct {
      GLint size;
-@@ -166,7 +171,9 @@ struct tex_shader {
+@@ -166,7 +173,9 @@ struct tex_shader {
    } effects;
  };
  
@@ -691,18 +742,20 @@ index 971d6bfb..a41016ec 100644
  struct output_shader {
    GLuint program;
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index bc9c6162..350ada86 100644
+index bc9c6162..0353e49c 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -231,6 +231,7 @@ if build_tests
+@@ -231,6 +231,9 @@ if build_tests
      'optimized-blur-encoded-cache',
      'optimized-blur-size-change',
      'optimized-blur-copy-failure',
 +    'box-downsample-curves',
++    'box-downsample-area',
++    'box-downsample-axes',
      'gamma22-to-srgb',
      'pq-roundtrip',
      'bt2020-to-srgb',
-@@ -275,6 +276,22 @@ if build_tests
+@@ -275,6 +278,22 @@ if build_tests
      suite: 'umbrielfx',
    )
  
@@ -726,7 +779,7 @@ index bc9c6162..350ada86 100644
      'umbrielfx-scale-hints-test',
      'tests/scale_hints.c',
 diff --git a/umbrielfx/render/fx_renderer/fx_pass.c b/umbrielfx/render/fx_renderer/fx_pass.c
-index 0781c1ed..e35efd00 100644
+index 0781c1ed..7ba9ade4 100644
 --- a/umbrielfx/render/fx_renderer/fx_pass.c
 +++ b/umbrielfx/render/fx_renderer/fx_pass.c
 @@ -1950,22 +1950,35 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
@@ -771,14 +824,16 @@ index 0781c1ed..e35efd00 100644
      break;
    default:
      abort();
-@@ -1977,6 +1990,23 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
+@@ -1977,6 +1990,27 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
    wlr_render_texture_options_get_dst_box(options, &dst_box);
    float alpha = wlr_render_texture_options_get_alpha(options);
  
-+  // Box taps tile the fragment's texel footprint: K per axis at ratio/K texel
-+  // steps (exact one-texel centers while integer ratios fit the constant 4x4
-+  // grid). A rotated draw swaps which destination extent each buffer axis
-+  // shrinks into, so the ratios derive from the transformed extents.
++  // The box footprint is ratio texels per destination pixel on each buffer
++  // axis (at least one): the shader weights every texel by the area it covers
++  // up to 4:1 on that axis, and above that tiles the axis with K taps at
++  // ratio/K texel steps. A rotated draw swaps which destination extent each
++  // buffer axis shrinks into, so the ratios derive from the transformed extents.
++  float box_ratio_x = 1.0f, box_ratio_y = 1.0f;
 +  float taps_x = 1.0f, taps_y = 1.0f;
 +  float step_x = 1.0f, step_y = 1.0f;
 +  if (use_box) {
@@ -786,6 +841,8 @@ index 0781c1ed..e35efd00 100644
 +    wlr_output_transform_coords(options->transform, &dst_width, &dst_height);
 +    const double ratio_x = dst_width > 0 ? src_fbox.width / dst_width : 1.0;
 +    const double ratio_y = dst_height > 0 ? src_fbox.height / dst_height : 1.0;
++    box_ratio_x = fmax(ratio_x, 1.0);
++    box_ratio_y = fmax(ratio_y, 1.0);
 +    taps_x = fmin(fmax(ceil(ratio_x), 1.0), 4.0);
 +    taps_y = fmin(fmax(ceil(ratio_y), 1.0), 4.0);
 +    step_x = fmax(ratio_x, 1.0) / taps_x;
@@ -795,18 +852,20 @@ index 0781c1ed..e35efd00 100644
    const struct wlr_box* clip_box = &dst_box;
    if (!wlr_box_empty(fx_options->clip_box)) {
      clip_box = fx_options->clip_box;
-@@ -2081,6 +2111,10 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
+@@ -2081,6 +2115,12 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
  
    glUniform1i(shader->tex, 0);
    glUniform1f(shader->alpha, alpha);
 +  if (use_box) {
++    glUniform2f(shader->box_ratio, box_ratio_x, box_ratio_y);
++    glUniform2f(shader->box_texture_size, options->texture->width, options->texture->height);
 +    glUniform2f(shader->taps, taps_x, taps_y);
 +    glUniform2f(shader->tap_step, step_x / options->texture->width, step_y / options->texture->height);
 +  }
  
    struct wlr_color_primaries primaries_srgb;
    wlr_color_primaries_from_named(&primaries_srgb, WLR_COLOR_NAMED_PRIMARIES_SRGB);
-@@ -2127,6 +2161,12 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
+@@ -2127,6 +2167,12 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
        fx_options->luminances != NULL ? fx_options->luminances->max : 100.0F
    );
    glUniform1i(shader->target_tf, color_passthrough ? 0 : target_tf);
@@ -966,10 +1025,10 @@ index 25a0124c..b24a1b72 100644
      wlr_log(WLR_ERROR, "Could not link output shader");
      goto error;
 diff --git a/umbrielfx/render/fx_renderer/shaders.c b/umbrielfx/render/fx_renderer/shaders.c
-index b384a282..a00c0063 100644
+index b384a282..5539418a 100644
 --- a/umbrielfx/render/fx_renderer/shaders.c
 +++ b/umbrielfx/render/fx_renderer/shaders.c
-@@ -275,10 +275,12 @@ bool link_quad_grad_round_program(struct quad_grad_round_shader* shader, int max
+@@ -275,10 +275,15 @@ bool link_quad_grad_round_program(struct quad_grad_round_shader* shader, int max
    return true;
  }
  
@@ -980,16 +1039,21 @@ index b384a282..a00c0063 100644
 +bool link_tex_program(
 +    struct tex_shader* shader, enum fx_tex_shader_source source, bool effects, bool sample_clamp, bool downsample
 +) {
-+  GLchar frag_src_part[12288];
-+  GLchar frag_src[16384];
++  GLchar frag_src_part[20480];
++  GLchar frag_src[24576];
++  // The four one-digit specifiers grow by one byte each; a tex.frag that
++  // outgrows the buffer is truncated into an unterminated #if.
++  _Static_assert(sizeof(tex_frag_src) + 16 <= sizeof(frag_src_part), "tex.frag does not fit frag_src_part");
 +  snprintf(frag_src_part, sizeof(frag_src_part), tex_frag_src, source, effects, sample_clamp, downsample);
    snprintf(frag_src, sizeof(frag_src), "%s\n%s\n", frag_src_part, effects ? corner_alpha_frag_src : "");
  
    GLuint prog;
-@@ -304,6 +306,9 @@ bool link_tex_program(struct tex_shader* shader, enum fx_tex_shader_source sourc
+@@ -304,6 +309,11 @@ bool link_tex_program(struct tex_shader* shader, enum fx_tex_shader_source sourc
  
    shader->discard_transparent = glGetUniformLocation(prog, "discard_transparent");
    shader->sample_bounds = sample_clamp ? glGetUniformLocation(prog, "sample_bounds") : -1;
++  shader->box_ratio = downsample ? glGetUniformLocation(prog, "box_ratio") : -1;
++  shader->box_texture_size = downsample ? glGetUniformLocation(prog, "box_texture_size") : -1;
 +  shader->taps = downsample ? glGetUniformLocation(prog, "taps") : -1;
 +  shader->tap_step = downsample ? glGetUniformLocation(prog, "tap_step") : -1;
 +  shader->box_tf = downsample ? glGetUniformLocation(prog, "box_tf") : -1;
@@ -997,7 +1061,7 @@ index b384a282..a00c0063 100644
    if (!effects) {
      return true;
 diff --git a/umbrielfx/render/fx_renderer/shaders/tex.frag b/umbrielfx/render/fx_renderer/shaders/tex.frag
-index 842a0a4e..72a93ac6 100644
+index 842a0a4e..b33231fb 100644
 --- a/umbrielfx/render/fx_renderer/shaders/tex.frag
 +++ b/umbrielfx/render/fx_renderer/shaders/tex.frag
 @@ -1,12 +1,13 @@
@@ -1015,7 +1079,7 @@ index 842a0a4e..72a93ac6 100644
  #error "Missing shader preamble"
  #endif
  
-@@ -74,15 +75,30 @@ uniform float discard_transparent;
+@@ -74,15 +75,32 @@ uniform float discard_transparent;
  // every other draw keeps the exact fetch drivers already handle well.
  uniform vec4 sample_bounds;
  #define SAMPLE_UV clamp(v_texcoord, sample_bounds.xy, sample_bounds.zw)
@@ -1027,11 +1091,13 @@ index 842a0a4e..72a93ac6 100644
  
 -vec4 sample_texture() {
 +#if DOWNSAMPLE
-+// Area (box) average for a minified source: taps.x times taps.y samples at
-+// ratio/K texel steps, weighted evenly, tiling the fragment's whole footprint
-+// (texel centers exactly while integer ratios fit the grid). The grid is
-+// constant-bounded and skips entries past the per-axis tap counts, which the
-+// pass derives from the minification ratio (clamped to 4).
++// Area (box) average for a minified source. Along each axis independently, up
++// to 4:1 every texel the fragment's footprint touches is fetched at its center
++// and weighted by the area it covers (box_ratio texels per pixel, at least
++// one). Above 4:1 on an axis, `taps` bilinear samples at ratio/taps texel steps
++// tile that axis instead, which bounds the cost of thumbnails.
++uniform vec2 box_ratio;
++uniform vec2 box_texture_size;
 +uniform vec2 taps;
 +uniform vec2 tap_step;
 +// The curve a passthrough pass's content is in (0 when the pass converts). A passthrough draw converts nothing, so
@@ -1049,7 +1115,7 @@ index 842a0a4e..72a93ac6 100644
  #endif
  }
  
-@@ -154,11 +170,9 @@ vec3 hdr_to_sdr(vec3 color) {
+@@ -154,11 +172,9 @@ vec3 hdr_to_sdr(vec3 color) {
    return color * (mapped_peak / peak);
  }
  
@@ -1064,7 +1130,7 @@ index 842a0a4e..72a93ac6 100644
    float color_alpha = color.a;
    vec3 rgb = color_alpha == 0.0 ? vec3(0.0) : color.rgb / color_alpha;
    // Extended-linear negative channels carry colors outside the source gamut.
-@@ -181,6 +195,14 @@ vec4 convert_color(vec4 color) {
+@@ -181,6 +197,14 @@ vec4 convert_color(vec4 color) {
      rgb = bt1886_color_to_linear(rgb);
    }
  
@@ -1079,7 +1145,7 @@ index 842a0a4e..72a93ac6 100644
    rgb *= lum_multiplier;
    rgb = primaries_matrix * rgb;
    if (map_hdr_to_sdr) {
-@@ -195,6 +217,74 @@ vec4 convert_color(vec4 color) {
+@@ -195,6 +219,113 @@ vec4 convert_color(vec4 color) {
    return vec4(rgb * color_alpha, color_alpha);
  }
  
@@ -1130,22 +1196,61 @@ index 842a0a4e..72a93ac6 100644
 +}
 +#endif
 +
++#if DOWNSAMPLE
++// One axis of a footprint: up to 4:1 every texel center the axis touches, with
++// the weight of the area it covers; above that `taps` bilinear samples at
++// ratio/taps texel steps. `box_ratio` texels per pixel, at least one.
++void box_axis_sample(
++    int index, float ratio, float taps, float coord, float size, float step, out float uv, out float weight
++) {
++  if (ratio <= 4.0) {
++    float lo = coord * size - 0.5 * ratio;
++    float texel = floor(lo) + float(index);
++    weight = min(lo + ratio, texel + 1.0) - max(lo, texel);
++    uv = (texel + 0.5) / size;
++  } else {
++    weight = float(index) < taps ? 1.0 / taps : 0.0;
++    uv = coord + (float(index) + 0.5 - taps * 0.5) * step;
++  }
++}
++
++// Exact area average on every axis within 4:1: each texel is fetched at its
++// center, where the bilinear filter returns it unmixed, and decoded before it
++// is weighted, so encoded values are never blended and the result conserves
++// coverage at every ratio and phase. Above 4:1 on an axis the tap grid tiles
++// that axis instead, which bounds the cost of thumbnails. The axes dispatch
++// independently, so an anisotropic draw stays exact on the axis it can.
++vec4 sample_box() {
++  vec4 acc = vec4(0.0);
++  for (int y = 0; y < 5; y++) {
++    float uv_y, weight_y;
++    box_axis_sample(y, box_ratio.y, taps.y, v_texcoord.y, box_texture_size.y, tap_step.y, uv_y, weight_y);
++    if (weight_y <= 0.0) {
++      continue;
++    }
++    for (int x = 0; x < 5; x++) {
++      float uv_x, weight_x;
++      box_axis_sample(x, box_ratio.x, taps.x, v_texcoord.x, box_texture_size.x, tap_step.x, uv_x, weight_x);
++      if (weight_x <= 0.0) {
++        continue;
++      }
++      acc += (weight_x * weight_y) * sample_linear(vec2(uv_x, uv_y));
++    }
++  }
++  // A texel-path axis normalizes by the whole covered area, a tap-path axis by
++  // its unit sample weights.
++  float norm_x = box_ratio.x <= 4.0 ? box_ratio.x : 1.0;
++  float norm_y = box_ratio.y <= 4.0 ? box_ratio.y : 1.0;
++  return encode_linear(acc / (norm_x * norm_y));
++}
++#endif
++
 +// Source color converted for the pass. Downsampling averages the box in linear
 +// light: averaging encoded values darkens every partially covered pixel, which
 +// thins light text on dark backgrounds and fattens dark text on light ones.
 +vec4 sample_converted() {
 +#if DOWNSAMPLE
-+  vec4 acc = vec4(0.0);
-+  for (int y = 0; y < 4; y++) {
-+    for (int x = 0; x < 4; x++) {
-+      if (float(x) >= taps.x || float(y) >= taps.y) {
-+        continue;
-+      }
-+      vec2 offset = (vec2(float(x), float(y)) + 0.5 - taps * 0.5) * tap_step;
-+      acc += sample_linear(v_texcoord + offset);
-+    }
-+  }
-+  return encode_linear(acc / (taps.x * taps.y));
++  return sample_box();
 +#else
 +  return convert_color(sample_texel(SAMPLE_UV));
 +#endif
@@ -1154,7 +1259,7 @@ index 842a0a4e..72a93ac6 100644
  #if EFFECTS
  float corner_alpha(
      vec2 size, vec2 position, bool is_cutout, float radius_tl, float radius_tr, float radius_bl, float radius_br
-@@ -202,7 +292,7 @@ float corner_alpha(
+@@ -202,7 +333,7 @@ float corner_alpha(
  #endif
  
  void main() {
@@ -1188,32 +1293,33 @@ index 3cf119d5..967994fd 100644
    wl_signal_emit_mutable(&surface.events.destroy, &surface);
    wlr_scene_node_destroy(&desktop->tree.node);
 diff --git a/umbrielfx/tests/color.c b/umbrielfx/tests/color.c
-index 740c285e..db87eb65 100644
+index 740c285e..027a867e 100644
 --- a/umbrielfx/tests/color.c
 +++ b/umbrielfx/tests/color.c
-@@ -1144,6 +1144,111 @@ static bool test_implicit_srgb_target(struct fixture* fixture) {
+@@ -1144,6 +1144,197 @@ static bool test_implicit_srgb_target(struct fixture* fixture) {
    return ok;
  }
  
-+// The box downsample averages in linear light, so a passthrough draw must decode
-+// with the curve of the space it is already in: an SDR swapchain (sRGB) or
-+// extended linear behind colour management, where the values are already
-+// linear. Each pair of texels is chosen to separate the two SDR curves.
-+static bool render_box_pair(
-+    struct fixture* fixture, const uint8_t texels[2][4], enum wlr_color_transfer_function input_tf,
-+    struct wlr_color_transform* output_transform, uint8_t out[4]
++// `texel_width` x `texel_height` texels drawn into `pixel_width` x
++// `pixel_height` pixels with the box.
++static bool render_box_grid(
++    struct fixture* fixture, const uint8_t (*texels)[4], int texel_width, int texel_height, int pixel_width,
++    int pixel_height, enum wlr_color_transfer_function input_tf, struct wlr_color_transform* output_transform,
++    uint8_t (*out)[4]
 +) {
 +  struct wlr_color_primaries srgb;
 +  wlr_color_primaries_from_named(&srgb, WLR_COLOR_NAMED_PRIMARIES_SRGB);
-+  struct wlr_texture* texture = wlr_texture_from_pixels(fixture->renderer, DRM_FORMAT_ABGR8888, 8, 2, 1, texels);
++  struct wlr_texture* texture = wlr_texture_from_pixels(
++      fixture->renderer, DRM_FORMAT_ABGR8888, texel_width * 4, texel_width, texel_height, texels
++  );
 +  if (!check(texture != NULL, "create box input texture")) {
 +    return false;
 +  }
-+  struct wlr_buffer* output = create_output_buffer(fixture, DRM_FORMAT_ABGR8888, 1, 1);
++  struct wlr_buffer* output = create_output_buffer(fixture, DRM_FORMAT_ABGR8888, pixel_width, pixel_height);
 +  bool ok = check(output != NULL, "allocate box output buffer");
 +  struct wlr_render_pass* pass = NULL;
 +  pixman_region32_t region;
-+  pixman_region32_init_rect(&region, 0, 0, 1, 1);
++  pixman_region32_init_rect(&region, 0, 0, pixel_width, pixel_height);
 +  if (ok) {
 +    pass = wlr_renderer_begin_buffer_pass(
 +        fixture->renderer, output, &(struct wlr_buffer_pass_options){.color_transform = output_transform}
@@ -1221,9 +1327,7 @@ index 740c285e..db87eb65 100644
 +    ok = check(pass != NULL, "begin box render pass");
 +  }
 +  if (ok) {
-+    // Two texels into one pixel: ratio 2, so two taps land on the texel
-+    // centres and the box averages them exactly.
-+    const struct wlr_box box = {.width = 1, .height = 1};
++    const struct wlr_box box = {.width = pixel_width, .height = pixel_height};
 +    fx_render_pass_add_texture(
 +        fx_get_render_pass(pass),
 +        &(struct fx_render_texture_options){
@@ -1244,7 +1348,7 @@ index 740c285e..db87eb65 100644
 +    ok = check(wlr_render_pass_submit(pass), "submit box render pass");
 +  }
 +  if (ok) {
-+    ok = check(read_buffer(fixture, output, DRM_FORMAT_ABGR8888, 4, out), "read box output buffer");
++    ok = check(read_buffer(fixture, output, DRM_FORMAT_ABGR8888, pixel_width * 4, out), "read box output buffer");
 +  }
 +  pixman_region32_fini(&region);
 +  if (output != NULL) {
@@ -1252,6 +1356,22 @@ index 740c285e..db87eb65 100644
 +  }
 +  wlr_texture_destroy(texture);
 +  return ok;
++}
++
++// One row of `texel_count` texels drawn into `pixel_count` pixels with the box.
++static bool render_box_row(
++    struct fixture* fixture, const uint8_t (*texels)[4], int texel_count, int pixel_count,
++    enum wlr_color_transfer_function input_tf, struct wlr_color_transform* output_transform, uint8_t (*out)[4]
++) {
++  return render_box_grid(fixture, texels, texel_count, 1, pixel_count, 1, input_tf, output_transform, out);
++}
++
++// Two texels into one pixel: ratio 2, so the box averages them exactly.
++static bool render_box_pair(
++    struct fixture* fixture, const uint8_t texels[2][4], enum wlr_color_transfer_function input_tf,
++    struct wlr_color_transform* output_transform, uint8_t out[4]
++) {
++  return render_box_row(fixture, texels, 2, 1, input_tf, output_transform, (uint8_t (*)[4])out);
 +}
 +
 +static bool check_box_grey(const uint8_t pixel[4], int expected, const char* name) {
@@ -1264,6 +1384,10 @@ index 740c285e..db87eb65 100644
 +  return true;
 +}
 +
++// The box downsample averages in linear light, so a passthrough draw must decode
++// with the curve of the space it is already in: an SDR swapchain (sRGB) or
++// extended linear behind colour management, where the values are already
++// linear. Each pair of texels is chosen to separate the two SDR curves.
 +static bool test_box_downsample_curves(struct fixture* fixture) {
 +  // 0 and 16 encode to 9 through the sRGB curve and 12 through gamma 2.2, so
 +  // the pair pins which curve an SDR passthrough draw decodes with.
@@ -1300,15 +1424,86 @@ index 740c285e..db87eb65 100644
 +  return ok;
 +}
 +
++// At 1.5:1 a pixel covers one whole texel and half of the next. The box must
++// weight them 2:1 by area and average in light: a lone white texel on black
++// reports linear 2/3 (213) on the pixel holding it whole and 1/3 (156) where it
++// is split, never an encoded blend or a tap that reaches outside the footprint.
++// The light a dark stem removes must not depend on where the stem starts.
++static bool test_box_downsample_area(struct fixture* fixture) {
++  static const uint8_t black[4] = {0, 0, 0, 255};
++  static const uint8_t white[4] = {255, 255, 255, 255};
++  uint8_t pixels[4][4] = {{0}};
++  bool ok = true;
++
++  const uint8_t (*whole)[4] = (const uint8_t[3][4]){
++      {255, 255, 255, 255},
++      {0, 0, 0, 255},
++      {0, 0, 0, 255},
++  };
++  ok = render_box_row(fixture, whole, 3, 2, WLR_COLOR_TRANSFER_FUNCTION_SRGB, NULL, pixels)
++      && check_box_grey(pixels[0], to_u8(linear_to_srgb(2.0f / 3.0f)), "texel covered whole")
++      && check_box_grey(pixels[1], 0, "footprint without the texel");
++
++  const uint8_t (*split)[4] = (const uint8_t[3][4]){
++      {0, 0, 0, 255},
++      {255, 255, 255, 255},
++      {0, 0, 0, 255},
++  };
++  ok = ok
++      && render_box_row(fixture, split, 3, 2, WLR_COLOR_TRANSFER_FUNCTION_SRGB, NULL, pixels)
++      && check_box_grey(pixels[0], to_u8(linear_to_srgb(1.0f / 3.0f)), "texel split, first half")
++      && check_box_grey(pixels[1], to_u8(linear_to_srgb(1.0f / 3.0f)), "texel split, second half");
++
++  // A two-texel black stem on white, six texels into four pixels, at each
++  // start: the removed light stays 2/1.5 pixels.
++  for (int start = 0; ok && start < 5; start++) {
++    uint8_t row[6][4];
++    for (int texel = 0; texel < 6; texel++) {
++      memcpy(row[texel], texel == start || texel == start + 1 ? black : white, sizeof(row[texel]));
++    }
++    ok = render_box_row(fixture, row, 6, 4, WLR_COLOR_TRANSFER_FUNCTION_SRGB, NULL, pixels);
++    float ink = 0.0f;
++    for (int pixel = 0; ok && pixel < 4; pixel++) {
++      ink += 1.0f - srgb_to_linear(pixels[pixel][0] / 255.0f);
++    }
++    if (ok && fabsf(ink - (2.0f / 1.5f)) > 0.02f) {
++      fprintf(stderr, "stem at texel %d removes %.3f pixels of light, expected %.3f\n", start, ink, 2.0f / 1.5f);
++      ok = false;
++    }
++  }
++  return ok;
++}
++
++// One axis inside 4:1 and one above it: 3x5 texels into 2x1 pixels gives an x
++// ratio of 1.5 and a y ratio of 5. The rows are identical, so y can sample them
++// any way it likes and the x weights must still be exact. A dispatch on the
++// larger ratio alone sends x through the tap grid too and reports the blended
++// encoded pair instead of the 2/3 area result.
++static bool test_box_downsample_axes(struct fixture* fixture) {
++  static const uint8_t texels[5][3][4] = {
++      {{255, 255, 255, 255}, {0, 0, 0, 255}, {0, 0, 0, 255}}, {{255, 255, 255, 255}, {0, 0, 0, 255}, {0, 0, 0, 255}},
++      {{255, 255, 255, 255}, {0, 0, 0, 255}, {0, 0, 0, 255}}, {{255, 255, 255, 255}, {0, 0, 0, 255}, {0, 0, 0, 255}},
++      {{255, 255, 255, 255}, {0, 0, 0, 255}, {0, 0, 0, 255}},
++  };
++  uint8_t pixels[2][4] = {{0}};
++  return render_box_grid(fixture, &texels[0][0], 3, 5, 2, 1, WLR_COLOR_TRANSFER_FUNCTION_SRGB, NULL, pixels)
++      && check_box_grey(pixels[0], to_u8(linear_to_srgb(2.0f / 3.0f)), "exact axis beside a tapped axis")
++      && check_box_grey(pixels[1], 0, "footprint without the texel beside a tapped axis");
++}
++
  static bool test_gamma22_to_srgb(struct fixture* fixture) {
    const uint8_t dark_input[4] = {24, 24, 49, 255};
    const uint8_t dark_expected[4] = {17, 17, 45, 255};
-@@ -3556,6 +3661,8 @@ int main(int argc, char* argv[]) {
+@@ -3556,6 +3747,12 @@ int main(int argc, char* argv[]) {
      ok = test_optimized_blur_size_change(&fixture);
    } else if (strcmp(argv[1], "optimized-blur-copy-failure") == 0) {
      ok = test_optimized_blur_copy_failure(&fixture);
 +  } else if (strcmp(argv[1], "box-downsample-curves") == 0) {
 +    ok = test_box_downsample_curves(&fixture);
++  } else if (strcmp(argv[1], "box-downsample-area") == 0) {
++    ok = test_box_downsample_area(&fixture);
++  } else if (strcmp(argv[1], "box-downsample-axes") == 0) {
++    ok = test_box_downsample_axes(&fixture);
    } else if (strcmp(argv[1], "gamma22-to-srgb") == 0) {
      ok = test_gamma22_to_srgb(&fixture);
    } else if (strcmp(argv[1], "pq-roundtrip") == 0) {
@@ -1363,18 +1558,20 @@ index 00000000..0845bac5
 +  return failures ? 1 : 0;
 +}
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index 3df12c09..c31794c7 100644
+index 3df12c09..8165c570 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
-@@ -3778,6 +3778,23 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -3778,6 +3778,25 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
        snapped_src_box.height = src_dst_height;
      }
  
 +    // Downsample policy: a minified source is sampled with the scene's
 +    // configured method unless the buffer pins nearest, which stays exact.
-+    // The box grid spans ceil(ratio) texels per axis (ratio when the 4-tap cap
-+    // steps it down), which exceeds one output pixel only for non-integer
-+    // ratios — the exact case where the damage path already expands by one.
++    // Up to 4:1 the box reads exactly the pixel's own texel footprint and
++    // reaches half a texel past it, inside the one-pixel expansion the damage
++    // path already applies to non-integer ratios. Above 4:1 the tap grid spans
++    // (taps - 1) * ratio / taps + 1 texels, which is shorter than the
++    // footprint, so it stays inside it.
 +    const bool minifying = (src_dst_width > 0 && snapped_src_box.width > src_dst_width)
 +        || (src_dst_height > 0 && snapped_src_box.height > src_dst_height);
 +    bool downsample_box = false;
@@ -1390,7 +1587,7 @@ index 3df12c09..c31794c7 100644
      // Adopting a one-texel-larger destination extent deliberately reaches
      // past the source region so that sampling stays exactly texel-centered
      // and the final row or column duplicates the edge texel. Whether that
-@@ -3797,6 +3814,16 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -3797,6 +3816,16 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
            || (snapped_src_box.y + snapped_src_box.height > sample_box.y + sample_box.height
                && sample_box.y + sample_box.height < texture->height);
      }
@@ -1407,7 +1604,7 @@ index 3df12c09..c31794c7 100644
      if (!crosses_crop_edge) {
        sample_box = (struct wlr_fbox){0};
      }
-@@ -3810,7 +3837,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -3810,7 +3839,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
                  .transform = transform,
                  .clip = &render_region, // Render with the smaller region, clipping CSD
                  .alpha = &scene_buffer->opacity,
@@ -1416,7 +1613,7 @@ index 3df12c09..c31794c7 100644
                  .blend_mode = !data->output->scene->calculate_visibility || !pixman_region32_empty(&opaque)
                      ? WLR_RENDER_BLEND_MODE_PREMULTIPLIED
                      : WLR_RENDER_BLEND_MODE_NONE,
-@@ -3826,6 +3853,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -3826,6 +3855,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
          .corners = fx_corner_radii_scale(buffer_corners, data->scale),
          .clipped_region = {0},
          .sample_box = sample_box,
@@ -1424,7 +1621,7 @@ index 3df12c09..c31794c7 100644
          .luminances = scene_buffer->luminances.reference > 0.0f ? &scene_buffer->luminances : NULL,
          .map_hdr_to_sdr = !data->hdr
              && (source_tf == WLR_COLOR_TRANSFER_FUNCTION_ST2084_PQ
-@@ -4601,6 +4629,19 @@ void wlr_scene_set_preferred_scale_provider(
+@@ -4601,6 +4631,19 @@ void wlr_scene_set_preferred_scale_provider(
    scene->preferred_scale_provider_data = data;
  }
  

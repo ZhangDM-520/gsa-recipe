@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1584.1bbbf15
-pkgrel=6
+pkgrel=7
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -75,7 +75,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
             '3e5192f37169ee2e48b4116a4677f74d2a193a3411dd569f74be3b7d10a8597c'
-            '1b5bcdabbb116e791dcaabcca0d5753bf77c1726b5611227c8bb19a318b2fc9b'
+            '13c8f7a5b2c6e9e02f81ce9d082739f80eb7954df56b97ee99f949197cec251b'
             'e4af7893010ce014814dbe311c27c01f5c1a5324b6b4ab4df1115d1f629f02dc'
             '3741d322aac7cd4757e8b8e5defa79605f813262a91dc55998299d77ad52243e'
             '50f89ef70af7abef7e2bfefe7a4fb1dcd9b6c037fcb9981fb112b5b4ab412de2'
@@ -233,6 +233,13 @@ prepare() {
   # sha256 91536dd3…).
   # Re-cut 2026-11-15 as the delta from 0012's 2de13d6a re-cut (29 files
   # +849/-36, sha256 1b5bcdab…).
+  # Re-cut 2026-11-17 after dMopp's non-integer-multiply fix was folded in
+  # (head b9f12f60: area-weighted texels up to 4:1 per axis, an exact/tapped
+  # axis split, and the unit case that pins it). Re-cut against the composed
+  # base of main + 0011 + 0012 rather than the branch merge-base, because 0012's
+  # docs fold-in moved the outputs.md context this patch anchors on (29 files
+  # +1046/-36, sha256 13c8f7a5…). Rehearsed across the full 15-patch stack on
+  # main@d1329334: no conflicts, composed tree 78cd826a, 177/177 units.
   git apply -3 ../0014-downsample-box.patch
 
   # [layout] underfull_strip: a scrolling strip narrower than the viewport
