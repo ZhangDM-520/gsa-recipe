@@ -1,13 +1,14 @@
 #!/usr/bin/python3
 # vencord-inject — assert Vencord injection into the Discord desktop client.
 #
-# Initiation contract of vencord-git (docs/JOURNAL.md 2026-09-23): the payload in
-# /usr/lib/vencord is inert until Discord's newest app-<ver>/resources tree is
-# patched — app.asar renamed to _app.asar and replaced with a shim asar whose
-# index.js requires /usr/lib/vencord/patcher.js. The shim is byte-equivalent
-# to the official Vencord Installer's WriteAppAsar (Vencord/Installer,
-# app_asar.go), so an injection created by the official installer is adopted
-# in place by simply rewriting the shim.
+# Initiation contract of vencord-git (private warehouse, 2026-09-23): the
+# payload in /usr/lib/vencord is inert until Discord's newest
+# app-<ver>/resources tree is patched — app.asar renamed to _app.asar and
+# replaced with a shim asar whose index.js requires
+# /usr/lib/vencord/patcher.js. The shim is byte-equivalent to the official
+# Vencord Installer's WriteAppAsar (Vencord/Installer, app_asar.go), so an
+# injection created by the official installer is adopted in place by simply
+# rewriting the shim.
 #
 # Modes: inject (idempotent, rewrites the shim every run), uninject (restore
 # the pristine app.asar), status (exit 0 only when every discovered channel

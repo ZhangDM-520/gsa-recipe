@@ -484,7 +484,7 @@ build() {
   # <dir>/<mangled-object-path>.gcda, so a bare generate paired with
   # use=<dir> misses every profile and silently compiles a profile-less
   # build (2026-10-19 GCC probe; the xorg-xwayland-git spelling is such a
-  # miss — see docs/JOURNAL.md 2026-10-19).
+  # miss — see the maintainer's private warehouse, 2026-10-19).
   local _gen_cflags="" _gen_cxxflags="" _gen_ldflags="" _flag
   for _flag in $_final_cflags; do
     case "$_flag" in

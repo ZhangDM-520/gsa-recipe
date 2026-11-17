@@ -101,8 +101,8 @@ build() {
   # <dir>/<mangled-object-path>.gcda, so the pre-2026-10-19 spelling (bare
   # generate + use=<dir>) missed every profile and silently compiled a
   # profile-less build — -Wno-error=missing-profile downgraded the miss to
-  # nothing visible (GCC probe + recipe fix: docs/JOURNAL.md 2026-10-19; jq's
-  # C-autotools block is the template). Phase 1 also strips -flto:
+  # nothing visible (GCC probe + recipe fix: the private warehouse,
+  # 2026-10-19; jq's C-autotools block is the template). Phase 1 also strips -flto:
   # generate-mode bookkeeping and LTO whole-program codegen interact badly
   # and meson's -Db_lto=false cannot remove what the env flags still carry.
   local _pgo_dir="$PWD/pgo-profiles"

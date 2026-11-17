@@ -46,7 +46,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         vencord-discord-desktop.hook)
 sha256sums=('SKIP'
             'd26eb9b6c1dbd204d9e1a287aa7feca57c2482e563b65ac3dbd32ce5d50adcad'
-            'eecaa5f8241086d3dbf0fa122ad99ae3fb78e86641413890ae16734e4ead0003'
+            'a68c24f31caa43cef882d5ea78cdb3cb8d5cf4f1a778dc67ea0e30bd17cf6e5e'
             'b9ada45f032c7722cb667b5e0273eba143d50a756cfdec104d84840411456384'
             '8c1ef45e980f264948d70230e80832b303bd502a6f07efe2a2f6901d563dcdda')
 

@@ -381,8 +381,8 @@ outputs. This is a host configuration step, not a repository file change.
 Regenerate and commit `.SRCINFO`; update the static group/recipe counts in
 `README.md` and the descriptive package-name count in `tests/project.sh` from
 the resulting metadata. At the completion of the research phase, no such host
-or recipe changes had been made; the later implementation is recorded in
-[`docs/JOURNAL.md`](JOURNAL.md).
+or recipe changes had been made; the later implementation is recorded in the
+maintainer's private warehouse.
 [`AGENTS.md` IgnorePkg rule](../AGENTS.md),
 [`tests/recipe-contract.sh` IgnorePkg lint](../tests/recipe-contract.sh),
 [`README.md`](../README.md#what-is-included),

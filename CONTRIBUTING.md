@@ -20,7 +20,8 @@ Explain non-obvious decisions in the recipe. **A comment explains the code, the
 kernel option, or the trim decision; it does not inventory the machine it was
 written on.** Kernel versions, package versions installed on the author's
 machine, CPU thread counts, bootloader command lines and incident narratives
-belong in `docs/JOURNAL.md`; `AGENTS.md` §6 holds a live decision.
+belong in the maintainer's private warehouse; `AGENTS.md` §6 holds a live
+decision.
 `linux-cachyos` is the worked example (2026-09-19).
 
 ## Recipe changes
@@ -221,5 +222,6 @@ Rust, Qt private-API modules, ROCm, and the system replacement packages are
 not ordinary independent leaf updates. Batch membership is declared in the
 `tags` field of the package's `config/topology.conf` record
 (`abi=must` / `abi=should`); the batch itself is derived from the edge graph.
-Record the reason for a new edge in `docs/JOURNAL.md` and update the maintainer
-rules in `AGENTS.md` when the operational contract changes.
+Record the reason for a new edge in the maintainer's private warehouse and
+update the maintainer rules in `AGENTS.md` when the operational contract
+changes.

@@ -230,9 +230,9 @@ a syntax check.
 
 ## Documentation history
 
-`AGENTS.md` is the compact operational contract. `docs/JOURNAL.md` is the
-chronological incident journal retained from the original workspace. Add a
-dated note for every non-trivial packaging or scheduler change:
+`AGENTS.md` is the compact operational contract. The chronological incident
+journal, retained from the original workspace, lives in the maintainer's private
+warehouse. Add a dated note for every non-trivial packaging or scheduler change:
 
 1. symptom;
 2. root cause;
@@ -241,4 +241,4 @@ dated note for every non-trivial packaging or scheduler change:
 5. durable rule for the next maintainer.
 
 Keep private paths, credentials, host logs, and generated artifacts out of
-both files.
+the public record.

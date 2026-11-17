@@ -10,8 +10,8 @@ A curated Arch Linux package set (recipes + declarative topology) built and
 installed by `gsa`, a native Rust engine that lives in its own repository
 (`ZhangDM-520/gentoo-style-arch`, where `docs/gsa-contract.md` is the
 authoritative interface). This glossary names the project's own concepts as
-they appear in this repository; history lives in `docs/JOURNAL.md` and rules in
-`AGENTS.md`.
+they appear in this repository; `AGENTS.md` carries the rules, and the action
+history lives in the maintainer's private warehouse.
 
 ## Language
 

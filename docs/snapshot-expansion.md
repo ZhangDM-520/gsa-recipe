@@ -82,8 +82,9 @@ drift.
 Fan-out (topology in-degree), which sizes a wave: **5** over 100
 (`git-git` 406, `meson-git` 155, `cmake-git` 143, `glib2-git` 120,
 `zlib-ng-compat-git` 118), **8** at 31–100, **59** at 5–30, **64** at ≤ 4.
-The working list with per-recipe fan-out and today's ref is
-`.logs/snapshot-manifest-2026-11-09.md` (regenerate it, never hand-maintain it).
+The working list with per-recipe fan-out and today's ref is a generated snapshot
+manifest in the maintainer's private warehouse (regenerate it, never
+hand-maintain it).
 
 ### Two pieces of the idiom that are forced, not chosen
 
