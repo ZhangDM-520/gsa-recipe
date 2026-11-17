@@ -1,7 +1,7 @@
 pkgbase = karchive
 	pkgdesc = Qt addon providing access to numerous types of archives
-	pkgver = 6.31.0
-	pkgrel = 2.1
+	pkgver = 6.32.0
+	pkgrel = 1.1
 	url = https://develop.kde.org/products/frameworks/
 	arch = x86_64
 	groups = kf6
@@ -19,11 +19,11 @@ pkgbase = karchive
 	depends = zlib
 	depends = zstd
 	provides = libKF6Archive.so
-	source = https://download.kde.org/stable/frameworks/6.31/karchive-6.31.0.tar.xz
-	source = https://download.kde.org/stable/frameworks/6.31/karchive-6.31.0.tar.xz.sig
+	source = https://download.kde.org/stable/frameworks/6.32/karchive-6.32.0.tar.xz
+	source = https://download.kde.org/stable/frameworks/6.32/karchive-6.32.0.tar.xz.sig
 	validpgpkeys = 53E6B47B45CEA3E0D5B7457758D0EE648A48B3BB
 	validpgpkeys = 90A968ACA84537CC27B99EAF2C8DF587A6D4AAC1
-	sha256sums = 95acaf5a459593184104e1c157cef415ec59a33e71674186169e0df33cdacaac
+	sha256sums = 30687d9be0aea05a4ef887212abd91d7c4337cb9f166610f98eac2b01407fb1f
 	sha256sums = SKIP
 
 pkgname = karchive

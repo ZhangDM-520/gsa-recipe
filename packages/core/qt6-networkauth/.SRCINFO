@@ -1,0 +1,22 @@
+pkgbase = qt6-networkauth
+	pkgdesc = Qt Network Authorization module
+	pkgver = 6.13.0_r1541.g999040e
+	pkgrel = 1
+	url = https://www.qt.io
+	arch = x86_64
+	groups = qt6
+	license = GPL-3.0-only
+	license = LGPL-3.0-only
+	license = LicenseRef-Qt-Commercial
+	license = Qt-GPL-exception-1.0
+	makedepends = cmake
+	makedepends = git
+	makedepends = ninja
+	depends = glibc
+	depends = libstdc++
+	depends = qt6-base
+	provides = libQt6NetworkAuth.so
+	source = git+https://code.qt.io/qt/qtnetworkauth#branch=dev
+	sha256sums = SKIP
+
+pkgname = qt6-networkauth

@@ -1,0 +1,108 @@
+# Maintainer: Evert Vorster <evorster@gmail.com>
+# Contributor: Gustavo Alvarez <sl1pkn07@gmail.com>
+# Contributor: IncredibleLaser
+# Contributor: nous <nous at archlinux.us>
+# Contributor: pressh
+
+_pkgname=kdenlive
+pkgname=${_pkgname}-git
+pkgver=27.03.70.r24787
+pkgrel=1
+pkgdesc='A non-linear video editor using the MLT video framework. KF6/Qt6 git version.'
+arch=('x86_64')
+url='https://apps.kde.org/kdenlive/'
+# Upstream is per-file SPDX: 835 files offer `GPL-3.0-only OR
+# LicenseRef-KDE-Accepted-GPL` and 71 are permissive; only the fuzzer offers a
+# `GPL-2.0-only` alternative, so GPL-3.0-only is the one arch-spellable licence
+# the whole payload satisfies. Stock spells it GPL-2.0-or-later.
+license=('GPL-3.0-only')
+
+depends=(
+  ffmpeg
+  frei0r-plugins
+  gcc-libs
+  glibc
+  karchive
+  kbookmarks
+  kcodecs
+  kconfig
+  kconfigwidgets
+  kcoreaddons
+  kcrash
+  kdbusaddons
+  kddockwidgets
+  kfilemetadata
+  kguiaddons
+  ki18n
+  kiconthemes
+  kio
+  knewstuff
+  knotifications
+  knotifyconfig
+  ktextwidgets
+  kwidgetsaddons
+  kxmlgui
+  libstdc++
+  mlt
+  opentimelineio
+  purpose
+  qqc2-desktop-style
+  qt6-base
+  qt6-declarative
+  qt6-multimedia
+  qt6-networkauth
+  qt6-svg
+  solid
+)
+makedepends=(
+  cmake
+  extra-cmake-modules
+  git
+  imath
+  ninja
+)
+optdepends=(
+  'bigsh0t: VR360 effects'
+  'dvgrab: for firewire capture'
+  'kimageformats: support for dds, xcf, exr, psd, and more image formats'
+  'noise-suppression-for-voice: noise suppression effect'
+  'opencv: for motion tracking'
+  'plasma-desktop: theme configuration'
+  'python-hydra-core: object masking through the SAM2 automask scripts'
+  'python-numpy: object masking through the SAM2 automask scripts'
+  'python-openai-whisper: speech to text (Whisper engine)'
+  'python-pillow: object masking through the SAM2 automask scripts'
+  'python-srt-equalizer: speech to text (Whisper engine)'
+  'python-vosk: speech to text (VOSK engine)'
+  'qt6-imageformats: support for tiff, webp, and more image formats'
+  'recordmydesktop: for screen capture'
+)
+provides=("${_pkgname}=${pkgver}")
+conflicts=("${_pkgname}")
+
+source=("git+https://invent.kde.org/multimedia/${_pkgname}.git")
+sha512sums=('SKIP')
+
+pkgver() {
+  cd "${_pkgname}"
+  local _ver
+  _ver=$(sed -n 's/^set *(RELEASE_SERVICE_VERSION_\(MAJOR\|MINOR\|MICRO\) *"\([^"]*\)".*/\2/p' \
+    CMakeLists.txt | paste -sd.)
+  [[ -n $_ver ]] || { echo "cannot read RELEASE_SERVICE_VERSION from CMakeLists.txt" >&2; return 1; }
+  printf '%s.r%s' "${_ver}" "$(git rev-list --count HEAD)"
+}
+
+build() {
+  cmake -B build -S "${_pkgname}" -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_TESTING=OFF \
+    -DBUILD_QCH=OFF
+  cmake --build build --parallel "${GSA_BUILD_JOBS:-$(nproc)}"
+}
+
+package() {
+  DESTDIR="$pkgdir" cmake --install build
+  install -Dm644 "$startdir/LICENSE" -t "$pkgdir"/usr/share/licenses/$pkgname/
+}
