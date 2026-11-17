@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1584.1bbbf15
-pkgrel=4
+pkgrel=5
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -70,7 +70,8 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0025-spawn-launch-record.patch'
         '0027-drag-blur-latency.patch'
         '0028-drag-physics-scalability.patch'
-        '0029-vram-blur-footprint.patch')
+        '0029-vram-blur-footprint.patch'
+        '0030-drag-horner.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
             '10867e434ac9f78d39567d548f0f9b7cf27a8913c50b263a65098447497a81d8'
@@ -85,7 +86,8 @@ sha256sums=('SKIP'
             '5edecb8814dd02274d25f69651d6ae95677307455aeb40b2422aa9266b03596b'
             '0df919fc22c90c93181523f9b96ed27b7437a1ed9ed9945556dba19fa4fbf82a'
             'eb8890b7813032cb035433b3272c837e52d5ae96be57f767335208680887e61d'
-            '3e6686cc33c1d94b241dae4182e473407b655ea3dba3d4da6c4a08e35e74ac43')
+            '3e6686cc33c1d94b241dae4182e473407b655ea3dba3d4da6c4a08e35e74ac43'
+            '263c6908d5e3c92709b736f876014d4961b783e9dd45257fb5233da9eb4240a5')
 
 pkgver() {
   cd "${_pkgname}"
@@ -428,6 +430,14 @@ prepare() {
   # sha256 3e6686cc…); pins `color-blur-ping-pong-size`, `color-blur-scratch-lifecycle`.
   # (Retire on merge of follow-up VRAM PR.)
   git apply -3 ../0029-vram-blur-footprint.patch
+
+  # [view] evaluate drag deformation surface with Horner's method: converts the
+  # normalized 4x4 Bernstein control net to power coefficients once per uniform
+  # update in `DragPhysics::normalizedPolynomial()` and reuses them per fragment
+  # in `kDeformation`. Upstream PR noctalia-dev/umbriel#824 (`eedfe31c`, 5 files,
+  # sha256 263c6908…); pin is `polynomialUniformsPreserveThePhysicalSheet`.
+  # (Retire on merge: 0030 -> noctalia-dev/umbriel#824.)
+  git apply -3 ../0030-drag-horner.patch
 }
 
 build() {

@@ -1,7 +1,7 @@
 pkgbase = umbriel-git
 	pkgdesc = A Wayland compositor built on wlroots
 	pkgver = 0.1.0.r1584.1bbbf15
-	pkgrel = 4
+	pkgrel = 5
 	epoch = 1
 	url = https://github.com/noctalia-dev/umbriel
 	arch = x86_64
@@ -53,6 +53,7 @@ pkgbase = umbriel-git
 	source = 0027-drag-blur-latency.patch
 	source = 0028-drag-physics-scalability.patch
 	source = 0029-vram-blur-footprint.patch
+	source = 0030-drag-horner.patch
 	sha256sums = SKIP
 	sha256sums = ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64
 	sha256sums = 10867e434ac9f78d39567d548f0f9b7cf27a8913c50b263a65098447497a81d8
@@ -68,5 +69,6 @@ pkgbase = umbriel-git
 	sha256sums = 0df919fc22c90c93181523f9b96ed27b7437a1ed9ed9945556dba19fa4fbf82a
 	sha256sums = eb8890b7813032cb035433b3272c837e52d5ae96be57f767335208680887e61d
 	sha256sums = 3e6686cc33c1d94b241dae4182e473407b655ea3dba3d4da6c4a08e35e74ac43
+	sha256sums = 263c6908d5e3c92709b736f876014d4961b783e9dd45257fb5233da9eb4240a5
 
 pkgname = umbriel-git
