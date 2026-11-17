@@ -6,7 +6,7 @@
 # The AUR package of the same name was used as a reference only.
 
 pkgname=ffmpeg-git
-pkgver=9.1.dev.r128294.gb034eb5e7e
+pkgver=9.1.dev.r129019.g98f2c633f4
 pkgrel=1
 pkgdesc='Complete solution to record, convert and stream audio and video (git version)'
 arch=('x86_64')
@@ -91,7 +91,6 @@ depends=(
   zlib
 )
 makedepends=(
-  amf-headers
   avisynthplus
   ffnvcodec-headers
   frei0r-plugins
@@ -151,13 +150,19 @@ build() {
 
   # house LLVM builds X86;AMDGPU;BPF only — no NVPTX target, so cuda_llvm
   # (compile CUDA kernels to PTX with clang) can never probe true and the
-  # flag makes configure die; nvdec/nvenc use ffnvcodec-headers and stay
+  # flag makes configure die; nvdec/nvenc use ffnvcodec-headers and stay.
+  #
+  # amf is off because the capability cannot exist on this host: upstream
+  # loads it at runtime as libamf.so (AMF/core/Factory.h AMF_DLL_NAME), which
+  # no Arch repository packages — only the headers are — and configure now
+  # needs AMF >= 1.5.3 while amf-headers ships a Version.h reading 1.5.2.
+  # Keeping the flag buys no encoder and fails the configure.
   ./configure \
       --prefix='/usr' \
       --disable-debug \
       --disable-static \
       --disable-stripping \
-      --enable-amf \
+      --disable-amf \
       --enable-avisynth \
       --enable-lto \
       --enable-fontconfig \

@@ -5,8 +5,8 @@
 
 pkgname=mpv
 epoch=1
-pkgver=0.41.0
-pkgrel=7.1
+pkgver=0.42.0
+pkgrel=2.1
 pkgdesc='a free, open source, and cross-platform media player'
 arch=('x86_64')
 license=('GPL-2.0-or-later AND LGPL-2.1-or-later')
@@ -24,9 +24,12 @@ makedepends=('git' 'meson' 'python-docutils' 'ladspa' 'wayland-protocols'
 optdepends=('yt-dlp: for video-sharing websites playback')
 provides=('libmpv.so')
 options=('!emptydirs')
-validpgpkeys=('145077D82501AA20152CACCE8D769208D5E31419') # sfan5 <sfan5@live.de>
+# v0.42.0 moved the release tag from sfan5 to the maintainer who signs it now;
+# makepkg matches VALIDSIG's primary-key field, so the primary is pinned even
+# though the tag carries a signing-subkey signature (verify_signature.sh arg10)
+validpgpkeys=('DE537FA4CD83E657227D6461D6CA75F6505F42A5') # Kacper Michajłow <kasper93@gmail.com>
 source=("git+https://github.com/mpv-player/mpv.git?signed#tag=v${pkgver}")
-sha256sums=('6d591780b86f20397697d8847e30b9bf864798b62615fa995395b7ce03a1e4f2')
+sha256sums=('b65fdea5cb43fd2cf2899ce785bacd9b08b8494faa801e3d1106fec4d537e71b')
 
 build() {
   local _meson_options=(
