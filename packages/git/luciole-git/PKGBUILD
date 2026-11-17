@@ -1,0 +1,122 @@
+# Maintainer: Noctalia Team <team@noctalia.dev>
+# Packaging notes (installed layout, dependency roles, portal/GVfs wiring):
+# https://github.com/noctalia-dev/luciole/blob/main/PACKAGING.md
+
+pkgname=luciole-git
+_pkgname=luciole
+pkgver=0.1.0.r301.gb40c96336
+pkgrel=1
+pkgdesc='A native Wayland file manager with fast previews, tabs, split view and Miller columns'
+arch=('x86_64' 'aarch64')
+url='https://github.com/noctalia-dev/luciole'
+license=('MIT')
+depends=(
+  'acl'
+  'adwaita-icon-theme'   # PACKAGING.md: a usable icon theme is required
+  'cairo'
+  'dconf'                # the GSettings backend behind org.gnome.desktop.interface
+  'fontconfig'
+  'freetype2'
+  'gcc-libs'
+  'gdk-pixbuf2'
+  'glib2'
+  'glibc'
+  'glycin'
+  'gsettings-desktop-schemas'
+  'gvfs'                 # trash:/// and the network backends, not a recommendation
+  'harfbuzz'
+  'hicolor-icon-theme'
+  'libarchive'
+  'libegl'               # virtuals: luciole links libEGL.so and libGLESv2.so
+  'libgles'
+  'libpng'
+  'librsvg'
+  'libxkbcommon'
+  'pango'
+  'shared-mime-info'
+  'tomlplusplus'
+  'wayland'
+  'xz'
+)
+makedepends=(
+  'git'                # VCS source (pkgver, build_revision)
+  'meson'
+  'ninja'
+  'nlohmann-json'      # header-only; the thumbnail module includes it
+  'pkgconf'
+  'stb'                # system stb_image_resize2.h is a hard configure gate
+  'wayland-protocols'  # >=1.49 protocol XML, scanned at build time
+)
+optdepends=(
+  '7zip: encrypted 7z archives'
+  'ffmpeg: video and audio thumbnails and metadata'
+  'ffmpegthumbnailer: filmstrip edges on video thumbnails'
+  'glib-networking: secure WebDAV (TLS)'
+  'gvfs-dnssd: WebDAV network locations'
+  'gvfs-smb: SMB network locations'
+  'poppler: PDF thumbnails and metadata'
+  'xdg-desktop-portal: use Luciole as the Open and Save file picker'
+  'xdg-terminal-exec: automatic terminal selection'
+)
+provides=("luciole=${pkgver}")
+conflicts=('luciole' 'luciole-bin')
+# lto:    makepkg appends -flto=auto to CFLAGS/CXXFLAGS/LDFLAGS; the meson
+#         target is also told -Db_lto=true so the binary links the internal
+#         static libraries with gcc-ar/gcc-ranlib
+# !debug: no separate debug package (parity with the noctalia/umbriel recipes)
+options=('!debug' 'lto')
+source=("${_pkgname}::git+${url}.git#branch=main")
+sha256sums=('SKIP')
+
+pkgver() {
+  cd "${_pkgname}"
+
+  # Upstream moved the version into a VERSION file read by
+  # `version: files('VERSION')`, so a meson.build parse yields an empty prefix.
+  local version
+  version="$(tr -d '[:space:]' < VERSION)"
+  printf '%s.r%s.g%s' "${version}" "$(git rev-list --count HEAD)" "$(git rev-parse --short=9 HEAD)"
+}
+
+build() {
+  # Purge the build dir first: `meson setup` on an already-configured dir only
+  # prints "Directory already configured." and exits 0, so a reused srcdir (a
+  # plain `makepkg -f` retry) would silently keep the previous run's options
+  # (rule 6).
+  rm -rf build
+
+  # One build phase, so LTO is on from the start — there is no PGO instrument
+  # leg to keep it off. -Db_lto=true makes meson link the internal static
+  # libraries through gcc-ar/gcc-ranlib, which GNU LTO needs (PACKAGING.md).
+  #
+  # native_optimizations stays false: the compiler line is the engine's
+  # (/etc/gsa/gcc-makepkg.conf carries -march/-mtune), and PACKAGING.md asks
+  # packagers to keep CPU-local codegen out of the meson option. Upstream also
+  # emits -ffunction-sections/-fdata-sections and -Wl,--gc-sections itself when
+  # buildtype is release, which arch-meson sets.
+  arch-meson "${_pkgname}" build \
+    -Db_ndebug=true \
+    -Db_lto=true \
+    -Dtests=disabled \
+    -Dnative_optimizations=false \
+    -Dbuild_revision="$(git -C "${_pkgname}" rev-parse --short=9 HEAD)"
+
+  meson compile -C build -j "${GSA_BUILD_JOBS:-$(nproc)}"
+}
+
+package() {
+  # meson install ships the whole layout PACKAGING.md lists: binary, fonts and
+  # the Tabler notice, palette template, both D-Bus services, the FileChooser
+  # portal file, desktop entry, icon, the three completions, and upstream's
+  # LICENSE under share/licenses/luciole.
+  meson install -C build --destdir "${pkgdir}"
+
+  # meson installs upstream's LICENSE under share/licenses/luciole (upstream's
+  # own name); keep the package-named copy as well so `licenses/<pkgname>` — the
+  # path a licence check looks in — exists for this package.
+  install -Dm644 "${_pkgname}/LICENSE" \
+    "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+
+  install -Dm644 "${_pkgname}/README.md" \
+    "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}
