@@ -1,5 +1,5 @@
 diff --git a/docs/user/configuration.md b/docs/user/configuration.md
-index 5432c51c..63ac0f9a 100644
+index 5432c51c..bd1a855a 100644
 --- a/docs/user/configuration.md
 +++ b/docs/user/configuration.md
 @@ -104,6 +104,7 @@ autostart = ["noctalia", "kitty"]
@@ -26,7 +26,7 @@ index 5432c51c..63ac0f9a 100644
 +X11 applications have no per-output scale. By default they see every output at its logical size, and Umbriel upscales their windows on outputs with a scale above 1, which looks soft. With `xwayland_native_resolution = true` they see each output at its physical size: a `3840x2160` output at scale `1.25` appears to them as `3840x2160` rather than `3072x1728`. Their windows render at one pixel per output pixel and stay sharp, but X11 applications that do not scale their own interface look smaller on scaled outputs. Games benefit most.
  
 -With `xwayland_xsettings = true`, Umbriel tells X11 applications that read XSETTINGS, such as GTK, Chromium, Electron, and Steam, the scale to draw their interface at: the largest output scale with `xwayland_native_resolution = true`, and `1` without it. It also announces `[input.cursor]` `theme` and `size`, the size scaled the same way. At native resolution X11 has one scale for every output, so on outputs with a smaller scale these applications look larger than native ones.
-+Native-resolution X11 applications use the output's `scale`, not `render_scale`, so applications that draw a fixed number of pixels keep their size when supersampling is enabled. Set `force_x11_supersample = true` to use `render_scale` for X11 as well. Applications that do not scale their interface to match can then appear smaller or larger; this setting has no effect without `xwayland_native_resolution`.
++Native-resolution X11 applications use the output's `scale`, not `render_scale`, so applications that draw a fixed number of pixels keep their size when supersampling is enabled. Set `force_x11_supersample = true` to use `render_scale` for X11 as well. Applications that do not scale their interface to match can then appear smaller or larger; this setting has no effect without `xwayland_native_resolution`. It applies to every X11 window on the output, fullscreen games included: neither the fullscreen exemption nor the `supersample` window rule reaches them, so a game run through Xwayland renders at `render_scale` and is not eligible for direct scanout.
 +
 +With `xwayland_xsettings = true`, Umbriel tells X11 applications that read XSETTINGS, such as GTK, Chromium, Electron, and Steam, the scale to draw their interface at: the largest X11 output scale with `xwayland_native_resolution = true`, and `1` without it. It also announces `[input.cursor]` `theme` and `size`, the size scaled the same way. At native resolution X11 has one scale for every output, so on outputs with a smaller scale these applications look larger than native ones.
  
@@ -59,7 +59,7 @@ index 35b0fbb3..03c17010 100644
  Layer-shell blur is off by default. Every matching rule contributes its settings, and later values take precedence.
  
 diff --git a/docs/user/outputs.md b/docs/user/outputs.md
-index 93b11f5a..0bbf38b3 100644
+index 93b11f5a..50eda383 100644
 --- a/docs/user/outputs.md
 +++ b/docs/user/outputs.md
 @@ -37,31 +37,32 @@ Locking the session or switching away from its active VT revokes outstanding lea
@@ -120,7 +120,7 @@ index 93b11f5a..0bbf38b3 100644
  
  Umbriel tries an unadvertised resolution as a custom mode. If it cannot apply the configured mode, it uses the preferred advertised mode and logs a warning. Backend tests include the 8-bit SDR fallback, so a rejected swapchain can reach the preferred mode. On that mode, Umbriel retries the configured HDR and bit-depth preferences. A temporary rendering failure after an accepted backend test retries the current candidate instead of changing modes.
  
-@@ -142,6 +143,32 @@ Positions use logical coordinates after scale and transform. A `3840x2160` outpu
+@@ -142,6 +143,43 @@ Positions use logical coordinates after scale and transform. A `3840x2160` outpu
  
  Omit `position` to place outputs automatically from left to right. Explicitly positioned outputs must touch or overlap for the pointer to move between them.
  
@@ -128,15 +128,26 @@ index 93b11f5a..0bbf38b3 100644
 +
 +`render_scale` separates what things look like from what Wayland clients render at, the way macOS handles HiDPI. With `scale = 1.35` and `render_scale = 2.0`, clients are asked to render at 2.0 and the compositor samples their buffers down to the output's `scale` raster, which smooths text and fine detail on low-ppi and non-RGB-subpixel panels. Logical geometry is unchanged: windows keep their `scale` sizes, and the output still advertises `scale` so client interfaces size as before.
 +
-+Native-resolution X11 applications use the physical output scale by default. To opt them into `render_scale`, see [`force_x11_supersample`](configuration.md#general).
++Which windows render at `render_scale`:
 +
-+Fullscreen windows and windows whose [content type](window-rules.md) is `game` or `video` are asked to render at `scale` instead, so a fullscreen buffer matches the output's physical mode and stays eligible for direct scanout. Supersampling a game or a video only costs GPU time, since both draw at a resolution of their own. The `supersample` window rule overrides this in either direction, for example to exempt a game that sends no content type:
++| Window                                                                    | Renders at                                                          |
++| ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
++| Wayland window                                                            | `render_scale`                                                      |
++| Fullscreen Wayland window                                                 | `scale`, so its buffer matches the mode and direct scanout can work |
++| Wayland window whose [content type](window-rules.md) is `game` or `video` | `scale`                                                             |
++| X11 window, default                                                       | unchanged: X11 applications ignore the scale hints                  |
++| X11 window with [`force_x11_supersample`](configuration.md#general)       | `render_scale`, fullscreen included; no window rule exempts it      |
++| Wayland window with a `supersample` [window rule](window-rules.md)        | `render_scale` with `true`, `scale` with `false`                    |
++
++Supersampling a game or a video only costs GPU time, since both draw at a resolution of their own. Games therefore need attention only as Wayland windows that are neither fullscreen nor tagged `game`, such as a game in windowed mode. Exempt those by app ID; a list covers several at once:
 +
 +```toml
 +[[window_rule]]
-+match.app_id = "^my-game$"
++match.app_id = ["^my-game$", "^my-other-game$"]
 +supersample = false
 +```
++
++Games that run through Xwayland need no rule while `force_x11_supersample` is off.
 +
 +Layer surfaces supersample too, with no exemption of their own. A `supersample = false` [layer rule](layer-rules.md) keeps a surface and its popups at `scale`, for example a screenshot overlay that shows a frozen capture of the output, which supersampling would scale up and back down:
 +
@@ -148,7 +159,7 @@ index 93b11f5a..0bbf38b3 100644
 +
 +Keep the default for layer surfaces that draw text or vector shapes, which gain from supersampling. A surface that already holds full-resolution pixels, such as a screenshot overlay, is the one to exempt. Applications that ignore the scale hints render as they always have. Values below `scale` are honored but undersample, which looks blurry. The configuration warning compares `render_scale` against the configured `scale` (1.0 when `scale` is unset), so it cannot see an auto-detected output scale. Hint-following buffers sized at `render_scale` no longer match the output mode while `render_scale` differs from `scale`, so they do not qualify for [direct scanout](#direct-scanout); fullscreen windows are exempt by default, as described above.
 +
-+Larger client buffers cost memory and sampling work: at `render_scale = 2.0` with `scale = 1.35` they hold about 2.2 times as many pixels as at `scale` alone, growing with the square of the ratio. Prefer whole or half-integer values for crisp buffer ratios.
++Larger client buffers cost memory and sampling work: at `render_scale = 2.0` with `scale = 1.35` they hold about 2.2 times as many pixels as at `scale` alone, growing with the square of the ratio. Sharpness depends on the ratio of `render_scale` to `scale`, not on `render_scale` alone.
 +
  ### Transform values
  

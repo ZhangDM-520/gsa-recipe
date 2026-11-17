@@ -9,7 +9,7 @@ source "$startdir/../../../lib/pgo.sh"
 pkgname=umbriel-git
 _pkgname=umbriel
 pkgver=0.1.0.r1584.1bbbf15
-pkgrel=5
+pkgrel=6
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -74,7 +74,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0030-drag-horner.patch')
 sha256sums=('SKIP'
             'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            '10867e434ac9f78d39567d548f0f9b7cf27a8913c50b263a65098447497a81d8'
+            '3e5192f37169ee2e48b4116a4677f74d2a193a3411dd569f74be3b7d10a8597c'
             '1b5bcdabbb116e791dcaabcca0d5753bf77c1726b5611227c8bb19a318b2fc9b'
             'e4af7893010ce014814dbe311c27c01f5c1a5324b6b4ab4df1115d1f629f02dc'
             '3741d322aac7cd4757e8b8e5defa79605f813262a91dc55998299d77ad52243e'
@@ -191,6 +191,13 @@ prepare() {
   # renamed vrrModes() to outputVrrModes() on the line below the render_scale
   # registration, and the merge keeps both (46 files +1379/-82,
   # sha256 10867e43…).
+  # Re-cut 2026-11-17 on main@1bbbf155 with dMopp's documentation fold-in
+  # (documented in the PR thread): `force_x11_supersample` maps per output, so
+  # neither the fullscreen exemption nor the `supersample` window rule reaches
+  # X11 windows; sharpness follows the render_scale/scale ratio; and a table
+  # lists which windows supersample, with an app-ID list rule exempting
+  # windowed games (head eee1144d, 46 files +1390/-82, sha256 3e5192f3…). 0014's
+  # outputs.md hunk keeps its place through the shifted context.
   git apply -3 ../0012-per-output-render-scale.patch
 
   # 0013 retired 2026-11-11: PR #585 merged upstream as d3c85928 (ICC/EDID output
