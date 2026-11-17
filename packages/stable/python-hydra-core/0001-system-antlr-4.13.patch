@@ -1,0 +1,20 @@
+--- a/build_helpers/build_helpers.py
++++ b/build_helpers/build_helpers.py
+@@ -185,7 +185,7 @@
+             command = [
+                 "java",
+                 "-jar",
+-                join(root_dir, "bin/antlr-4.9.3-complete.jar"),
++                "/usr/share/java/antlr-complete.jar",
+                 "-Dlanguage=Python3",
+                 "-o",
+                 join(project_root, "hydra/grammar/gen/"),
+--- a/requirements/requirements.txt
++++ b/requirements/requirements.txt
+@@ -1,4 +1,4 @@
+-omegaconf>=2.2,<2.4
+-antlr4-python3-runtime==4.9.*
++omegaconf>=2.2,<2.5
++antlr4-python3-runtime==4.13.*
+ importlib-resources;python_version<'3.9'
+ packaging

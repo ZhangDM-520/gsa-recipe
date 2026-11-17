@@ -1,0 +1,87 @@
+# Maintainer: acxz <akashpatel2008 at yahoo dot com>
+# Contributor: Harley Wiltzer <harleyw@hotmail.com>
+# Contributor: Filip Graliński <filipg at ceti dot pl>
+# Contributor: Andrei Shadrikov <notvuvko@gmail.com>
+
+pkgname=python-hydra-core
+pkgver=1.3.8
+pkgrel=1
+pkgdesc='A framework for elegantly configuring complex applications'
+arch=(any)
+url='https://hydra.cc'
+license=(MIT)
+depends=(
+  python
+  python-antlr4
+  python-omegaconf
+  python-packaging
+)
+makedepends=(
+  antlr4
+  java-runtime
+  python-build
+  python-installer
+  python-setuptools
+  python-wheel
+)
+optdepends=('python-pytest: pytest plugin registered through the pytest11 entry point')
+# The tag is lightweight (unsigned), so this is a checksum pin: the archive is
+# byte-identical from facebookresearch/hydra (which redirects here) and from
+# the canonical hydra-ecosystem/hydra. 1.3.4-1.3.8 carry security hardening of
+# instantiate/target handling and the PyYAML loader path; 1.3.3 removed the
+# setup.py pkg_resources dependency, which is why no source patch is needed
+# for a setuptools without pkg_resources.
+_pkgname=hydra
+source=("https://github.com/hydra-ecosystem/hydra/archive/refs/tags/v$pkgver.tar.gz"
+        '0001-system-antlr-4.13.patch'
+        '0002-python314-argparse-help.patch')
+b2sums=('0be325d2ea1f0a67cd03b90482e336ceae0177ec73fced3a28204205e00b0069afbb9d12a64bde0a17b781e32edd7e2e01a7980f4c7975e86573eb0ec502fec3'
+        'd47edaef8b6adb07834045bb8c8c4cb2c1511a4c0db1047702160e1aa2ea0101894d1d366273c3ecd3f00af301621ccadaa5f63e7148078bf4fb4f215198fff4'
+        'a296c064101189c5fc3d6aa50ff18695748968e4a06f7de7f5fa106f8e9561c48742db13e05be2502ced24b4d16759a74e7d7b8dc55533d63a0f889d502db2ae')
+
+prepare() {
+  cd "$_pkgname-$pkgver"
+
+  # build_py regenerates hydra/grammar/gen with ANTLR: the tarball bundles
+  # antlr-4.9.3-complete.jar, and 4.9-generated parsers cannot be deserialized
+  # by the packaged python-antlr4. Generate with the system ANTLR 4.13 instead
+  # and state that runtime in the wheel metadata, which otherwise asks for the
+  # 4.9 line. The release also still pins omegaconf<2.4, while the stock
+  # python-omegaconf is 2.4.0 and the compose/instantiate/override/multirun
+  # paths are verified against it (upstream main moved to the 2.4 line); keep
+  # the metadata honest rather than shipping a wheel whose pin cannot be met.
+  patch -p1 -i ../0001-system-antlr-4.13.patch
+
+  # Python 3.14 validates argument help strings through _check_help() ->
+  # formatter._expand_help(action), which needs a real string; LazyCompletionHelp
+  # defers rendering and is rejected with 'badly formed help string' on the
+  # first @hydra.main invocation. This is upstream's own guard (mainline, not
+  # in any release): disable the validation only around that add_argument
+  # call. Drop the patch when a release carries the fix.
+  patch -p1 -i ../0002-python314-argparse-help.patch
+}
+
+build() {
+  cd "$_pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$_pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+
+  install -Dm644 LICENSE -t "$pkgdir"/usr/share/licenses/$pkgname/
+
+  # ANTLR stamps every generated parser with the absolute path of the grammar
+  # it read, which would make the archive carry the build directory.
+  sed -i -E 's#^(\# Generated from ).*/(hydra/grammar/[^ ]+) by ANTLR#\1\2 by ANTLR#' \
+    "$pkgdir"/usr/lib/python*/site-packages/hydra/grammar/gen/*.py
+
+  # trim: ANTLR grammar sources plus the generated .interp/.tokens bookkeeping
+  # are build inputs; at runtime only the generated Python in grammar/gen is
+  # imported (verified by deleting them and running an app through
+  # --help/--cfg/--info/multirun). hydra.test_utils stays: the pytest11 entry
+  # point imports it, so trimming it would ship a plugin that cannot load.
+  find "$pkgdir"/usr/lib/python*/site-packages/hydra -type f \
+    \( -name '*.g4' -o -name '*.interp' -o -name '*.tokens' -o -name '.gitignore' \) -delete
+}

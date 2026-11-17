@@ -1,0 +1,26 @@
+pkgbase = python-hydra-core
+	pkgdesc = A framework for elegantly configuring complex applications
+	pkgver = 1.3.8
+	pkgrel = 1
+	url = https://hydra.cc
+	arch = any
+	license = MIT
+	makedepends = antlr4
+	makedepends = java-runtime
+	makedepends = python-build
+	makedepends = python-installer
+	makedepends = python-setuptools
+	makedepends = python-wheel
+	depends = python
+	depends = python-antlr4
+	depends = python-omegaconf
+	depends = python-packaging
+	optdepends = python-pytest: pytest plugin registered through the pytest11 entry point
+	source = https://github.com/hydra-ecosystem/hydra/archive/refs/tags/v1.3.8.tar.gz
+	source = 0001-system-antlr-4.13.patch
+	source = 0002-python314-argparse-help.patch
+	b2sums = 0be325d2ea1f0a67cd03b90482e336ceae0177ec73fced3a28204205e00b0069afbb9d12a64bde0a17b781e32edd7e2e01a7980f4c7975e86573eb0ec502fec3
+	b2sums = d47edaef8b6adb07834045bb8c8c4cb2c1511a4c0db1047702160e1aa2ea0101894d1d366273c3ecd3f00af301621ccadaa5f63e7148078bf4fb4f215198fff4
+	b2sums = a296c064101189c5fc3d6aa50ff18695748968e4a06f7de7f5fa106f8e9561c48742db13e05be2502ced24b4d16759a74e7d7b8dc55533d63a0f889d502db2ae
+
+pkgname = python-hydra-core

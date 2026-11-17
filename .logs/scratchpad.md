@@ -2,12 +2,10 @@
 
 **Idle.** No active task.
 
-Last action: `.logs/action-2026-11-16-battery-cleanup.md` (pgo-transition fixture
-fixed; logseq-desktop-git + vencord-git parked under `packages/deprecated/`).
-Battery: 25 passed, 1 failed — the red is `recipe-sources.sh` over the other
-lane's untracked `packages/git/umbriel-git/0027-drag-blur-latency.patch`
-(expected, out of scope).
+Last action: `.logs/action-2026-11-17-python-hydra-core.md`
+(`packages/stable/python-hydra-core` 1.3.8-1 added to `app`, built and
+installed through the engine; battery PASS 26/26, srcinfo-freshness PASS).
 
-Next: nothing queued from this round. `packages/deprecated/` now holds shelly,
-logseq-desktop-git and vencord-git; `gsa -Ma` names one `package-drift` row per
-parked directory, which is expected state.
+Next: nothing in flight. Staged for review: the recipe, its one
+`config/topology.conf` record and the journal line; awaiting the owner's
+commit decision.
