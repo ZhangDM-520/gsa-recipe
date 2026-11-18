@@ -65,10 +65,10 @@ index f14d9e80..9ff7732c 100644
  `windows_in` accepts `popin`, `zoom`, `slide`, `fade`, or `none`. `windows_out` accepts `fade`, `slide`, `popin`, or `zoom`. `workspaces` accepts `slide` or `reveal` (see [Workspace reveal](#workspace-reveal)). `scale` applies to `popin`: an opening window grows from it to full size, and a closing window shrinks toward it, while both fade.
  
 diff --git a/docs/user/layout.md b/docs/user/layout.md
-index 1f6e6b69..de222778 100644
+index 62cc07fa..7e774911 100644
 --- a/docs/user/layout.md
 +++ b/docs/user/layout.md
-@@ -316,6 +316,8 @@ The dialog leaves when it stops being modal or closes, and becomes an ordinary f
+@@ -323,6 +323,8 @@ The dialog leaves when it stops being modal or closes, and becomes an ordinary f
  
  Only floating windows minimize: `window-minimize`, the minimize button of Umbriel's [title bar](appearance.md#title-bar) or of the application, or a taskbar can hide one. Tiled, pinned, fullscreen, and scratchpad windows do not minimize, and applications and the title bar offer minimize only while the window floats. Tiling a minimized window, for example by switching its workspace to a tiling layout, shows it again.
  
@@ -78,10 +78,10 @@ index 1f6e6b69..de222778 100644
  
  A minimized window comes back when:
 diff --git a/examples/config.toml b/examples/config.toml
-index fe4be1ed..b7083923 100644
+index 95624eb5..be88c125 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
-@@ -475,6 +475,15 @@ action = "overview-open"
+@@ -498,6 +498,15 @@ action = "overview-open"
  # curve = "spring:1,900"
  # duration_ms = 250 # For non-spring curves; a spring sets its own length.
  
@@ -98,10 +98,10 @@ index fe4be1ed..b7083923 100644
  # it redraws. Wait for the redraws instead (at most 150 ms), then switch to the
  # new layout in one frame.
 diff --git a/src/config/config.h b/src/config/config.h
-index 301b5df5..9a13a60b 100644
+index 7c6129d1..f6b3a2df 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
-@@ -966,6 +966,18 @@ namespace umbriel {
+@@ -987,6 +987,18 @@ namespace umbriel {
          bool operator==(const Scratchpad&) const = default;
        } scratchpad;
  
@@ -223,10 +223,10 @@ index 9b42b181..de4136de 100644
    // Seconds elapsed from `epochMsec` to `nowMsec`, computed in double precision so the result keeps
    // sub-millisecond resolution long after the raw millisecond count exceeds a float's exact range.
 diff --git a/src/server/focus.cpp b/src/server/focus.cpp
-index 60be64e2..29d8d9e5 100644
+index 50bc99b8..b8050015 100644
 --- a/src/server/focus.cpp
 +++ b/src/server/focus.cpp
-@@ -470,7 +470,9 @@ namespace umbriel {
+@@ -480,7 +480,9 @@ namespace umbriel {
          return std::nullopt;
        }
        auto* view = static_cast<View*>(tag);
@@ -236,7 +236,7 @@ index 60be64e2..29d8d9e5 100644
            || (!view->pinned() && !view->onActiveWorkspace())
            || view->ssdFrame() == nullptr
            || !view->ssdFrame()->contains(node)) {
-@@ -535,6 +537,11 @@ namespace umbriel {
+@@ -545,6 +547,11 @@ namespace umbriel {
        *surface = nullptr;
        return nullptr;
      }
@@ -303,7 +303,7 @@ index a0a1c9b1..30656bf1 100644
 +
  } // namespace umbriel
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index 14dcc009..15228c84 100644
+index 6f2a5e33..025ffed8 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
 @@ -698,7 +698,8 @@ namespace umbriel {
@@ -317,10 +317,10 @@ index 14dcc009..15228c84 100644
      m_decoration.setShadowEnabled(enabled);
      m_server->updateIdleInhibit();
 diff --git a/src/view/view.h b/src/view/view.h
-index bdc43dcb..83510eed 100644
+index 8fa5404b..def23685 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -462,6 +462,19 @@ namespace umbriel {
+@@ -468,6 +468,19 @@ namespace umbriel {
      void cancelPositionAnimation();
      void snapPosition(int x, int y);
      void animateFadeTo(float toAlpha, int durationMs, const AnimationCurve& curve);
@@ -340,7 +340,7 @@ index bdc43dcb..83510eed 100644
      const ViewPresentation& presentation() const { return m_presentation; }
      // Size/position to the full output and drop tile clips (exclusive zones do not apply).
      void applyFullscreenLayout(bool animate = false);
-@@ -1114,6 +1127,16 @@ namespace umbriel {
+@@ -1119,6 +1132,16 @@ namespace umbriel {
      double m_openingScale = 1.0;
      std::optional<std::array<int, 2>> m_openingFloatingSize;
      int m_openingSlide = 0;
@@ -358,7 +358,7 @@ index bdc43dcb..83510eed 100644
      // Floating because its workspace uses stacking; tiles again when moved to a tiling layout.
      bool m_floatedByStackingLayout = false;
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index b4c45729..e42149da 100644
+index 3ffa2c2b..8d9f5484 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
 @@ -41,7 +41,8 @@ namespace umbriel {
@@ -545,7 +545,7 @@ index b4c45729..e42149da 100644
      if (m_focusDim.tick(nowMsec)) {
        setFadeAlpha(m_fadeAlpha);
        active = active || m_focusDim.animating();
-@@ -1092,6 +1214,7 @@ namespace umbriel {
+@@ -1090,6 +1212,7 @@ namespace umbriel {
          || m_posY.animating()
          || sizeAnimating()
          || m_fade.animating()
@@ -554,10 +554,10 @@ index b4c45729..e42149da 100644
          || m_outerBorderColorAnim.animating()
          || m_ruleOpacity.animating()
 diff --git a/src/view/view_floating.cpp b/src/view/view_floating.cpp
-index 53ba06d4..9f89cab7 100644
+index 9500b7d3..8bf84a7a 100644
 --- a/src/view/view_floating.cpp
 +++ b/src/view/view_floating.cpp
-@@ -333,6 +333,8 @@ namespace umbriel {
+@@ -338,6 +338,8 @@ namespace umbriel {
      if (attached()) {
        return;
      }
@@ -567,7 +567,7 @@ index 53ba06d4..9f89cab7 100644
  
      const bool automatic = !placementSize
 diff --git a/src/view/view_state.cpp b/src/view/view_state.cpp
-index adf5f799..aa8bb265 100644
+index fc2d63a0..d053428b 100644
 --- a/src/view/view_state.cpp
 +++ b/src/view/view_state.cpp
 @@ -104,6 +104,10 @@ namespace umbriel {
@@ -581,7 +581,7 @@ index adf5f799..aa8bb265 100644
      if (m_tiled && m_workspace != nullptr) {
        m_floatingMaximized = false;
        if (m_maximizedToEdges) {
-@@ -295,8 +299,28 @@ namespace umbriel {
+@@ -296,8 +300,28 @@ namespace umbriel {
      if (minimized) {
        m_minimizeSerial = ++gNextMinimizeSerial;
      }
@@ -612,7 +612,7 @@ index adf5f799..aa8bb265 100644
      }
      if (m_foreign != nullptr) {
        wlr_foreign_toplevel_handle_v1_set_minimized(m_foreign, minimized);
-@@ -971,6 +995,10 @@ namespace umbriel {
+@@ -979,6 +1003,10 @@ namespace umbriel {
  
    void View::setFullscreen(bool fullscreen, FullscreenExitLayout exitLayout) {
      assert(!attached());
@@ -1032,10 +1032,10 @@ index 00000000..a3e93cf7
 +
 +echo "minimize collapsed from $before_width to $hiding_width px and was gone at the end; reveal grew it back to $revealed_width px"
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index b5bb9ac1..755e54be 100644
+index baf56327..7072c482 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
-@@ -1305,6 +1305,39 @@ UMBRIEL_TEST(overviewWorkspaceCurveLoadsAndFallsBackToItsSpring) {
+@@ -1432,6 +1432,39 @@ UMBRIEL_TEST(overviewWorkspaceCurveLoadsAndFallsBackToItsSpring) {
    CHECK_EQ(store.config().animation.overview.workspaceCurve.spring.stiffness, 1000.0);
  }
  

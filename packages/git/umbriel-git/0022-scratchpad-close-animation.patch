@@ -12,10 +12,10 @@ index a3c5fab3..4fb85bcf 100644
  ## Restoring windows
  
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index fe3fe898..66ae2ed1 100644
+index 98f7ff98..69adf9d9 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -1931,13 +1931,38 @@ namespace umbriel {
+@@ -2041,13 +2041,38 @@ namespace umbriel {
      if (!movedAlpha && !movedSlide) {
        return false;
      }
@@ -56,7 +56,7 @@ index fe3fe898..66ae2ed1 100644
      for (const Buffer& buffer : m_buffers) {
        wlr_scene_buffer_set_opacity(buffer.node, std::clamp(buffer.baseOpacity * alpha, 0.0F, 1.0F));
      }
-@@ -1961,15 +1986,9 @@ namespace umbriel {
+@@ -2071,15 +2096,9 @@ namespace umbriel {
  
      if (m_shadow.node != nullptr) {
        auto color = m_shadow.color;
@@ -73,7 +73,7 @@ index fe3fe898..66ae2ed1 100644
    }
  
    void Server::registerAnimatable(Animatable* animatable) {
-@@ -2008,13 +2027,21 @@ namespace umbriel {
+@@ -2118,13 +2137,21 @@ namespace umbriel {
  
      // A snapshot only exists while fading out, so a settled one is finished.
      // Erasing destroys its scene tree and unregisters it.
@@ -95,7 +95,7 @@ index fe3fe898..66ae2ed1 100644
      return active;
    }
  
-@@ -2222,6 +2249,15 @@ namespace umbriel {
+@@ -2332,6 +2359,15 @@ namespace umbriel {
      }
    }
  
@@ -112,10 +112,10 @@ index fe3fe898..66ae2ed1 100644
      for (const auto& snapshot : m_closeSnapshots) {
        if (snapshot->id() == id) {
 diff --git a/src/server/server.h b/src/server/server.h
-index ba302e6c..4bfddd63 100644
+index 62f30e68..40d222b6 100644
 --- a/src/server/server.h
 +++ b/src/server/server.h
-@@ -536,6 +536,8 @@ namespace umbriel {
+@@ -551,6 +551,8 @@ namespace umbriel {
      void presentCloseSnapshot(CloseSnapshotId id, int canvasX, int canvasY, bool visible);
      // False once the snapshot has been reaped.
      bool closeSnapshotAlive(CloseSnapshotId id) const;
@@ -124,7 +124,7 @@ index ba302e6c..4bfddd63 100644
      // End a held snapshot; it is reaped at the end of the current animation tick.
      void releaseCloseSnapshot(CloseSnapshotId id);
  
-@@ -843,6 +845,7 @@ namespace umbriel {
+@@ -861,6 +863,7 @@ namespace umbriel {
        // Place the captured box at a canvas origin in output-root coordinates, or hide it while its workspace is not
        // showing.
        void present(int canvasX, int canvasY, bool visible);
@@ -132,7 +132,7 @@ index ba302e6c..4bfddd63 100644
  
        AnimationPhase animationPhase() const override { return AnimationPhase::Overlays; }
        bool tickAnimations(double nowMsec) override;
-@@ -852,6 +855,8 @@ namespace umbriel {
+@@ -870,6 +873,8 @@ namespace umbriel {
      private:
        void applyPresentation();
        void applyShrink(int width, int height);
@@ -141,7 +141,7 @@ index ba302e6c..4bfddd63 100644
  
        Server* m_server = nullptr;
        CloseSnapshotId m_id = kInvalidCloseSnapshot;
-@@ -906,11 +911,15 @@ namespace umbriel {
+@@ -924,11 +929,15 @@ namespace umbriel {
        int m_shadowWidth = 0;
        int m_shadowHeight = 0;
        wlr_box m_shadowHole{};
@@ -158,10 +158,10 @@ index ba302e6c..4bfddd63 100644
      std::vector<Animatable*> m_animatablesScratch;
  
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index e43f0141..2966adac 100644
+index 411e717f..96222d4b 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
-@@ -2769,13 +2769,20 @@ namespace umbriel {
+@@ -2786,13 +2786,20 @@ namespace umbriel {
        m_insertHint->hideImmediate();
      }
      // Dropping the snapshot unregisters it and destroys its scene tree.
@@ -183,10 +183,10 @@ index e43f0141..2966adac 100644
      // output is freed. Destroy them now while the wlr_output is still valid.
      {
 diff --git a/src/view/view.h b/src/view/view.h
-index 83510eed..82cbf503 100644
+index def23685..b3d1f176 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
-@@ -528,8 +528,8 @@ namespace umbriel {
+@@ -530,8 +530,8 @@ namespace umbriel {
      bool animatesOn(const Output* output) const override;
  
    private:
@@ -197,7 +197,7 @@ index 83510eed..82cbf503 100644
      friend class Cursor;
      friend class ScratchpadManager;
      friend class ColorManager;
-@@ -700,7 +700,8 @@ namespace umbriel {
+@@ -702,7 +702,8 @@ namespace umbriel {
      void watchViewSurfaceTree(wlr_surface* root, wlr_subsurface* attachment = nullptr);
      void watchViewSurface(wlr_surface* surface, wlr_subsurface* attachment);
      void clearViewSurfaceWatches();
@@ -208,10 +208,10 @@ index 83510eed..82cbf503 100644
      // stays under it at the same box and keeps drawing its own shadow, so the copy takes none.
      [[nodiscard]] CloseSnapshotId captureHeldSnapshot();
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index e42149da..0ee2426d 100644
+index 8d9f5484..72ee6f7a 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
-@@ -1238,7 +1238,7 @@ namespace umbriel {
+@@ -1236,7 +1236,7 @@ namespace umbriel {
      return fullArea;
    }
  
@@ -220,7 +220,7 @@ index e42149da..0ee2426d 100644
      const auto& animation = config().animation;
      const bool held = m_tiled && m_workspace != nullptr && animation.holdsClosedTile();
      if (!m_mapped
-@@ -1249,7 +1249,7 @@ namespace umbriel {
+@@ -1247,7 +1247,7 @@ namespace umbriel {
          || (m_server->overview() != nullptr && m_server->overview()->active())) {
        return kInvalidCloseSnapshot;
      }
@@ -229,7 +229,7 @@ index e42149da..0ee2426d 100644
    }
  
    CloseSnapshotId View::captureHeldSnapshot() {
-@@ -1263,9 +1263,12 @@ namespace umbriel {
+@@ -1261,9 +1261,12 @@ namespace umbriel {
      return captureSnapshot(true, false);
    }
  
@@ -245,7 +245,7 @@ index e42149da..0ee2426d 100644
      if (output == nullptr) {
        return kInvalidCloseSnapshot;
      }
-@@ -1364,6 +1367,18 @@ namespace umbriel {
+@@ -1362,6 +1365,18 @@ namespace umbriel {
          output, snap, content, std::move(snapBorders), m_presentedBox,
          held ? std::optional{Server::CloseSnapshotOverrides{.held = true}} : std::nullopt, shadow, titleBarHeight()
      );
@@ -265,7 +265,7 @@ index e42149da..0ee2426d 100644
      return id;
    }
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index de1e1705..b32138ef 100644
+index bbe0a3fa..1076c549 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
 @@ -587,6 +587,9 @@ namespace umbriel {
@@ -278,7 +278,7 @@ index de1e1705..b32138ef 100644
      m_server->seat()->toplevelDrags().unmapped(this);
      if (m_effectSelectionIdle != nullptr) {
        wl_event_source_remove(m_effectSelectionIdle);
-@@ -659,7 +662,7 @@ namespace umbriel {
+@@ -660,7 +663,7 @@ namespace umbriel {
        overview->onViewUnmapped(this, animateClose);
      }
      // Replacement focus can hide the closing tab. Capture while its current visibility still decides eligibility.
@@ -288,7 +288,7 @@ index de1e1705..b32138ef 100644
      // window normally.
      if (m_minimized) {
 diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index fa3b6cbd..77d7729d 100644
+index bde21dc3..79d4f7a9 100644
 --- a/src/workspace/scratchpad.cpp
 +++ b/src/workspace/scratchpad.cpp
 @@ -94,6 +94,8 @@ namespace umbriel {

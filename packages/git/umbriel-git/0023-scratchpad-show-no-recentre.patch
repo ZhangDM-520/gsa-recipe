@@ -12,7 +12,7 @@ index 4fb85bcf..ac3180e0 100644
  
  Each member remembers its source output, workspace, and tiled or floating state. If that output or workspace no longer exists, Umbriel restores the window to the scratchpad's current output and active workspace.
 diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
-index 77d7729d..c5fb922f 100644
+index 79d4f7a9..f2032184 100644
 --- a/src/workspace/scratchpad.cpp
 +++ b/src/workspace/scratchpad.cpp
 @@ -281,6 +281,8 @@ namespace umbriel {

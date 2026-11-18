@@ -1,5 +1,5 @@
 diff --git a/docs/design/effects.md b/docs/design/effects.md
-index 7d613670..3a6ebd40 100644
+index ff912112..0194120b 100644
 --- a/docs/design/effects.md
 +++ b/docs/design/effects.md
 @@ -72,7 +72,7 @@ The live content tree also owns the server-side title bar and attached chrome, s
@@ -91,7 +91,7 @@ index 945860d4..6a41e705 100644
  
  /**
 diff --git a/umbrielfx/include/umbrielfx/render/pass.h b/umbrielfx/include/umbrielfx/render/pass.h
-index ff6138bd..4a8534c6 100644
+index fd033664..93e26518 100644
 --- a/umbrielfx/include/umbrielfx/render/pass.h
 +++ b/umbrielfx/include/umbrielfx/render/pass.h
 @@ -84,6 +84,9 @@ struct fx_gles_render_pass {
@@ -141,10 +141,10 @@ index 2b5fc53a..a4818e85 100644
  // Border node geometry in logical px, relative to the composite's logical_box origin.
  struct fx_effect_geometry {
 diff --git a/umbrielfx/internal/render/fx_renderer/fx_renderer.h b/umbrielfx/internal/render/fx_renderer/fx_renderer.h
-index 1fce6195..aa4d155a 100644
+index 91a5c62d..574d1495 100644
 --- a/umbrielfx/internal/render/fx_renderer/fx_renderer.h
 +++ b/umbrielfx/internal/render/fx_renderer/fx_renderer.h
-@@ -286,6 +286,8 @@ struct fx_renderer {
+@@ -298,6 +298,8 @@ struct fx_renderer {
    bool fail_animation_capture_for_test;
    // Set only through fx_renderer_split_blur_composite_for_test.
    bool split_blur_composite_for_test;
@@ -154,10 +154,10 @@ index 1fce6195..aa4d155a 100644
    struct fx_effect_shader* animation_shadow_vertical;
  
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index ba698fe0..11f14ec3 100644
+index b1193d71..6ee5d6c0 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -301,6 +301,8 @@ if build_tests
+@@ -336,6 +336,8 @@ if build_tests
      'move-margin-damage',
      'offscreen-margin',
      'drag-onscreen-capture',
@@ -194,7 +194,7 @@ index e7de290f..4e8e0cd1 100644
  }
  
 diff --git a/umbrielfx/render/fx_renderer/fx_pass.c b/umbrielfx/render/fx_renderer/fx_pass.c
-index 85d817c4..8d6bf8e2 100644
+index 149e5586..0ab6e3ba 100644
 --- a/umbrielfx/render/fx_renderer/fx_pass.c
 +++ b/umbrielfx/render/fx_renderer/fx_pass.c
 @@ -705,18 +705,22 @@ static void set_tex_matrix(GLint loc, enum wl_output_transform trans, const stru
@@ -328,7 +328,7 @@ index 85d817c4..8d6bf8e2 100644
    return true;
  }
  
-@@ -2196,7 +2218,11 @@ static struct fx_framebuffer* animation_backdrop(
+@@ -2242,7 +2264,11 @@ static struct fx_framebuffer* animation_backdrop(
    if (pass->animation_depth == 1
        && pass->group_depth == 0
        && pass->isolation_depth == 0
@@ -341,7 +341,7 @@ index 85d817c4..8d6bf8e2 100644
      return pass->animation_parents[0];
    }
    struct fx_framebuffer* saved = pass->buffer;
-@@ -3346,6 +3372,14 @@ void fx_renderer_fail_animation_capture_for_test(struct wlr_renderer* renderer,
+@@ -3392,6 +3418,14 @@ void fx_renderer_fail_animation_capture_for_test(struct wlr_renderer* renderer,
    fx_get_renderer(renderer)->fail_animation_capture_for_test = fail;
  }
  
@@ -837,7 +837,7 @@ index e473f2f2..95dc3925 100644
      ok = test_animation_backdrop_fast_path(&fixture);
    } else if (strcmp(argv[1], "bounded-drag-confinement") == 0) {
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index 50247d98..91b24fc4 100644
+index 5239802a..10ee7adf 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
 @@ -3502,6 +3502,54 @@ static bool excluded_from_backdrop(struct wlr_scene_node* node, const void* grou
@@ -924,7 +924,7 @@ index 50247d98..91b24fc4 100644
        // TODO: Render blur/rounded corners/etc here:
  
        // Render the buffer as a rect, this is likely to be more efficient
-@@ -3862,22 +3899,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -3892,22 +3929,7 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
      // TODO: Use the base wlr_render_pass_add_texture as a fast-path in the future
      fx_render_pass_add_texture(fx_pass, &tex_options);
  
@@ -948,7 +948,7 @@ index 50247d98..91b24fc4 100644
  
      if (entry->highlight_transparent_region) {
        wlr_render_pass_add_rect(
-@@ -4044,13 +4066,177 @@ outer_animation(struct wlr_scene_node* node, struct wlr_scene_node* stop, struct
+@@ -4074,13 +4096,177 @@ outer_animation(struct wlr_scene_node* node, struct wlr_scene_node* stop, struct
    return outer;
  }
  
@@ -1127,7 +1127,7 @@ index 50247d98..91b24fc4 100644
    struct animation_shadow* shadow = animation_shadow_get(entry->node);
    if (shadow == NULL || shadow->source == NULL || data->shadow_capture) {
      return false;
-@@ -4093,19 +4279,50 @@ static bool render_animation_shadow(struct render_list_entry* entry, const struc
+@@ -4123,19 +4309,50 @@ static bool render_animation_shadow(struct render_list_entry* entry, const struc
    if (high < 0) {
      return true;
    }
@@ -1180,7 +1180,7 @@ index 50247d98..91b24fc4 100644
    struct wlr_box origin = {.width = 1, .height = 1};
    struct wlr_box offset = {
        .x = node->blur_sigma - node->clipped_region.area.x,
-@@ -4115,9 +4332,21 @@ static bool render_animation_shadow(struct render_list_entry* entry, const struc
+@@ -4145,9 +4362,21 @@ static bool render_animation_shadow(struct render_list_entry* entry, const struc
    };
    transform_output_box(&origin, data);
    transform_output_box(&offset, data);
@@ -1203,7 +1203,7 @@ index 50247d98..91b24fc4 100644
    pixman_region32_fini(&clip);
    return rendered;
  }
-@@ -4309,31 +4538,11 @@ static void render_background(
+@@ -4339,31 +4568,11 @@ static void render_background(
      const pixman_region32_t* clip, enum wlr_render_blend_mode blend_mode
  );
  
@@ -1236,7 +1236,7 @@ index 50247d98..91b24fc4 100644
    for (int i = high; i >= low;) {
      if (excluded_from_backdrop(entries[i].node, data->backdrop_group)
          || excluded_from_backdrop(entries[i].node, data->workspace_group)) {
-@@ -4342,7 +4551,8 @@ static void render_animated_range(
+@@ -4372,7 +4581,8 @@ static void render_animated_range(
      }
      struct scene_animation* animation = outer_animation(entries[i].node, stop, pass->buffer->renderer);
      if (animation == NULL) {
@@ -1246,7 +1246,7 @@ index 50247d98..91b24fc4 100644
          scene_entry_render(&entries[i], data);
        }
        i--;
-@@ -4354,39 +4564,95 @@ static void render_animated_range(
+@@ -4384,39 +4594,95 @@ static void render_animated_range(
      }
      int lx, ly;
      wlr_scene_node_coords(animation->node, &lx, &ly);
@@ -1371,7 +1371,7 @@ index 50247d98..91b24fc4 100644
      }
      const bool has_animation_clip = animation->output_clip_enabled && !data->shadow_capture;
      struct wlr_box output_box = {0};
-@@ -4397,23 +4663,7 @@ static void render_animated_range(
+@@ -4427,23 +4693,7 @@ static void render_animated_range(
        transform_output_box(&output_box, data);
      }
      pixman_region32_t ancestor_clip;
@@ -1396,7 +1396,7 @@ index 50247d98..91b24fc4 100644
      // A persistent slot this frame's damage misses would composite nothing and blank its history.
      const bool persistent_damaged =
          animation->persistent && persistent_effect_damaged(animation, data, has_clip ? &ancestor_clip : NULL);
-@@ -4436,6 +4686,12 @@ static void render_animated_range(
+@@ -4466,6 +4716,12 @@ static void render_animated_range(
          pass->isolation_content = true;
        }
      }
@@ -1409,7 +1409,7 @@ index 50247d98..91b24fc4 100644
      bool captured[FX_ANIMATION_SLOTS] = {0};
      bool captured_any = false;
      for (int slot = FX_ANIMATION_SLOTS - 1; slot >= 0; slot--) {
-@@ -4449,27 +4705,39 @@ static void render_animated_range(
+@@ -4479,27 +4735,39 @@ static void render_animated_range(
            && shader->renderer == pass->buffer->renderer
            && !fx_slot_in_place(slot)
            && (persistent_damaged || !fx_slot_persistent(slot))) {
@@ -1460,7 +1460,7 @@ index 50247d98..91b24fc4 100644
      const pixman_box32_t* extents = pixman_region32_extents(&bounds);
      struct wlr_box logical_box = {
          .x = extents->x1 - data->logical.x,
-@@ -4481,11 +4749,22 @@ static void render_animated_range(
+@@ -4511,11 +4779,22 @@ static void render_animated_range(
      transform_output_box(&box, data);
      pixman_region32_t clip;
      pixman_region32_init(&clip);
@@ -1485,7 +1485,7 @@ index 50247d98..91b24fc4 100644
      pixman_region32_t output_clip;
      bool has_output_clip = false;
      if (has_animation_clip) {
-@@ -4512,10 +4791,11 @@ static void render_animated_range(
+@@ -4542,10 +4821,11 @@ static void render_animated_range(
          }
        }
      }
@@ -1499,7 +1499,7 @@ index 50247d98..91b24fc4 100644
          struct fx_effect_geometry geometry;
          const bool has_geometry = slot == FX_SLOT_BORDER_EFFECT
              && fx_effect_shader_kind(animation->shaders[slot]) == FX_EFFECT_BORDER
-@@ -4524,11 +4804,11 @@ static void render_animated_range(
+@@ -4554,11 +4834,11 @@ static void render_animated_range(
              .shader = animation->shaders[slot],
              .parameters = &animation->parameters[slot],
              .audio = data->audio,
@@ -1513,7 +1513,7 @@ index 50247d98..91b24fc4 100644
              .output_clip = composite_clip,
              .history = &animation->histories[slot],
              .output = data->output->output,
-@@ -4553,15 +4833,19 @@ static void render_animated_range(
+@@ -4583,15 +4863,19 @@ static void render_animated_range(
      }
      pixman_region32_fini(&bounds);
      pixman_region32_fini(&ancestor_clip);

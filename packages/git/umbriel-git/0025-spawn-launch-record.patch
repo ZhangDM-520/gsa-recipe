@@ -37,10 +37,10 @@ index 0cbd85cd..eedbe8cd 100644
 +
 +journald resolves the unit from the process that writes, so a program that is still running when it writes is attributed to the scope unit the launch record named: `journalctl --user -u app-umbriel-1180-3.scope`. A program that writes and exits at once, which is what a missing command does, may be recorded with the `umbriel` identifier and no unit, because there is no process left to look up. Such a record is missed by a unit query and still found by `-t umbriel`. A program that writes nothing, or redirects its own diagnostics away, leaves only the launch record. Under a TTY the child's own output also reaches `umbriel-stderr.log`.
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index 93701695..efc079d9 100644
+index 69adf9d9..00eafc22 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -1545,7 +1545,7 @@ namespace umbriel {
+@@ -1675,7 +1675,7 @@ namespace umbriel {
  
    void Server::spawn(const char* command, const char* description, bool withActivationToken) {
      if (m_socketName.empty()) {
@@ -49,7 +49,7 @@ index 93701695..efc079d9 100644
        return;
      }
  
-@@ -1558,9 +1558,10 @@ namespace umbriel {
+@@ -1688,9 +1688,10 @@ namespace umbriel {
        kLog.error("cannot launch application because systemd scope isolation is unavailable");
        return;
      }
@@ -62,7 +62,7 @@ index 93701695..efc079d9 100644
  
      wlr_xdg_activation_token_v1* launchToken = nullptr;
      std::string launchTokenName;
-@@ -1579,7 +1580,7 @@ namespace umbriel {
+@@ -1709,7 +1710,7 @@ namespace umbriel {
        if (launchToken != nullptr) {
          wlr_xdg_activation_token_v1_destroy(launchToken);
        }
@@ -71,7 +71,7 @@ index 93701695..efc079d9 100644
        return;
      }
      if (pid == 0) {
-@@ -1621,17 +1622,30 @@ namespace umbriel {
+@@ -1751,17 +1752,30 @@ namespace umbriel {
      if (launchToken != nullptr) {
        trackActivationToken(launchToken, true, pid);
      }

@@ -8,8 +8,8 @@ source "$startdir/../../../lib/pgo.sh"
 
 pkgname=umbriel-git
 _pkgname=umbriel
-pkgver=0.1.0.r1584.1bbbf15
-pkgrel=7
+pkgver=0.1.0.r1612.1bf3bce
+pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
 arch=('x86_64' 'aarch64')
@@ -73,21 +73,21 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0029-vram-blur-footprint.patch'
         '0030-drag-horner.patch')
 sha256sums=('SKIP'
-            'ee5963f2ee7899bd916459744dd01fcf699746ebccb7455f1b556adabc304f64'
-            '3e5192f37169ee2e48b4116a4677f74d2a193a3411dd569f74be3b7d10a8597c'
-            '13c8f7a5b2c6e9e02f81ce9d082739f80eb7954df56b97ee99f949197cec251b'
+            '4a00fd655fd726feb339e34e49e647a4a6d3b69b7c9caca6c263e4bed21c64c7'
+            '65cc421d7d85a15d5f4089b8f688b912fc066ad9720b084cee86860c2f3fbfe5'
+            '25e32de93f27846f1fadae34f1b586af083751ae914dd70163dbfbd378fadeec'
             'e4af7893010ce014814dbe311c27c01f5c1a5324b6b4ab4df1115d1f629f02dc'
-            '3741d322aac7cd4757e8b8e5defa79605f813262a91dc55998299d77ad52243e'
-            '50f89ef70af7abef7e2bfefe7a4fb1dcd9b6c037fcb9981fb112b5b4ab412de2'
-            'fde7fc7e0d799a9601c9ba026ea6338eabc5f162a35fab20c4416ae862c99eea'
-            '7d33e1df6d23f051a23e5e55d5e4d2c2c2fb2def5af1c0d52c229d9518d49744'
-            '99ff9ed72648620b46926d10c3dc32c88af9929d1bde8fbf9e8dfb13495c1fad'
-            '59d89e53515b197f0a7ab7518f9787e338379508f4c79ebc2553c773b1c8d53c'
-            '5edecb8814dd02274d25f69651d6ae95677307455aeb40b2422aa9266b03596b'
-            '0df919fc22c90c93181523f9b96ed27b7437a1ed9ed9945556dba19fa4fbf82a'
-            'eb8890b7813032cb035433b3272c837e52d5ae96be57f767335208680887e61d'
-            '3e6686cc33c1d94b241dae4182e473407b655ea3dba3d4da6c4a08e35e74ac43'
-            '263c6908d5e3c92709b736f876014d4961b783e9dd45257fb5233da9eb4240a5')
+            'baf4f5e7d676b939855842173fc1e544e6e11569ab6df5ae1909d96d983a54bc'
+            'e20f2426d29a6828f1929fe8b79a824ce06d10875fdde460b8296e9d1421c8c4'
+            'c952246b3eff9753a7aa475301d733567550d2118407b91752b88cb79091e5a2'
+            'db0e1730937e5e5e7b113a07164bb99f580a8678a1ea3d88ee45fa9f2eae9b6c'
+            '6b06d5bcdd93c769a6f3dfeaec121e2524947b018d14f43912abd0a66e683bc3'
+            '970521c3ce60611495745fe972620e94c5c0b1ccb1422adc38ff8c73f234d8db'
+            'f0859b027f1e90be5beaa3d14564817b458e3177fc9f91be60028df1f7d38256'
+            '753e7186261a02a704f24b9bc4287bb21d5cdb0037222447e8cb862d2e48edea'
+            'ec09b6f50c9957a43d6b6aac30a5d359ccdb171fd5dab146d4524d0667e1407c'
+            '462cb243d626656a769b57fc61f9dadbc72d6e062e9914939a330a19292f085a'
+            '9dc195bef9437c6cb091d1bc17f28c795e2f7bdb356b0bb5ea00772338e6c2a8')
 
 pkgver() {
   cd "${_pkgname}"
@@ -105,6 +105,13 @@ pkgver() {
 prepare() {
   cd "${_pkgname}"
 
+  # Re-cut 2026-11-19 on main@c89f6771: main had moved 29-60 commits past every
+  # PR head, and 0011/0019/0020/0024 no longer applied. Each patch is again the
+  # same squashed `git diff` between the composed stack and the PR head, so the
+  # hunks are unchanged (0018 and its sha256 are untouched); only the index
+  # lines and hunk offsets moved, except 0020, which carries the merge below.
+  # The plan and the per-PR measurements live in the maintainer's warehouse.
+  #
   # Drag-release re-home waits for the deform settle (and the drag tree
   # demotes only when its last drag-presented view leaves). Upstream PR
   # noctalia-dev/umbriel#570; 0011-drag-deform-settle-crop.patch (sha256
@@ -310,7 +317,8 @@ prepare() {
   # every color_source and title_shadow removes it; title_contrast reverses a
   # title whose colour would vanish into the bar, using the palette in "fixed",
   # the mean in "average", and a strip read in "window" only when
-  # title_contrast_sample opts into it. Flattened stack adaptation on
+  # title_contrast_sample opts into it; a bare symbol is judged against the edge
+  # under its own button. Flattened stack adaptation on
   # main@3898f805 over 0011+0012+0013+0014+0018+0019 (sha256 757892f7…; the
   # strip follows xdg window geometry, marks the mirror's client-buffer lock
   # ignorable through a new umbrielfx helper, and keeps the close snapshot's
@@ -344,6 +352,15 @@ prepare() {
   # labels stay in `m_tree` (37 files +2615/-80, sha256 50f89ef7…).
   # The PR branch merged main@1bbbf155 and resolved the same way, so this patch is
   # now the branch's own delta again instead of a hand adaptation (head 8a4ab6e0).
+  # Re-cut 2026-11-18 on main@1bbbf155 after the per-button contrast sample: a
+  # bare symbol is judged against the edge under its own button, from one
+  # readback over the title and button spans (head 321e5e09, 37 files
+  # +2863/-80, sha256 6f5e24b6…).
+  # Re-cut 2026-11-19 on main@c89f6771 with main merged into the branch (head
+  # 26cd5c67, 37 files +2900/-80, sha256 e20f2426…). c89f6771 turned frameClip's
+  # `bool underBorder` into a clamped `int outset` plus m_opaqueBorderInset, so
+  # the fill and the adaptive mirror both take the opaque-border inset; leaving
+  # the mirror's old `true` would compile as outset 1 and disagree with the fill.
   git apply -3 ../0020-adaptive-title-bar.patch
 
   # [animation.windows_minimize]: a minimizing floating window leaves and returns with an animation instead of

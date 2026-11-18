@@ -1,5 +1,5 @@
 diff --git a/src/scene/effect_registry.cpp b/src/scene/effect_registry.cpp
-index e4303532..edab8ba2 100644
+index ecee137d..359a4eb9 100644
 --- a/src/scene/effect_registry.cpp
 +++ b/src/scene/effect_registry.cpp
 @@ -35,11 +35,12 @@ namespace umbriel {
@@ -81,10 +81,10 @@ index 5d40e10a..d7492e95 100644
      float maxDisplacement() const;
      // Largest speed of any mass on either axis, in logical pixels per second.
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 5e2b0e1e..f3623f90 100644
+index 72ee6f7a..8979df0c 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
-@@ -858,10 +858,10 @@ namespace umbriel {
+@@ -968,10 +968,10 @@ namespace umbriel {
        parameters.expand = dragPhysicsExpand();
        if (fx_uniform* sheet =
                fx_parameters_add_uniform(&parameters, "umbriel_deformation", FX_UNIFORM_VEC2, DragPhysics::kPoints)) {

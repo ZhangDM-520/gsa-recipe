@@ -1,5 +1,5 @@
 diff --git a/src/scene/effect_registry.cpp b/src/scene/effect_registry.cpp
-index e4303532..a8e4551e 100644
+index baeef2fa..ecee137d 100644
 --- a/src/scene/effect_registry.cpp
 +++ b/src/scene/effect_registry.cpp
 @@ -277,6 +277,8 @@ vec4 animation(vec2 uv) {
@@ -26,7 +26,7 @@ index 57e3c2e2..d6b09a09 100644
  bool fx_effect_shader_reads(const struct fx_effect_shader* shader, const char* uniform);
  enum fx_effect_kind fx_effect_shader_kind(const struct fx_effect_shader* shader);
 diff --git a/umbrielfx/include/umbrielfx/render/pass.h b/umbrielfx/include/umbrielfx/render/pass.h
-index c7d0d17a..ff6138bd 100644
+index 5a85b5a9..fd033664 100644
 --- a/umbrielfx/include/umbrielfx/render/pass.h
 +++ b/umbrielfx/include/umbrielfx/render/pass.h
 @@ -44,6 +44,9 @@ struct fx_gles_render_pass {
@@ -60,10 +60,10 @@ index 2dc2ca60..2b5fc53a 100644
    struct fx_effect_uniform uniforms[FX_EFFECT_UNIFORM_CACHE];
  };
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index 6743c218..ba698fe0 100644
+index 0353e49c..b1193d71 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -300,6 +300,9 @@ if build_tests
+@@ -335,6 +335,9 @@ if build_tests
      'margin-damage',
      'move-margin-damage',
      'offscreen-margin',
@@ -91,7 +91,7 @@ index 89e0a448..2c3aeedb 100644
  
  void fx_effect_shader_unref(struct fx_effect_shader* shader) {
 diff --git a/umbrielfx/render/fx_renderer/fx_pass.c b/umbrielfx/render/fx_renderer/fx_pass.c
-index 0781c1ed..85d817c4 100644
+index 7ba9ade4..149e5586 100644
 --- a/umbrielfx/render/fx_renderer/fx_pass.c
 +++ b/umbrielfx/render/fx_renderer/fx_pass.c
 @@ -733,6 +733,7 @@ static bool push_capture(struct fx_gles_render_pass* pass, const struct wlr_box*
@@ -117,7 +117,7 @@ index 0781c1ed..85d817c4 100644
    if (!pass->has_color_transform || pass->suppress_updated) {
      return;
    }
-@@ -2160,30 +2169,77 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
+@@ -2206,30 +2215,77 @@ void fx_render_pass_add_texture(struct fx_gles_render_pass* pass, const struct f
    TRACY_BOTH_ZONES_END;
  }
  
@@ -199,7 +199,7 @@ index 0781c1ed..85d817c4 100644
      struct wlr_texture* texture = fx_texture_from_buffer(&target->renderer->wlr_renderer, layer->buffer);
      if (texture == NULL) {
        pass->animation_failed = true;
-@@ -2193,15 +2249,18 @@ static struct fx_framebuffer* animation_backdrop(struct fx_gles_render_pass* pas
+@@ -2239,15 +2295,18 @@ static struct fx_framebuffer* animation_backdrop(struct fx_gles_render_pass* pas
      struct wlr_render_texture_options options = {
          .texture = texture,
          .dst_box = layer_box,
@@ -221,7 +221,7 @@ index 0781c1ed..85d817c4 100644
    fx_framebuffer_bind(saved);
    return target;
  }
-@@ -2758,12 +2817,7 @@ static struct fx_framebuffer* get_main_buffer_blur(
+@@ -2804,12 +2863,7 @@ static struct fx_framebuffer* get_main_buffer_blur(
    fx_options->tex_options.base.transform = WL_OUTPUT_TRANSFORM_NORMAL;
  
    pixman_region32_t damage;
@@ -235,7 +235,7 @@ index 0781c1ed..85d817c4 100644
  
    // damage region will be scaled, make a temp
    pixman_region32_t scaled_damage;
-@@ -3003,7 +3057,8 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
+@@ -3049,7 +3103,8 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
        // Isn't as efficient as just using the optimized blur buffer
        blur_options.current_buffer = fbos->optimized_no_blur_buffer;
      } else {
@@ -245,7 +245,7 @@ index 0781c1ed..85d817c4 100644
      }
      buffer = get_main_buffer_blur(pass, &blur_options, fuse ? &final_upsample : NULL);
    } else {
-@@ -3030,7 +3085,10 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
+@@ -3076,7 +3131,10 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
      struct fx_render_texture_options tex_options = fx_options->tex_options;
      tex_options.discard_transparent = fx_options->ignore_alpha;
      tex_options.clipped_region = fx_options->clipped_region;
@@ -256,7 +256,7 @@ index 0781c1ed..85d817c4 100644
  
      stencil_mask_close(true);
    }
-@@ -3136,11 +3194,12 @@ bool fx_render_pass_add_optimized_blur(
+@@ -3182,11 +3240,12 @@ bool fx_render_pass_add_optimized_blur(
    struct fx_framebuffer* blur_buffer = ensure_offscreen_buffer(pass, &fbos->optimized_blur_buffer, false);
    struct fx_framebuffer* no_blur_buffer = ensure_offscreen_buffer(pass, &fbos->optimized_no_blur_buffer, false);
    struct fx_framebuffer* fx_buffer = NULL;
@@ -272,7 +272,7 @@ index 0781c1ed..85d817c4 100644
      fx_buffer = get_main_buffer_blur(pass, &blur_options, NULL);
    }
    bool rendered = false;
-@@ -3219,10 +3278,13 @@ bool fx_render_pass_read_to_buffer(
+@@ -3265,10 +3324,13 @@ bool fx_render_pass_read_to_buffer(
    // transform, so a copy into an offscreen buffer must not extend the
    // region that gets copied out at submit time.
    const bool suppress_updated = pass->suppress_updated;
@@ -592,7 +592,7 @@ index 67663585..e473f2f2 100644
      ok = test_border_geometry(&fixture);
    } else if (strcmp(argv[1], "border-geometry-tree") == 0) {
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index e24d67cf..50247d98 100644
+index 8165c570..5239802a 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
 @@ -277,7 +277,9 @@ static struct scene_effects* scene_effects_get(struct wlr_scene* scene, bool cre
@@ -665,7 +665,7 @@ index e24d67cf..50247d98 100644
    pixman_region32_subtract(&node->visible, &node->visible, data->update_region);
    pixman_region32_union(&node->visible, &node->visible, keep_input ? data->update_region : data->visible);
    pixman_region32_intersect_rect(&node->visible, &node->visible, lx, ly, box.width, box.height);
-@@ -4259,14 +4283,14 @@ static void render_in_place_slots(
+@@ -4289,14 +4313,14 @@ static void render_in_place_slots(
  }
  
  static bool
@@ -682,7 +682,7 @@ index e24d67cf..50247d98 100644
      return false;
    }
    pixman_region32_t damage;
-@@ -4285,6 +4309,27 @@ static void render_background(
+@@ -4315,6 +4339,27 @@ static void render_background(
      const pixman_region32_t* clip, enum wlr_render_blend_mode blend_mode
  );
  
@@ -710,7 +710,7 @@ index e24d67cf..50247d98 100644
  static void render_animated_range(
      struct render_list_entry* entries, int high, int low, struct wlr_scene_node* stop, const struct render_data* data
  ) {
-@@ -4310,26 +4355,26 @@ static void render_animated_range(
+@@ -4340,26 +4385,26 @@ static void render_animated_range(
      int lx, ly;
      wlr_scene_node_coords(animation->node, &lx, &ly);
      // Keep off-output pixels until after deformation: they can bend back on screen.
@@ -751,7 +751,7 @@ index e24d67cf..50247d98 100644
        if (needs_capture && fx_render_pass_begin_capture(pass, &capture_box)) {
          struct render_data capture = *data;
          capture.capture_x -= capture_box.x;
-@@ -6354,11 +6399,11 @@ static bool effect_buffer_box(struct wlr_box* box, const struct render_data* dat
+@@ -6405,11 +6450,11 @@ static bool effect_buffer_box(struct wlr_box* box, const struct render_data* dat
    return wlr_box_intersection(box, box, &buffer_box);
  }
  
@@ -766,7 +766,7 @@ index e24d67cf..50247d98 100644
      return false;
    }
    pixman_region32_t bounds;
-@@ -6413,8 +6458,8 @@ static bool expand_damage_to_effects(
+@@ -6464,8 +6509,8 @@ static bool expand_damage_to_effects(
      const struct scene_output_effects* output_effects, const struct render_data* data, pixman_region32_t* damage,
      bool commit
  ) {
@@ -777,7 +777,7 @@ index e24d67cf..50247d98 100644
      return false;
    }
    struct wlr_box screen_box = {0}, cursor_box = {0};
-@@ -6430,11 +6475,11 @@ static bool expand_damage_to_effects(
+@@ -6481,11 +6526,11 @@ static bool expand_damage_to_effects(
    bool grew;
    do {
      grew = false;

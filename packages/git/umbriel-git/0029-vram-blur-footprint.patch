@@ -28,7 +28,7 @@ index 6a41e705..6ab80594 100644
  
  #endif
 diff --git a/umbrielfx/include/umbrielfx/render/pass.h b/umbrielfx/include/umbrielfx/render/pass.h
-index 20be5bd1..0b768f1f 100644
+index 93e26518..ea0998ec 100644
 --- a/umbrielfx/include/umbrielfx/render/pass.h
 +++ b/umbrielfx/include/umbrielfx/render/pass.h
 @@ -55,6 +55,7 @@ struct fx_gles_render_pass {
@@ -40,10 +40,10 @@ index 20be5bd1..0b768f1f 100644
    // NULL when no advanced effects like blur is being used in the current pass.
    // Call `fx_render_pass_init_offscreen_buffers` to use advanced effects.
 diff --git a/umbrielfx/meson.build b/umbrielfx/meson.build
-index 23983df0..cb992b63 100644
+index 6ee5d6c0..4031e78e 100644
 --- a/umbrielfx/meson.build
 +++ b/umbrielfx/meson.build
-@@ -251,6 +251,8 @@ if build_tests
+@@ -253,6 +253,8 @@ if build_tests
      'shared-sdr-capture-storage-change',
      'capture-read-format',
      'framebuffer-texture-binding',
@@ -212,10 +212,10 @@ index 4e8e0cd1..3418843e 100644
    if (!renderer) {
      return NULL;
 diff --git a/umbrielfx/render/fx_renderer/fx_pass.c b/umbrielfx/render/fx_renderer/fx_pass.c
-index 7a054ec5..3025293a 100644
+index 0ab6e3ba..4a1d2020 100644
 --- a/umbrielfx/render/fx_renderer/fx_pass.c
 +++ b/umbrielfx/render/fx_renderer/fx_pass.c
-@@ -2739,11 +2739,19 @@ void fx_render_pass_add_box_shadow(
+@@ -2745,11 +2745,19 @@ void fx_render_pass_add_box_shadow(
    TRACY_BOTH_ZONES_END;
  }
  
@@ -238,7 +238,7 @@ index 7a054ec5..3025293a 100644
  ) {
    struct fx_render_texture_options* tex_options = &fx_options->tex_options;
    struct wlr_render_texture_options* options = &tex_options->base;
-@@ -2753,12 +2761,15 @@ static void render_blur_segments(
+@@ -2759,12 +2767,15 @@ static void render_blur_segments(
    TRACY_BOTH_ZONES_START(renderer);
    push_fx_debug(renderer);
  
@@ -259,7 +259,7 @@ index 7a054ec5..3025293a 100644
  
    options->texture = fx_texture_from_buffer(&renderer->wlr_renderer, fx_options->current_buffer->buffer);
    struct fx_texture* texture = fx_get_texture(options->texture);
-@@ -2767,14 +2778,13 @@ static void render_blur_segments(
+@@ -2773,14 +2784,13 @@ static void render_blur_segments(
     * Render
     */
  
@@ -281,7 +281,7 @@ index 7a054ec5..3025293a 100644
  
    glDisable(GL_BLEND);
    glDisable(GL_STENCIL_TEST);
-@@ -2808,11 +2818,10 @@ static void render_blur_segments(
+@@ -2814,11 +2824,10 @@ static void render_blur_segments(
  
    glUniform1i(shader->tex, 0);
    glUniform1f(shader->radius, blur_data->radius);
@@ -297,7 +297,7 @@ index 7a054ec5..3025293a 100644
    glUniform4f(
        shader->sample_bounds, 0.5F / options->texture->width, 0.5F / options->texture->height,
        (sample_width - 0.5F) / options->texture->width, (sample_height - 0.5F) / options->texture->height
-@@ -2824,7 +2833,7 @@ static void render_blur_segments(
+@@ -2830,7 +2839,7 @@ static void render_blur_segments(
      glUniform2f(shader->halfpixel, 0.5F / (options->texture->width * 2.0F), 0.5F / (options->texture->height * 2.0F));
    }
  
@@ -306,7 +306,7 @@ index 7a054ec5..3025293a 100644
    set_tex_matrix(shader->tex_proj, options->transform, &src_fbox);
  
    render(&dst_box, options->clip, shader->pos_attrib);
-@@ -2836,20 +2845,16 @@ static void render_blur_segments(
+@@ -2842,20 +2851,16 @@ static void render_blur_segments(
    wlr_texture_destroy(options->texture);
  
    // Swap buffer. We don't want to draw to the same buffer
@@ -334,7 +334,7 @@ index 7a054ec5..3025293a 100644
  ) {
    if (pass->fx_offscreen_buffers == NULL) {
      wlr_log(WLR_ERROR, "FX Pass offscreen buffers not initialized. Skipping getting blur...");
-@@ -2872,8 +2877,14 @@ static struct fx_framebuffer* get_main_buffer_blur(
+@@ -2878,8 +2883,14 @@ static struct fx_framebuffer* get_main_buffer_blur(
    fx_options->blur_data = &blur_data;
  
    struct fx_target_buffers* buffers = target_buffers(pass);
@@ -351,7 +351,7 @@ index 7a054ec5..3025293a 100644
      return NULL;
    }
  
-@@ -2935,16 +2946,17 @@ static struct fx_framebuffer* get_main_buffer_blur(
+@@ -2941,16 +2952,17 @@ static struct fx_framebuffer* get_main_buffer_blur(
    // Downscale
    for (int i = 0; i < blur_data.num_passes; ++i) {
      wlr_region_scale(&scaled_damage, &damage, 1.0F / (1 << (i + 1)));
@@ -372,7 +372,7 @@ index 7a054ec5..3025293a 100644
      );
    }
    if (final_upsample != NULL) {
-@@ -2957,6 +2969,7 @@ static struct fx_framebuffer* get_main_buffer_blur(
+@@ -2963,6 +2975,7 @@ static struct fx_framebuffer* get_main_buffer_blur(
  
    // Bind back to the default buffer
    fx_framebuffer_bind(pass->buffer);
@@ -380,7 +380,7 @@ index 7a054ec5..3025293a 100644
  
    pop_fx_debug(renderer);
    TRACY_BOTH_ZONES_END;
-@@ -2964,14 +2977,27 @@ static struct fx_framebuffer* get_main_buffer_blur(
+@@ -2970,14 +2983,27 @@ static struct fx_framebuffer* get_main_buffer_blur(
    return fx_options->current_buffer;
  }
  
@@ -412,7 +412,7 @@ index 7a054ec5..3025293a 100644
  // True when fx_render_pass_add_texture would draw the full-resolution blur
  // level with nothing beyond the alpha, corners, clipped region and blending
  // that render_blur_composite reproduces.
-@@ -3011,8 +3037,10 @@ static void render_blur_composite(
+@@ -3017,8 +3043,10 @@ static void render_blur_composite(
                   : &renderer->shaders.blur2_with_effects_composite)
        : (corners ? &renderer->shaders.blur2_composite_corners : &renderer->shaders.blur2_composite);
  
@@ -425,7 +425,7 @@ index 7a054ec5..3025293a 100644
    const struct wlr_box dst_box = {.width = width, .height = height};
    const struct wlr_box* clip_box = wlr_box_empty(tex_options->clip_box) ? &dst_box : tex_options->clip_box;
  
-@@ -3043,13 +3071,13 @@ static void render_blur_composite(
+@@ -3049,13 +3077,13 @@ static void render_blur_composite(
  
    glUniform1i(blur->tex, 0);
    glUniform1f(blur->radius, blur_data->radius);
@@ -444,7 +444,7 @@ index 7a054ec5..3025293a 100644
    if (effects) {
      glUniform1f(shader->blur.noise, blur_data->noise);
      glUniform1f(shader->blur.brightness, blur_data->brightness);
-@@ -3074,7 +3102,10 @@ static void render_blur_composite(
+@@ -3080,7 +3108,10 @@ static void render_blur_composite(
    }
  
    set_proj_matrix(blur->proj, pass->projection_matrix, &dst_box);
@@ -456,7 +456,7 @@ index 7a054ec5..3025293a 100644
  
    render(&dst_box, &clip_region, blur->pos_attrib);
    pixman_region32_fini(&clip_region);
-@@ -3106,12 +3137,10 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
+@@ -3112,12 +3143,10 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
    const bool use_optimized = fx_options->use_optimized_blur
        && pass->group_depth == 0
        && fbos->optimized_blur_buffer != NULL
@@ -471,7 +471,7 @@ index 7a054ec5..3025293a 100644
    struct blur_data final_upsample = {0};
    TRACY_ZONE_TEXT_f("Use Optimized Blur: %d", fx_options->use_optimized_blur);
    TRACY_ZONE_TEXT_f("Fused Composite: %d", fuse);
-@@ -3126,9 +3155,37 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
+@@ -3132,9 +3161,37 @@ void fx_render_pass_add_blur(struct fx_gles_render_pass* pass, struct fx_render_
        struct blur_data effective_blur = blur_data_apply_strength(fx_options->blur_data, fx_options->blur_strength);
        blur_options.current_buffer = animation_backdrop(pass, fx_options, &effective_blur);
      }
@@ -511,7 +511,7 @@ index 7a054ec5..3025293a 100644
    }
    TRACY_ZONE_TEXT_f("Optimized Blur Successfully Used: %d", buffer && use_optimized);
    if (!buffer) {
-@@ -3205,8 +3262,7 @@ bool fx_render_pass_optimized_blur_stale(const struct fx_gles_render_pass* pass)
+@@ -3211,8 +3268,7 @@ bool fx_render_pass_optimized_blur_stale(const struct fx_gles_render_pass* pass)
        && fbos->optimized_blur_buffer != NULL
        && (!fbos->optimized_blur_valid
            || fbos->optimized_blur_sdr_tf != linear_sdr_tf(pass)
@@ -521,7 +521,7 @@ index 7a054ec5..3025293a 100644
  }
  
  bool fx_render_pass_add_optimized_blur(
-@@ -3249,33 +3305,55 @@ bool fx_render_pass_add_optimized_blur(
+@@ -3255,33 +3311,55 @@ bool fx_render_pass_add_optimized_blur(
    pixman_region32_t clip;
    pixman_region32_init_rect(&clip, dst_box.x, dst_box.y, dst_box.width, dst_box.height);
  
@@ -590,7 +590,7 @@ index 7a054ec5..3025293a 100644
      fbos->optimized_blur_sdr_tf = linear_sdr_tf(pass);
    }
  
-@@ -3345,16 +3423,24 @@ bool fx_render_pass_read_to_buffer(
+@@ -3351,16 +3429,24 @@ bool fx_render_pass_read_to_buffer(
    // region that gets copied out at submit time.
    const bool suppress_updated = pass->suppress_updated;
    const bool suppress_capture = pass->suppress_capture_draws;
@@ -616,10 +616,10 @@ index 7a054ec5..3025293a 100644
  
  done:
 diff --git a/umbrielfx/tests/color.c b/umbrielfx/tests/color.c
-index db87eb65..efca4faa 100644
+index 027a867e..58c3133e 100644
 --- a/umbrielfx/tests/color.c
 +++ b/umbrielfx/tests/color.c
-@@ -2088,7 +2088,7 @@ static bool test_sdr10_blur_buffer_format(struct fixture* fixture) {
+@@ -2174,7 +2174,7 @@ static bool test_sdr10_blur_buffer_format(struct fixture* fixture) {
    if (ok) {
      const float opacity = 1.0f;
      struct blur_data blur_data = {
@@ -628,7 +628,7 @@ index db87eb65..efca4faa 100644
          .radius = 1.0f,
          .brightness = 1.0f,
          .contrast = 1.0f,
-@@ -2136,6 +2136,506 @@ static bool test_sdr10_blur_buffer_format(struct fixture* fixture) {
+@@ -2222,6 +2222,506 @@ static bool test_sdr10_blur_buffer_format(struct fixture* fixture) {
    return ok;
  }
  
@@ -1135,7 +1135,7 @@ index db87eb65..efca4faa 100644
  static bool test_shared_output_buffers(struct fixture* fixture) {
    bool ok = true;
    struct wlr_buffer* target_a = create_output_buffer(fixture, DRM_FORMAT_ABGR8888, TEST_WIDTH, TEST_HEIGHT);
-@@ -3701,6 +4201,10 @@ int main(int argc, char* argv[]) {
+@@ -3791,6 +4291,10 @@ int main(int argc, char* argv[]) {
      ok = test_capture_read_format(&fixture);
    } else if (strcmp(argv[1], "framebuffer-texture-binding") == 0) {
      ok = test_framebuffer_texture_binding(&fixture);
@@ -1147,10 +1147,10 @@ index db87eb65..efca4faa 100644
      fprintf(stderr, "unknown case: %s\n", argv[1]);
      ok = false;
 diff --git a/umbrielfx/types/scene/wlr_scene.c b/umbrielfx/types/scene/wlr_scene.c
-index 62c61d35..0286de27 100644
+index 10ee7adf..6173a9c7 100644
 --- a/umbrielfx/types/scene/wlr_scene.c
 +++ b/umbrielfx/types/scene/wlr_scene.c
-@@ -4008,6 +4008,9 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
+@@ -4010,6 +4010,9 @@ static void scene_entry_render(struct render_list_entry* entry, const struct ren
      break;
    case WLR_SCENE_NODE_BLUR:;
      struct wlr_scene_blur* blur = wlr_scene_blur_from_node(node);
@@ -1160,7 +1160,7 @@ index 62c61d35..0286de27 100644
  
      struct wlr_texture* tex = NULL;
      struct wlr_scene_buffer* mask = wlr_scene_blur_get_transparency_mask_source(blur);
-@@ -5779,21 +5782,37 @@ void wlr_scene_output_set_sdr_white_level(struct wlr_scene_output* scene_output,
+@@ -5781,21 +5784,37 @@ void wlr_scene_output_set_sdr_white_level(struct wlr_scene_output* scene_output,
    scene_output_damage_whole(scene_output);
  }
  
@@ -1205,7 +1205,7 @@ index 62c61d35..0286de27 100644
  }
  
  bool wlr_scene_output_set_sdr_transfer_function(
-@@ -5807,7 +5826,9 @@ bool wlr_scene_output_set_sdr_transfer_function(
+@@ -5809,7 +5828,9 @@ bool wlr_scene_output_set_sdr_transfer_function(
    }
    fx_offscreen_buffers_invalidate_blend(scene_output->output);
    fx_renderer_clear_output_effect_buffers(scene_output->output);
@@ -1216,7 +1216,7 @@ index 62c61d35..0286de27 100644
    scene_output_damage_whole(scene_output);
    return true;
  }
-@@ -5855,6 +5876,9 @@ static bool scene_node_invisible(struct wlr_scene_node* node) {
+@@ -5857,6 +5878,9 @@ static bool scene_node_invisible(struct wlr_scene_node* node) {
      struct wlr_scene_shadow* shadow = wlr_scene_shadow_from_node(node);
  
      return shadow->color[3] == 0.f;
@@ -1226,7 +1226,7 @@ index 62c61d35..0286de27 100644
    }
  
    return false;
-@@ -6121,6 +6145,26 @@ capture_list_iterator(struct wlr_scene_node* node, int lx, int ly, const pixman_
+@@ -6123,6 +6147,26 @@ capture_list_iterator(struct wlr_scene_node* node, int lx, int ly, const pixman_
    return false;
  }
  
@@ -1253,7 +1253,7 @@ index 62c61d35..0286de27 100644
  static bool render_capture_exclusion(struct render_data* data, const struct wlr_scene_output_state_options* options) {
    struct capture_list list = {.box = data->logical};
    wl_array_init(&list.entries);
-@@ -6134,11 +6178,19 @@ static bool render_capture_exclusion(struct render_data* data, const struct wlr_
+@@ -6136,11 +6180,19 @@ static bool render_capture_exclusion(struct render_data* data, const struct wlr_
      list.failed = true;
    }
    if (!list.failed) {
@@ -1274,7 +1274,7 @@ index 62c61d35..0286de27 100644
      list.failed = pass->animation_failed;
    }
    for (int i = 0; i < count; ++i) {
-@@ -6849,6 +6901,17 @@ static void render_background(
+@@ -6851,6 +6903,17 @@ static void render_background(
    );
  }
  
@@ -1292,7 +1292,7 @@ index 62c61d35..0286de27 100644
  static bool scene_output_build_state(
      struct wlr_scene_output* scene_output, struct wlr_output_state* state,
      const struct wlr_scene_output_state_options* options
-@@ -6962,23 +7025,50 @@ static bool scene_output_build_state(
+@@ -6964,23 +7027,50 @@ static bool scene_output_build_state(
  
    {
      TRACY_ZONE_START_N("render list");
@@ -1354,7 +1354,7 @@ index 62c61d35..0286de27 100644
    const bool capture_pending = options->effect_capture_pending || capture_exclusion;
    struct scene_output_effects* output_effects =
        effects != NULL || capture_pending || scene_output->output_effects_configured
-@@ -7226,16 +7316,19 @@ static bool scene_output_build_state(
+@@ -7228,16 +7318,19 @@ static bool scene_output_build_state(
      while (glGetError() != GL_NO_ERROR) {
      }
    }

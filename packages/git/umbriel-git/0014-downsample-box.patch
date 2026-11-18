@@ -270,7 +270,7 @@ index 74bd1036..76ad36ac 100644
      moveToWorkspace(workspace, attachToLayout, LayoutAttachOrigin::ExistingView);
    }
 diff --git a/src/view/view.h b/src/view/view.h
-index 15f6d4f0..4cbebe95 100644
+index 192aa15d..891d1dde 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -143,6 +143,10 @@ namespace umbriel {

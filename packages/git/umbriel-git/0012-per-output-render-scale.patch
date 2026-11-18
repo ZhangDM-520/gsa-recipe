@@ -1,8 +1,8 @@
 diff --git a/docs/user/configuration.md b/docs/user/configuration.md
-index 5432c51c..bd1a855a 100644
+index 2aecf90a..8e3f3aae 100644
 --- a/docs/user/configuration.md
 +++ b/docs/user/configuration.md
-@@ -104,6 +104,7 @@ autostart = ["noctalia", "kitty"]
+@@ -106,6 +106,7 @@ autostart = ["noctalia", "kitty"]
  mod_key = "Super"
  xwayland = true
  xwayland_native_resolution = false
@@ -10,7 +10,7 @@ index 5432c51c..bd1a855a 100644
  xwayland_xsettings = true
  xwayland_primary_output = ""
  nvidia_sync_workaround = true
-@@ -119,6 +120,7 @@ honor_restored_maximize = false
+@@ -121,6 +122,7 @@ honor_restored_maximize = false
  | `mod_key`                    | string       | Super, or Alt when nested | Modifier represented by `Mod` in keybinds.                                                                                                                                           |
  | `xwayland`                   | bool         | `true`                    | Start Xwayland lazily for X11 applications. Changes require a restart.                                                                                                               |
  | `xwayland_native_resolution` | bool         | `false`                   | Show outputs to X11 applications at their physical resolution, so they render sharp on scaled outputs. Changes require a restart.                                                    |
@@ -18,7 +18,7 @@ index 5432c51c..bd1a855a 100644
  | `xwayland_xsettings`         | bool         | `true`                    | Announce the interface scale and cursor theme to X11 applications through XSETTINGS. Turn it off to run your own XSETTINGS manager, such as `xsettingsd`. Changes require a restart. |
  | `xwayland_primary_output`    | string       | `""`                      | Connector or monitor identity to publish as the X11 primary monitor. Applies on reload. Empty leaves primary selection unmanaged.                                                    |
  | `nvidia_sync_workaround`     | bool         | `true`                    | Wait for GPU completion on composed NVIDIA outputs without explicit synchronization. Applies on reload. See [NVIDIA synchronization](#nvidia-synchronization).                       |
-@@ -131,9 +133,11 @@ honor_restored_maximize = false
+@@ -133,9 +135,11 @@ honor_restored_maximize = false
  
  X11 bounding shapes clip windows to their visible regions, including holes and separate rectangles. Shape changes apply while the window is open and are preserved in overview previews, window captures, and close animations. Input shapes remain independent, so a click-through overlay can keep drawing its visible widgets.
  
@@ -165,7 +165,7 @@ index 93b11f5a..50eda383 100644
  
  Accepted values are `normal`, `90`, `180`, `270`, `flipped`, `flipped-90`, `flipped-180`, and `flipped-270`.
 diff --git a/examples/config.toml b/examples/config.toml
-index 5a87ac24..56a9c82a 100644
+index b8df36dc..68a72173 100644
 --- a/examples/config.toml
 +++ b/examples/config.toml
 @@ -28,6 +28,8 @@ files = []
@@ -185,7 +185,7 @@ index 5a87ac24..56a9c82a 100644
  # vrr = "fullscreen"
  # hdr = "auto"
  # sdr_transfer = "gamma22" # Or "srgb" for piecewise SDR decoding in HDR.
-@@ -442,6 +445,12 @@ blur_popups = true
+@@ -450,6 +453,12 @@ blur_popups = true
  match.namespace = "^noctalia-(notification|dock|panel|attached-panel|osd)$"
  blur_optimized = false
  
@@ -199,7 +199,7 @@ index 5a87ac24..56a9c82a 100644
  # Overview
  # Built-in overview and animation values are used. The top-left hot corner opens
 diff --git a/src/config/change.cpp b/src/config/change.cpp
-index 05833ba2..4d7a6c23 100644
+index 6d29c719..083b6048 100644
 --- a/src/config/change.cpp
 +++ b/src/config/change.cpp
 @@ -46,6 +46,7 @@ namespace umbriel {
@@ -211,7 +211,7 @@ index 05833ba2..4d7a6c23 100644
            && lhs.vrr == rhs.vrr
            && lhs.hdr == rhs.hdr
 diff --git a/src/config/config.h b/src/config/config.h
-index de197e3f..7ce3483d 100644
+index ed812630..d4c7bf50 100644
 --- a/src/config/config.h
 +++ b/src/config/config.h
 @@ -336,6 +336,9 @@ namespace umbriel {
@@ -505,7 +505,7 @@ index 5cf72036..08575895 100644
      void refreshStartupRuleEffects();
      void applyFadeAlpha();
 diff --git a/src/output/output.cpp b/src/output/output.cpp
-index 3fc6e73e..5b60d450 100644
+index 529d8183..0807ab1b 100644
 --- a/src/output/output.cpp
 +++ b/src/output/output.cpp
 @@ -663,6 +663,28 @@ namespace umbriel {
@@ -600,10 +600,10 @@ index f84afcc0..fda08bf1 100644
      // Whether a workspace step wraps around the ends of this output's inventory.
      bool configuredCyclicWorkspaces() const;
 diff --git a/src/server/ipc_commands.cpp b/src/server/ipc_commands.cpp
-index a2ea5879..2a59a6cc 100644
+index db892c2d..8b1765cf 100644
 --- a/src/server/ipc_commands.cpp
 +++ b/src/server/ipc_commands.cpp
-@@ -326,6 +326,7 @@ namespace umbriel {
+@@ -429,6 +429,7 @@ namespace umbriel {
          std::println("  Position: {},{}", position.value("x", 0), position.value("y", 0));
          std::println("  Transform: {}", output.value("transform", "normal"));
          std::println("  Scale: {:f}", output.value("scale", 1.0));
@@ -611,7 +611,7 @@ index a2ea5879..2a59a6cc 100644
          const auto& usable = output.at("usable_area");
          std::println(
              "  Usable area: {}x{}{:+}{:+}", usable.value("width", 0), usable.value("height", 0), usable.value("x", 0),
-@@ -1043,6 +1044,7 @@ namespace umbriel {
+@@ -1146,6 +1147,7 @@ namespace umbriel {
            {"usable_area", {{"x", usable.x}, {"y", usable.y}, {"width", usable.width}, {"height", usable.height}}},
            {"transform", transformName(wlrOutput->transform)},
            {"scale", wlrOutput->scale},
@@ -620,10 +620,10 @@ index a2ea5879..2a59a6cc 100644
            {"hdr_active", output->hdrActive()},
            {"direct_scanout", std::move(directScanout)},
 diff --git a/src/server/server.cpp b/src/server/server.cpp
-index 93701695..b1bc4d41 100644
+index 47fe6dcb..3885a755 100644
 --- a/src/server/server.cpp
 +++ b/src/server/server.cpp
-@@ -711,6 +711,19 @@ namespace umbriel {
+@@ -793,6 +793,19 @@ namespace umbriel {
        throw std::runtime_error(std::string("umbrielfx scene helpers are not linked correctly: ") + mismatch);
      }
      m_scene = wlr_scene_create();
@@ -644,10 +644,10 @@ index 93701695..b1bc4d41 100644
        wlr_scene_set_linux_dmabuf_v1(m_scene, linuxDmabuf);
      }
 diff --git a/src/server/server_events.cpp b/src/server/server_events.cpp
-index fa549261..d90324c4 100644
+index b6d21b1a..796a4aea 100644
 --- a/src/server/server_events.cpp
 +++ b/src/server/server_events.cpp
-@@ -862,6 +862,10 @@ namespace umbriel {
+@@ -863,6 +863,10 @@ namespace umbriel {
        // Scale may have changed; every surface must hear about it or scale-aware
        // clients keep mapping input with the stale scale.
        refreshSurfaceScales();
@@ -659,10 +659,10 @@ index fa549261..d90324c4 100644
      if (effects.tearingPolicy) {
        for (const auto& output : m_outputs) {
 diff --git a/src/view/view.cpp b/src/view/view.cpp
-index 96e91569..bab6e581 100644
+index 27b3f9a0..74bd1036 100644
 --- a/src/view/view.cpp
 +++ b/src/view/view.cpp
-@@ -976,12 +976,27 @@ namespace umbriel {
+@@ -1102,12 +1102,27 @@ namespace umbriel {
      if (m_captureSource != nullptr) {
        umbrielfx_scene_capture_source_set_scale(m_captureSource, output->wlr()->scale);
      }
@@ -693,7 +693,7 @@ index 96e91569..bab6e581 100644
      if (popup == nullptr || m_sceneTree == nullptr || m_toplevel == nullptr) {
        return;
 diff --git a/src/view/view.h b/src/view/view.h
-index 27edfbdd..657a82eb 100644
+index 79664fc1..192aa15d 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -153,6 +153,10 @@ namespace umbriel {
@@ -707,7 +707,7 @@ index 27edfbdd..657a82eb 100644
      bool confinePointer();
      double touchpadScrollFactor();
      bool allowsShortcutsInhibit();
-@@ -781,6 +785,9 @@ namespace umbriel {
+@@ -793,6 +797,9 @@ namespace umbriel {
      // popups included). Scale-aware clients size and map pointer coordinates by this, so it must follow the view across
      // outputs and track scale changes.
      void notifyOutputScale();
@@ -717,7 +717,7 @@ index 27edfbdd..657a82eb 100644
      // Keep floats visually at the last requested size while client geometry lags.
      void syncFloatingSurfaceClip();
      void beginFloatingResize(uint32_t edges);
-@@ -1117,6 +1124,7 @@ namespace umbriel {
+@@ -1154,6 +1161,7 @@ namespace umbriel {
      AnimatedValue m_ruleBlur{0.0};
      bool m_backgroundRender = false;
      bool m_allowShortcutsInhibit = true;
@@ -726,10 +726,10 @@ index 27edfbdd..657a82eb 100644
      float m_overviewOpacity = 1.0F;
      std::vector<std::unique_ptr<ViewSurfaceWatch>> m_viewSurfaceWatches;
 diff --git a/src/view/view_lifecycle.cpp b/src/view/view_lifecycle.cpp
-index 2c67b527..c134381f 100644
+index c37031f1..571e429e 100644
 --- a/src/view/view_lifecycle.cpp
 +++ b/src/view/view_lifecycle.cpp
-@@ -858,6 +858,8 @@ namespace umbriel {
+@@ -866,6 +866,8 @@ namespace umbriel {
      }
      m_contentType = next;
      m_server->scheduleIpcWindowsEvent();
@@ -931,10 +931,10 @@ index fbf8e7da..35b31394 100644
      m_primary = std::make_unique<XwaylandPrimary>(server.display());
      m_wlr->data = this;
 diff --git a/tests/harness/check.sh b/tests/harness/check.sh
-index c8a99e10..a3c3b843 100755
+index 2808bfd6..4daf09b3 100755
 --- a/tests/harness/check.sh
 +++ b/tests/harness/check.sh
-@@ -345,16 +345,20 @@ row() {
+@@ -346,16 +346,20 @@ row() {
  # No autostart, no Xwayland, no cheatsheet: a check wants a bare compositor, and
  # each of those would spawn processes outside the container. A check that needs
  # X11 opts in with `# harness: xwayland=true` in its header, or with
@@ -957,7 +957,7 @@ index c8a99e10..a3c3b843 100755
    if [[ -n $cursor_theme ]]; then
      cat >> "$1" << EOF
  
-@@ -382,7 +386,7 @@ check_keyboard() {
+@@ -383,7 +387,7 @@ check_keyboard() {
  
  check_xwayland() {
    local declared
@@ -1739,10 +1739,10 @@ index 00000000..29b49448
 +  fi
 +}
 diff --git a/tests/meson.build b/tests/meson.build
-index 3a780e9f..8bdcdb54 100644
+index 2dc43bfb..da960c9e 100644
 --- a/tests/meson.build
 +++ b/tests/meson.build
-@@ -218,6 +218,8 @@ layer_client = executable(
+@@ -224,6 +224,8 @@ layer_client = executable(
      layer_shell_client_c,
      xdg_shell_client_h,
      xdg_shell_client_c,
@@ -1751,7 +1751,7 @@ index 3a780e9f..8bdcdb54 100644
    ],
    dependencies: [wayland_client_dep],
  )
-@@ -327,6 +329,8 @@ fractional_client = executable(
+@@ -333,6 +335,8 @@ fractional_client = executable(
      legacy_decoration_client_c,
      xdg_decoration_client_h,
      xdg_decoration_client_c,
@@ -1761,10 +1761,10 @@ index 3a780e9f..8bdcdb54 100644
    dependencies: [wayland_client_dep],
  )
 diff --git a/tests/unit/config_change.cpp b/tests/unit/config_change.cpp
-index 60560127..cfdc2a5b 100644
+index a394e78f..5e941066 100644
 --- a/tests/unit/config_change.cpp
 +++ b/tests/unit/config_change.cpp
-@@ -205,6 +205,22 @@ UMBRIEL_TEST(eachSectionIsReportedOnItsOwn) {
+@@ -217,6 +217,22 @@ UMBRIEL_TEST(eachSectionIsReportedOnItsOwn) {
    }
  }
  
@@ -1788,7 +1788,7 @@ index 60560127..cfdc2a5b 100644
    Config before;
    Config after = before;
 diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
-index 418fc46f..8738eb70 100644
+index 52235928..493aaa15 100644
 --- a/tests/unit/config_load.cpp
 +++ b/tests/unit/config_load.cpp
 @@ -822,6 +822,47 @@ center_focused = true
@@ -1941,10 +1941,10 @@ index 4d48b1f5..7d22ba32 100644
    Config config;
  
 diff --git a/tests/unit/config_schema.cpp b/tests/unit/config_schema.cpp
-index 6ecde186..868e9919 100644
+index 7e2b6b32..0e2e55c5 100644
 --- a/tests/unit/config_schema.cpp
 +++ b/tests/unit/config_schema.cpp
-@@ -290,6 +290,21 @@ UMBRIEL_TEST(outputSdrGamutSchemaListsCanonicalValuesAndDefault) {
+@@ -298,6 +298,21 @@ UMBRIEL_TEST(outputSdrGamutSchemaListsCanonicalValuesAndDefault) {
    CHECK(found);
  }
  
