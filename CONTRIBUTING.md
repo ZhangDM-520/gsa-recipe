@@ -20,8 +20,8 @@ Explain non-obvious decisions in the recipe. **A comment explains the code, the
 kernel option, or the trim decision; it does not inventory the machine it was
 written on.** Kernel versions, package versions installed on the author's
 machine, CPU thread counts, bootloader command lines and incident narratives
-belong in the maintainer's private warehouse; `AGENTS.md` §6 holds a live
-decision.
+belong in the maintainer's private warehouse, where `AGENTS.md` rule 17 keeps
+that boundary.
 `linux-cachyos` is the worked example (2026-09-19).
 
 ## Recipe changes
@@ -51,7 +51,7 @@ decision.
    record, and only after verifying the relationship against the package
    metadata and a build-order reason. Coupled-batch tags
    (`abi=must`/`abi=should`) belong in the same record's `tags` field — see
-   "Updating coupled stacks" in `docs/maintainer-guide.md`.
+   `AGENTS.md` rules 13, 14 and 23 for the coupled-batch contract.
 6. Regenerate `.SRCINFO` from the repository root:
 
    ```sh

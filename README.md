@@ -108,11 +108,9 @@ installing anything you have not reviewed.
 
 | Document | What it answers |
 | --- | --- |
-| `AGENTS.md` | This repository's memory: rules, pitfalls, queue, and the shell-boundary hazards |
-| `docs/maintainer-guide.md` | Adding and updating recipes, version-synced releases, coupled stacks |
+| `AGENTS.md` | The operating contract: mental model, rules, pitfalls, and how to work here |
 | `docs/package-policy.md` | What a recipe directory may hold versus what is fetched at build time |
 | `docs/source-sharing.md` | The shared-source mirror contract and what qualifies as a canonical mirror |
-| `docs/adr/` | The decisions that fought back: the shared PGO gate, the one-record topology |
 | `CONTRIBUTING.md` | The recipe-change checklist and validation standard |
 | `SECURITY.md` | Trust model and safe-operation rules |
 | `CONTEXT.md` | The project's vocabulary |

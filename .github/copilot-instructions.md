@@ -1,51 +1,50 @@
-# Copilot instructions — Gentoo_Style_Arch (recipe repository)
+# Copilot instructions — the `gsa` recipe repository
 
-Curated Arch Linux recipe set for **AMD laptops** (AMD CPU, amdgpu/radeon) plus declarative build topology (`config/topology.conf`). **Data only**: the `gsa` engine lives in `ZhangDM-520/gentoo-style-arch` and runs as `/usr/bin/gsa` (`packages/core/gsa-pm` packages it, self-tracking). Never vendor/patch engine code here.
-
-- **`AGENTS.md`**: Stack shape, edges, landmines, rule/pitfall/queue indexes (`docs/{rules,optimization-playbook,pitfalls,queue}.md` hold details).
-- **`docs/JOURNAL.md` & `.logs/scratchpad.md`**: Chronology tail and active working buffer.
+Curated Arch Linux recipes for **AMD laptops** (AMD CPU, amdgpu/radeon) plus a declarative build topology. **Data only**: the `gsa` engine lives in `ZhangDM-520/gentoo-style-arch` and runs as `/usr/bin/gsa` (`packages/core/gsa-pm` packages it, self-tracking). Never vendor or patch engine code here; `docs/gsa-contract.md` in the engine repository is authoritative.
 
 ## Commands
 
-Privilege follows pacman: `-Q*`, `-Sl`, `-Ma`/`-Md`/`-Mi`/`-Ml`/`-Ms`/`-Mw`, `--dry-run`, `-Mh`, and `--{install-decide,qa-check,print-*}` run unprivileged; `-S`, `-B`, `-U`, `-Sw` (`fetch`), `-Sy`, `-Su`, `-Mc*`, and write-side `-M*` require root (rc `3`); `-Mm` refuses root. `makepkg` always drops to the user.
-
 ```sh
-gsa --help | -Qg | -Qt | -Qi <ref> | -Sl @git | -Qa <ref> | -Qr | -Qp <arc> | -Qu | -Qb | -Ma
-bash -n packages/<cat>/<pkg>/PKGBUILD && GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<pkg> > packages/<cat>/<pkg>/.SRCINFO
+bash tests/run-all.sh [filter|--serial|-j N]     # the battery; tests the installed /usr/bin/gsa
+bash -n packages/<cat>/<pkg>/PKGBUILD            # recipe syntax
+GIT_CONFIG_COUNT=0 makepkg --printsrcinfo --dir packages/<cat>/<pkg> > packages/<cat>/<pkg>/.SRCINFO
+gsa -Qg | -Qt | -Qi <ref> | -Sl @git | -Qr | -Qu | -Ma
 gsa --qa-check <declared-deps|abi-closure|abi-exposure|provides-versioning|purged-tools|stale-ignorepkg|swap-drift>
-bash tests/run-all.sh [filter|--serial|-j N]                 # tests installed /usr/bin/gsa (GSA_TEST_GSA_BIN=... overrides)
-cd ../gentoo-style-arch && GSA_RECIPE_CHECKOUT=$PWD/../gsa-recipe bash tests/srcinfo-freshness.sh
-sudo gsa -S --dry-run @git | sudo gsa -B --leaf <pkg> | sudo gsa -S <pkg|@core> | sudo gsa -Sy
-sudo gsa -Md --fix | sudo gsa -Mi [--prune|--backfill] | gsa -Mh | sudo gsa -Ml --keep N | sudo gsa -Mc @git
+sudo gsa -S --dry-run @git     # repeat per group; plan only
+sudo gsa -S --leaf <pkg>       # one recipe, no consumer expansion
+GIT_CONFIG_COUNT=0 makepkg -f --dir packages/core/gsa-pm     # engine bootstrap
 ```
 
-- **Audit & mirror notes**: `gsa -Ma` always exits `0`—read its report (`packages/deprecated/` `package-drift` rows are expected). `gsa -Mm` rewrites cwd recipes into mirror symlinks when passed `--noconfirm` (probe without it first).
-- **Bootstrap `gsa-pm`**: Build via `GIT_CONFIG_COUNT=0 makepkg -f --dir packages/core/gsa-pm`.
-- **Build safety**: Never use real rebuilds as syntax checks or run concurrent heavy builds (OOM risk); build in store/runtime clone, never in checkout.
+- `gsa -Ma` is report-only and **always exits 0** — read the report. One `package-drift` row per `packages/deprecated/` directory is expected.
+- Never use a real rebuild as a syntax check, and never run two heavy builds concurrently (OOM risk). Build in the store or a copy of the tree; a repo-cwd build rewrites `pkgver=` in place.
+- `gsa -Mm --noconfirm` is the one verb that rewrites the checkout (mirror symlinks). Probe without `--noconfirm` first.
 
-## Selection semantics & exit codes
+## Change checklist
 
-Selections expand to **transitive consumers** (`--leaf` builds exact targets). Exact lookup only (typos exit `2`); `<id>-snapshot` aliases primary `#commit=` recipes while keeping `-git` ids. `--skip` and `--skip-built` cannot combine. `gsa --install-decide <checked|force> <arc...>` exposes install rows (`0` plan, `1` refusal, `2` usage).
+1. Recipe lives in `packages/<category>/<id>/` with `PKGBUILD`, committed `.SRCINFO`, and any local patch, asset or licence; a generator pair (`PKGBUILD.in` + `update.PKGBUILD`) stays in lockstep with `PKGBUILD`.
+2. A new local asset must survive **two** ignore layers — the recipe's own `.gitignore` (`*` plus `!` negations) and the root `.gitignore` (which acknowledges only `LICENSES/`). Confirm with `git check-ignore -v <asset>` (no output = visible). Never let a recipe `.gitignore` match itself.
+3. One `config/topology.conf` record: `id|path|groups|edges[|tags]`. It is the only place binding an ID to a path; groups come from the closed roster (`gsa -Qg`); edges need `pacman -T`/`.SRCINFO` evidence; tags carry `abi=must|should`, `abi-rev=<n>`, `app-cluster=<name>`, `version-sync=nvchecker`, `toolchain=gcc|clang`. A malformed record breaks every command.
+4. Regenerate `.SRCINFO` from the same edit; `provides=` goes after `pkgver=`.
+5. Validate in this order: `bash -n` → `.SRCINFO` → `gsa -Sl` → `gsa -Ma` (read it) → `gsa -S --dry-run` → `bash tests/run-all.sh`. Any topology edit needs the battery, not just the matching fixture.
 
-- **Exit codes**: `0` clean, `1` `--fail-fast` build failure, `2` usage/config error, `3` refusal/gate abort, `4` cone-stop failure, `5` deferral-only, `130` interrupted (record emitted).
+## Refused in review
 
-## Structure & mental model
+- Baseline compiler flags in a recipe (`-O3`, `-march`, `-mtune`, `-pipe`, `-fno-plt`, `-fuse-ld=mold`, LTO/RELRO). The engine injects them; a recipe keeps a reasoned delta or a substitution (`CFLAGS=${CFLAGS/-fno-math-errno/}`).
+- Real-hand `b2sums` growth per knob (`b2sums+=()`); keep the flat list and add a parse-time guard instead.
+- `--skippgpcheck`, dropping `?signed`, or `SKIP`ping a pinned `#commit=`/patch sum to get past a failure.
+- `!check`/`autodeps` as `options` (invalid under pacman 7.x), or dropping a PGO-training or capability-protecting test.
+- Unversioned provides for a NAME capability, hand-versioned soname provides, or a concrete provider where a virtual exists.
+- Host facts in a recipe comment (thread counts, installed versions, incident narrative).
+- Weakening an ABI/fail-closed gate, or writing `/var/lib/gsa` from a recipe.
 
-Topology (not folder names) defines build order and groups (`git`, `stable`, `core`, `misc`, `app`, `build-tools`).
+## PGO seam
 
-- **`packages/<cat>/<id>/`**: `PKGBUILD` + committed `.SRCINFO` + local patches/assets/licences (`PKGBUILD.in` + `update.PKGBUILD` kept in lockstep). `packages/deprecated/` holds parked recipes (commented out in `topology.conf`).
-- **`config/` (3 files only; enforced by engine `tests/project.sh`)**: `topology.conf` (`id|path|groups|edges[|tags]`, tags: `abi=must|should`, `abi-rev=<n>`, `app-cluster=<name>`, `version-sync=nvchecker`, `toolchain=gcc|clang`), `build-defaults.conf`, `abi-exclusions.conf` (`id|reason|review-by`).
-- **`lib/`, `tools/`, `tests/`**: `lib/{pgo.sh,cups-config}`, `tools/` diagnostics, `tests/` (`tests/assets/` frozen oracle, `tests/lib/*.bash` helpers).
-- **`gsa-pm` `--print-*` seam**: Ships `/etc/gsa/*-makepkg.conf` and shell completions via `tests/gsa-pm-shipped-files.sh`.
+`source "$startdir/../../../lib/pgo.sh"` at top level and put `verify_no_profile_instrumentation "$pkgdir"` as the **last** statement of every `package*()` (fatal `exit 1`). Thresholds are per-recipe `local` variables, never a module knob. Phase 2 re-runs the configure, not only the build.
 
-## Key conventions & fixture authoring
+## Fixtures
 
-- **Two ignore layers**: Local `*` + `!` negations and root `.gitignore` (denies subdirs except `LICENSES/`); verify with `git check-ignore -v <asset>`. Fetched-only inputs go in `FETCHED-ONLY`.
-- **Flat `b2sums`**: Keep `b2sums` flat (guard mismatches, exempt `GENINTEG=1`).
-- **Provides & virtual deps**: Toolchain `-git` provides are versioned (`meson=${pkgver}`); library provides are bare sonames (`libfoo.so`); use virtual deps (`java-runtime`, `libgl`).
-- **Engine-owned optimization & PGO**: No baseline flags in recipes; source `lib/pgo.sh` at top and put `verify_no_profile_instrumentation "$pkgdir"` last in every `package*` (fatal `exit 1`; per-recipe `pgo_min_*` thresholds).
-- **Fail-closed gates & state**: Never weaken checksums/PGP/ABI gates and never write `/var/lib/gsa` from recipes.
-- **Fixtures (`tests/`)**: `$TMPDIR`-scoped, non-mutating, parallel-safe (`GSA_BUILD_DIR` isolated per fixture), using `tests/lib/{fixture-lib,rr-v2}.bash` and `GSA_FAKE_*` stubs; assert on builder output/decision rows, not prose.
-- **Workflow**: Add recipes in order (`PKGBUILD` + negations -> `topology.conf` -> `.SRCINFO` -> `bash -n`/`gsa -Sl`/`gsa -Ma`/`--dry-run`); review uncommitted `gsa -Sy` diffs before committing.
-- **Work log**: Keep comments public (`docs/JOURNAL.md` 1-line summary; `.logs/scratchpad.md` reset per task; `docs/CURRENT.md` overwrite-only by its own lane).
-- **Commit trailers**: End commits with `Assisted-by: LLM (human-reviewed)` then `Signed-off-by:` (no `Co-authored-by`); ask before committing/pushing.
+`tests/*.sh` are discovered (a new one needs no runner edit), `$TMPDIR`-scoped, non-mutating and parallel-safe (`GSA_BUILD_DIR` per fixture), using `tests/lib/{fixture-lib,rr-v2}.bash` and `GSA_FAKE_*` stubs. Assert on builder output and decision rows (`--install-decide`), never rendered prose. A stub must scan argv rather than match option positions, and a fixture must never hardcode a value the recipe already owns.
+
+## Commits
+
+Every commit ends with `Assisted-by: LLM (human-reviewed)` then `Signed-off-by` matching the configured git identity; no `Co-authored-by`. Never commit or push unprompted — a green battery is evidence, not consent.
