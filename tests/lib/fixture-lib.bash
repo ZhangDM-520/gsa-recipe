@@ -151,7 +151,7 @@ EOF
 }
 
 # install_fish_oracle DIR — install the FROZEN fish oracle beside a scratch
-# workspace for a fish-only deviation section (docs/gsa-fixture-migration.md;
+# workspace for a fish-only deviation section (the retired fixture contract;
 # the deviations are named in each fixture's header). The oracle under
 # tests/assets/ is a frozen REFERENCE (the retired engine, kept byte-identical
 # for differential comparison), never an engine of record. It resolves its

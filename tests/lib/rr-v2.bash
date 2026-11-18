@@ -16,7 +16,7 @@
 # stub-vocabulary role (docs/gsa-contract.md §D.2). The fish-era fixture
 # synthesis helpers (make_workspace, add_package, stub_*, run_builder) and the
 # `format: 1` rr_* parser stay in fixture-lib.bash until their fixtures flip
-# per docs/gsa-fixture-migration.md; fixture-lib.bash itself must remain
+# per the retired fixture contract; fixture-lib.bash itself must remain
 # byte-identical during the staged migration (single-writer discipline).
 #
 # ─── What this file provides ────────────────────────────────────────────────
@@ -82,7 +82,7 @@ vgrep() {
 # STRICTNESS: the parser rejects malformed blocks loudly (reason on stderr,
 # non-zero status) instead of letting a fixture fall back to prose. Rules the
 # §H grammar states are enforced as written; where the contract is silent the
-# parser takes the strict reading and docs/gsa-fixture-migration.md "Contract
+# parser takes the strict reading and the retired fixture contract "Contract
 # gaps found" records the silence: blank lines and control characters inside
 # the block are rejected, duplicate scalars/rows/continuation keys are
 # rejected, plan and outcome rows must agree with the `order` scalar — one
@@ -454,14 +454,14 @@ rr2_remaining() {
 #          the cwd upward). The binary is GSA_TEST_GSA_BIN (a fixture's
 #          `cargo build --offline --target-dir <fixture>/cargo -p gsa-cli`
 #          product, or a prebuilt binary) or `gsa` from PATH.
-#   fish — the FROZEN ORACLE (docs/gsa-fixture-migration.md): `fish
+#   fish — the FROZEN ORACLE (the retired fixture contract): `fish
 #          "$WORKSPACE/build-all.fish" ARG...`, only for the fixtures'
 #          fish-only deviation sections, which install the oracle copy with
 #          tests/lib/fixture-lib.bash's install_fish_oracle. It is an oracle
 #          comparison, never an engine.
 #
 # ARG... is always the CURRENT engine's own argv — the per-fixture argv
-# re-contract (docs/gsa-fixture-migration.md) flips the spelling at each phase;
+# re-contract (the retired fixture contract) flips the spelling at each phase;
 # this function removes the engine identity from the call sites so that flip
 # never touches the invocation mechanics. An unknown GSA_TEST_ENGINE is a loud
 # usage error (FIXTURE_RC=2) naming the value and the two spellings.
@@ -613,7 +613,7 @@ rr2_env_forward() {
 # (unchanged) fish-era table; this table is the v2 successor and carries the
 # same knob names forward plus the knobs this migration introduces. The two
 # tables coexist only until Phase 5 retires fixture-lib.bash's engine-era
-# content — one fact, one home from cutover on (docs/gsa-fixture-migration.md).
+# content — one fact, one home from cutover on (the retired fixture contract).
 
 declare -A GSA_FAKE_KNOB_TABLE=()
 
@@ -700,13 +700,13 @@ unset _knob _desc
 # archive candidate in plan order, single spaces between the first two fields,
 # `<reason…>` the remainder of the line (a kebab reason key, optionally
 # followed by detail). This framing REPLACES the tab-framed plan_row codec of
-# build-all.fish (docs/gsa-fixture-migration.md §6 R-5: the tab codec has no
+# build-all.fish (the retired fixture contract §6 R-5: the tab codec has no
 # v2 form); these helpers are `format: 2`-independent — decision rows are the
 # seam's stdout, never a run-record block, so rr2_body does not apply.
 #
 # rr2_decisions — the decision-row stream, normalized: `<pkgbase> <decision>
 # <reason-key>` per row in stream (= plan) order, detail after the reason key
-# stripped (docs/gsa-fixture-migration.md §7). The decision vocabulary is
+# stripped (the retired fixture contract §7). The decision vocabulary is
 # §E.3's closed set (install|skip|refuse|noop|parked); reason keys are OPEN
 # (§L.2: additive reason keys do not bump the format), so the key is kept as
 # observed and never matched against a table here. A malformed row is a loud
