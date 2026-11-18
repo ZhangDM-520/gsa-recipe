@@ -193,10 +193,10 @@ index c2b3cf1c..29bf676c 100644
      Easing easing = Easing::EaseOutCubic;
      BezierCurve bezier{};
 diff --git a/src/scene/effect_registry.cpp b/src/scene/effect_registry.cpp
-index e4303532..baeef2fa 100644
+index f24aecd8..04b4a2ac 100644
 --- a/src/scene/effect_registry.cpp
 +++ b/src/scene/effect_registry.cpp
-@@ -451,4 +451,11 @@ vec4 animation(vec2 uv) {
+@@ -472,4 +472,11 @@ vec4 animation(vec2 uv) {
      bind(node, event, value, static_cast<float>(evaluateCurve(value.curve(), value.progress())), direction);
    }
  
@@ -209,10 +209,10 @@ index e4303532..baeef2fa 100644
 +
  } // namespace umbriel
 diff --git a/src/scene/effect_registry.h b/src/scene/effect_registry.h
-index 9b42b181..de4136de 100644
+index ac9060f2..078c8627 100644
 --- a/src/scene/effect_registry.h
 +++ b/src/scene/effect_registry.h
-@@ -129,6 +129,9 @@ namespace umbriel {
+@@ -133,6 +133,9 @@ namespace umbriel {
    void
    bindAnimationEffect(wlr_scene_node* node, AnimationEvent event, const AnimatedValue& value, float direction = 0.0F);
    void bindAnimationEffect(wlr_scene_node* node, AnimationEvent event, const AnimatedColor& value, float direction);
@@ -317,7 +317,7 @@ index 6f2a5e33..025ffed8 100644
      m_decoration.setShadowEnabled(enabled);
      m_server->updateIdleInhibit();
 diff --git a/src/view/view.h b/src/view/view.h
-index 8fa5404b..def23685 100644
+index f5c170a5..afc5684b 100644
 --- a/src/view/view.h
 +++ b/src/view/view.h
 @@ -468,6 +468,19 @@ namespace umbriel {
@@ -340,7 +340,7 @@ index 8fa5404b..def23685 100644
      const ViewPresentation& presentation() const { return m_presentation; }
      // Size/position to the full output and drop tile clips (exclusive zones do not apply).
      void applyFullscreenLayout(bool animate = false);
-@@ -1119,6 +1132,16 @@ namespace umbriel {
+@@ -1121,6 +1134,16 @@ namespace umbriel {
      double m_openingScale = 1.0;
      std::optional<std::array<int, 2>> m_openingFloatingSize;
      int m_openingSlide = 0;
@@ -358,10 +358,10 @@ index 8fa5404b..def23685 100644
      // Floating because its workspace uses stacking; tiles again when moved to a tiling layout.
      bool m_floatedByStackingLayout = false;
 diff --git a/src/view/view_animation.cpp b/src/view/view_animation.cpp
-index 3ffa2c2b..8d9f5484 100644
+index 36fc08c7..7b8dd7e0 100644
 --- a/src/view/view_animation.cpp
 +++ b/src/view/view_animation.cpp
-@@ -41,7 +41,8 @@ namespace umbriel {
+@@ -47,7 +47,8 @@ namespace umbriel {
    }
  
    bool View::fadeComposited() const {
@@ -371,10 +371,12 @@ index 3ffa2c2b..8d9f5484 100644
        return false;
      }
      return m_customFade || (!m_inScratchpad && effectRegistry().lifecycleEffect(AnimationEvent::WindowsIn) != nullptr);
-@@ -120,6 +121,12 @@ namespace umbriel {
+@@ -126,7 +127,13 @@ namespace umbriel {
    }
  
    void View::cancelFadeAnimation() {
+-    const bool wasAnimating = m_fade.animating();
++    const bool wasAnimating = m_fade.animating() || minimizeFadeActive();
 +    // An unmap or a fresh map abandons a minimize transition. A conceal left the node and box collapsed, and a re-map
 +    // may never issue the presentation that would put them back.
 +    if (minimizeConcealing()) {
@@ -384,7 +386,7 @@ index 3ffa2c2b..8d9f5484 100644
      m_fade.snap(1.0);
      setFadeAlpha(1.0F);
      releaseOpeningPresentation();
-@@ -757,6 +764,99 @@ namespace umbriel {
+@@ -778,6 +785,99 @@ namespace umbriel {
      syncAnimationEffects();
    }
  
@@ -484,7 +486,7 @@ index 3ffa2c2b..8d9f5484 100644
    void View::animateFadeTo(float toAlpha, int durationMs, const AnimationCurve& curve) {
      m_customFade = m_inScratchpad && effectRegistry().animationEffect(AnimationEvent::Scratchpad) != nullptr;
      m_fade.snap(m_fadeAlpha);
-@@ -777,6 +877,10 @@ namespace umbriel {
+@@ -798,6 +898,10 @@ namespace umbriel {
    }
  
    void View::animateTo(int x, int y) {
@@ -495,7 +497,7 @@ index 3ffa2c2b..8d9f5484 100644
      if (m_mapped && !m_tiled && (layoutTargetX() != x || layoutTargetY() != y)) {
        m_server->scheduleIpcWindowsEvent();
      }
-@@ -839,7 +943,10 @@ namespace umbriel {
+@@ -865,7 +969,10 @@ namespace umbriel {
        m_effects.detach();
        return;
      }
@@ -507,7 +509,7 @@ index 3ffa2c2b..8d9f5484 100644
        const auto& movement = m_posX.animating() ? m_posX : (m_posY.animating() ? m_posY : m_presentation.animation());
        bindAnimationEffect(&target->node, AnimationEvent::WindowsMove, movement);
      } else if (
-@@ -874,7 +981,13 @@ namespace umbriel {
+@@ -900,7 +1007,13 @@ namespace umbriel {
        m_dragSlotBound = false;
      }
      bindAnimationEffect(&target->node, AnimationEvent::DimUnfocused, m_focusDim);
@@ -522,7 +524,7 @@ index 3ffa2c2b..8d9f5484 100644
      wlr_scene_node_set_animation(
          &target->node, static_cast<unsigned>(m_inScratchpad ? AnimationEvent::WindowsIn : AnimationEvent::Scratchpad),
          nullptr, nullptr
-@@ -965,6 +1078,7 @@ namespace umbriel {
+@@ -1003,6 +1116,7 @@ namespace umbriel {
                != nullptr;
        const float rawAlpha = std::clamp(static_cast<float>(m_fade.current()), 0.0F, 1.0F);
        const bool builtInSlide = !m_inScratchpad
@@ -530,7 +532,7 @@ index 3ffa2c2b..8d9f5484 100644
            && !m_customFade
            && config().animation.windowsIn.style == "slide"
            && effectRegistry().animationEffect(AnimationEvent::WindowsIn) == nullptr;
-@@ -1005,6 +1119,14 @@ namespace umbriel {
+@@ -1043,6 +1157,17 @@ namespace umbriel {
        active = active || m_fade.animating();
        openingFinished = m_mapped && !m_inScratchpad && !m_fade.animating() && m_fade.target() > m_fade.from();
      }
@@ -540,12 +542,15 @@ index 3ffa2c2b..8d9f5484 100644
 +      } else {
 +        m_minimizePhase = MinimizePhase::None;
 +      }
++      // A finished conceal snaps the fade and restores the resting box outside
++      // the tick's own progress, so the gated re-sync must run.
++      progressed = true;
 +      active = true;
 +    }
      if (m_focusDim.tick(nowMsec)) {
+       progressed = true;
        setFadeAlpha(m_fadeAlpha);
-       active = active || m_focusDim.animating();
-@@ -1090,6 +1212,7 @@ namespace umbriel {
+@@ -1146,6 +1271,7 @@ namespace umbriel {
          || m_posY.animating()
          || sizeAnimating()
          || m_fade.animating()
@@ -567,7 +572,7 @@ index 9500b7d3..8bf84a7a 100644
  
      const bool automatic = !placementSize
 diff --git a/src/view/view_state.cpp b/src/view/view_state.cpp
-index fc2d63a0..d053428b 100644
+index 4192c5ca..ac177868 100644
 --- a/src/view/view_state.cpp
 +++ b/src/view/view_state.cpp
 @@ -104,6 +104,10 @@ namespace umbriel {

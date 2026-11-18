@@ -60,7 +60,7 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0011-drag-deform-settle-crop.patch'
         '0012-per-output-render-scale.patch'
         '0014-downsample-box.patch'
-        '0018-underfull-strip-align.patch'
+        '9999-rejected-prs.patch'
         '0019-background-effect.patch'
         '0020-adaptive-title-bar.patch'
         '0021-minimize-animation.patch'
@@ -76,10 +76,10 @@ sha256sums=('SKIP'
             '4a00fd655fd726feb339e34e49e647a4a6d3b69b7c9caca6c263e4bed21c64c7'
             '65cc421d7d85a15d5f4089b8f688b912fc066ad9720b084cee86860c2f3fbfe5'
             '25e32de93f27846f1fadae34f1b586af083751ae914dd70163dbfbd378fadeec'
-            'e4af7893010ce014814dbe311c27c01f5c1a5324b6b4ab4df1115d1f629f02dc'
+            '50c300ae2761547f9f6353738c633d98912d6eef56a9a0200938b066082634b3'
             'baf4f5e7d676b939855842173fc1e544e6e11569ab6df5ae1909d96d983a54bc'
             'e20f2426d29a6828f1929fe8b79a824ce06d10875fdde460b8296e9d1421c8c4'
-            'c952246b3eff9753a7aa475301d733567550d2118407b91752b88cb79091e5a2'
+            '6a7fc5a444b914446688f8b7bbdcbaccab1873fbd566ab24eaded02c4a7b23d7'
             'db0e1730937e5e5e7b113a07164bb99f580a8678a1ea3d88ee45fa9f2eae9b6c'
             '6b06d5bcdd93c769a6f3dfeaec121e2524947b018d14f43912abd0a66e683bc3'
             '970521c3ce60611495745fe972620e94c5c0b1ccb1422adc38ff8c73f234d8db'
@@ -108,8 +108,9 @@ prepare() {
   # Re-cut 2026-11-19 on main@c89f6771: main had moved 29-60 commits past every
   # PR head, and 0011/0019/0020/0024 no longer applied. Each patch is again the
   # same squashed `git diff` between the composed stack and the PR head, so the
-  # hunks are unchanged (0018 and its sha256 are untouched); only the index
-  # lines and hunk offsets moved, except 0020, which carries the merge below.
+  # hunks are unchanged (0018's underfull commits now travel inside
+  # 9999-rejected-prs.patch); only the index lines and hunk offsets moved,
+  # except 0020, which carries the merge below.
   # The plan and the per-PR measurements live in the maintainer's warehouse.
   #
   # Drag-release re-home waits for the deform settle (and the drag tree
@@ -249,23 +250,18 @@ prepare() {
   # main@d1329334: no conflicts, composed tree 78cd826a, 177/177 units.
   git apply -3 ../0014-downsample-box.patch
 
-  # [layout] underfull_strip: a scrolling strip narrower than the viewport
-  # rests at its start, in the centre, or at its end, replacing the
-  # `layout.scrolling.center_underfull_strip` boolean (breaking: the removed
-  # key warns `unknown key`, and the docs map true -> "center", false ->
-  # "start"). Placement is a whole-strip property and the value names are
-  # axis-neutral so vertical strips read correctly. Resize gestures follow:
-  # an end-aligned fitting strip refuses the last column's trailing edge and
-  # trades width across interior boundaries, while centre keeps its symmetric
-  # growth, and a corner drag keeps its cross-axis half. Upstream PR
-  # noctalia-dev/umbriel#713, five commits
-  # (d1c4c53/7eec2b3/33680fa/b001a86/57c27d3) on main@aa3b6b3; sha256 da533d36….
-  # (KEPT DOWNSTREAM: the maintainer declined the change on 2026-11-07 and the
-  # PR is closed unmerged, so this patch has no upstream to retire against.)
-  # Re-cut 2026-11-16 on main@1bbbf155 over 0011+0012+0014: e4ecd92a widened the
-  # `docs/user/workspaces.md` table for `layout.client_maximize`, so the
-  # `underfull_strip` row is re-aligned to it (sha256 e4af7893…).
-  git apply -3 ../0018-underfull-strip-align.patch
+  # [layout+perf] rejected-PR umbrella: one downstream-only patch carrying the
+  # three threads upstream declined, so the recipe maintains a single blob:
+  # 0018's underfull_strip (noctalia-dev/umbriel#713, five commits, closed
+  # unmerged), #559's settled-view effect-sync gate, and #560's unchanged-
+  # geometry reconfigure skip. Seven-commit mbox from branch
+  # `upstream-rejected` on main@c89f6771: 30 files, +754/-125.
+  # It applies in 0018's former slot because 0019-0030 were cut on top of the
+  # underfull hunks; 9999's underfull commits are the same five rebased onto
+  # 2026-11-19 main, so their files and hunks are unchanged.
+  # (KEPT DOWNSTREAM: #713 was declined on 2026-11-07; #559/#560 were rebuffed
+  # on 2026-10-25. None has an upstream to retire against.)
+  git apply -3 ../9999-rejected-prs.patch
 
   # [appearance.blur] client_requests + ext_background_effect_v1: applications
   # (GTK4 terminals such as Zashterminal) name the part of their own surface
@@ -370,6 +366,10 @@ prepare() {
   # 0011+0012+0013+0014+0018+0019+0020; sha256 4bc48f1e…. (Retire on merge: 0021 -> the minimize animation PR.)
   # Re-cut 2026-11-10 on main@8e13926a after the PR merge/convention round
   # (head 22625cb3, 20 files +790/-23, sha256 fde7fc7e…).
+  # Re-cut 2026-11-19 into the 9999 slot: 9999 carries the settled-view
+  # effect-sync gate, so the minimize tick and the cancel path mark
+  # `progressed` whenever a conceal snaps the fade and restores the resting
+  # box outside the tick (20 files +794/-24, sha256 6a7fc5a4…).
   git apply -3 ../0021-minimize-animation.patch
 
   # [animation.windows_out] inside a scratchpad: a closing member's snapshot draws in the pad's own tree, above its
