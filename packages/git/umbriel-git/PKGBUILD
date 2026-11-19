@@ -71,7 +71,8 @@ source=("${_pkgname}::git+${url}.git#branch=main"
         '0027-drag-blur-latency.patch'
         '0028-drag-physics-scalability.patch'
         '0029-vram-blur-footprint.patch'
-        '0030-drag-horner.patch')
+        '0030-drag-horner.patch'
+        '0031-scratchpad-blur-strength.patch')
 sha256sums=('SKIP'
             '4a00fd655fd726feb339e34e49e647a4a6d3b69b7c9caca6c263e4bed21c64c7'
             '65cc421d7d85a15d5f4089b8f688b912fc066ad9720b084cee86860c2f3fbfe5'
@@ -87,7 +88,8 @@ sha256sums=('SKIP'
             '753e7186261a02a704f24b9bc4287bb21d5cdb0037222447e8cb862d2e48edea'
             'ec09b6f50c9957a43d6b6aac30a5d359ccdb171fd5dab146d4524d0667e1407c'
             '462cb243d626656a769b57fc61f9dadbc72d6e062e9914939a330a19292f085a'
-            '9dc195bef9437c6cb091d1bc17f28c795e2f7bdb356b0bb5ea00772338e6c2a8')
+            '9dc195bef9437c6cb091d1bc17f28c795e2f7bdb356b0bb5ea00772338e6c2a8'
+            '7e803c692dd11861871c79e5febd2dcc3975d42cfd744ac838d881ff708c284b')
 
 pkgver() {
   cd "${_pkgname}"
@@ -469,6 +471,20 @@ prepare() {
   # sha256 263c6908…); pin is `polynomialUniformsPreserveThePhysicalSheet`.
   # (Retire on merge: 0030 -> noctalia-dev/umbriel#824.)
   git apply -3 ../0030-drag-horner.patch
+
+  # [scene] scale the scratchpad backdrop blur with its animation strength:
+  # `animation.scratchpad.blur_strength` (0.0-1.0, default 1.0) now reaches
+  # `wlr_scene_blur_set_strength` in `updateDimAndBlur` instead of leaving the
+  # node at the renderer default; the default renders exactly as before and the
+  # fade still moves alpha alone, so strength is never fade-scaled. The apply
+  # stays gated on `appearance.blur.enabled`, so the two switches are
+  # independent. 6 files +124/-2, sha256 7e803c69…; the pins are config-load
+  # (default and both clamps) and harness check
+  # scratchpad/backdrop_blur_strength. The branch is cut on main@c89f6771 at
+  # ea4a5262; the `docs/user/animation.md` hunk is rebased onto 0021's
+  # `windows_minimize` table row so it applies here.
+  # (Retire on merge: 0031 -> the PR.)
+  git apply -3 ../0031-scratchpad-blur-strength.patch
 }
 
 build() {

@@ -1,0 +1,222 @@
+diff --git a/docs/user/animation.md b/docs/user/animation.md
+index 9ff7732c..caf1c9a1 100644
+--- a/docs/user/animation.md
++++ b/docs/user/animation.md
+@@ -47,6 +47,7 @@ enabled = true
+ curve = "spring:1,800"
+ dim = 0.8
+ blur = false
++blur_strength = 1.0
+ 
+ [animation.dialogs]
+ enabled = true
+@@ -86,7 +87,7 @@ Each event other than `windows_drag` also accepts `enabled`, `duration_ms`, and
+ | `[animation.windows_opacity]`  | none, and no `effect`                                               | Focus changes to window-rule opacity and backdrop blur     |
+ | `[animation.workspaces]`       | `style`                                                             | Workspace switching                                        |
+ | `[animation.overview]`         | `workspace_curve`                                                   | Overview opening, closing, and filmstrip movement          |
+-| `[animation.scratchpad]`       | `dim`, `blur`                                                       | Scratchpad show and hide, and its backdrop                 |
++| `[animation.scratchpad]`       | `dim`, `blur`, `blur_strength`                                      | Scratchpad show and hide, and its backdrop                 |
+ | `[animation.dialogs]`          | `dim`, and no `effect`                                              | Shade over a window while a modal dialog is attached to it |
+ | `[animation.border]`           | none                                                                | Focus-border color                                         |
+ | `[animation.dim_unfocused]`    | `dim`                                                               | Unfocused-window opacity                                   |
+@@ -111,7 +112,7 @@ When a tiled window closes while `windows_out` is disabled, its last frame stays
+ 
+ `animation.overview.workspace_curve` controls filmstrip movement after wheel, keyboard, and touchpad navigation. A released touchpad gesture keeps the speed the fingers had when its curve is a spring: `[animation.workspaces]` for the three-finger switch, `[animation.overview]` for the four-finger open and close, and `workspace_curve` for the filmstrip. Any other curve starts from rest.
+ 
+-Scratchpad `dim` and `blur` remain active without a fade when animation is disabled. `dim` is the opacity of the black layer over the output behind a visible scratchpad; `blur` blurs it when `[appearance.blur]` is enabled.
++Scratchpad `dim` and `blur` remain active without a fade when animation is disabled. `dim` is the opacity of the black layer over the output behind a visible scratchpad; `blur` blurs it when `[appearance.blur]` is enabled, and `blur_strength` scales that blur from 0.0 to 1.0, where 1.0 is the renderer's base strength. The fade moves blur alpha alone, so strength holds steady through a show or hide unless you set it yourself.
+ 
+ Dialogs `dim` works the same way: it is the opacity, 0.0 to 1.0 and `0.3` by default, of the black shade over a window while a modal dialog is attached to it (see [Dialogs](layout.md#dialogs)). The shade fades in when the dialog attaches and out when it leaves, and stays without a fade when animation is disabled.
+ 
+diff --git a/src/config/config.h b/src/config/config.h
+index 76ca6747..71291213 100644
+--- a/src/config/config.h
++++ b/src/config/config.h
+@@ -988,6 +988,8 @@ namespace umbriel {
+         AnimationCurve curve{.easing = Easing::Spring, .spring = {.damping = 1.0, .stiffness = 800.0}};
+         double dim = 0.8;
+         bool blur = false;
++        // Backdrop blur strength, 0.0-1.0.
++        double blurStrength = 1.0;
+         bool operator==(const Scratchpad&) const = default;
+       } scratchpad;
+ 
+diff --git a/src/config/fields_animation.cpp b/src/config/fields_animation.cpp
+index ba8c8be3..5a4624a5 100644
+--- a/src/config/fields_animation.cpp
++++ b/src/config/fields_animation.cpp
+@@ -222,6 +222,7 @@ namespace umbriel {
+       static const registry::Fields<A::Scratchpad> scratchpad = eventFields<A::Scratchpad>({
+           real("dim", 0.0, 1.0, &A::Scratchpad::dim),
+           boolean("blur", &A::Scratchpad::blur),
++          real("blur_strength", 0.0, 1.0, &A::Scratchpad::blurStrength),
+       });
+       static const registry::Fields<A::Dialogs> dialogs = timelineFields<A::Dialogs>({
+           boolean("enabled", &A::Dialogs::enabled),
+diff --git a/src/workspace/scratchpad.cpp b/src/workspace/scratchpad.cpp
+index 7a64b5cb..9928854f 100644
+--- a/src/workspace/scratchpad.cpp
++++ b/src/workspace/scratchpad.cpp
+@@ -768,6 +768,7 @@ namespace umbriel {
+     const bool visible = visibleOn(output);
+     const double dim = config().animation.scratchpad.dim;
+     const bool blurEnabled = config().animation.scratchpad.blur && config().appearance.blur.enabled;
++    const auto blurStrength = static_cast<float>(config().animation.scratchpad.blurStrength);
+     const auto fade = m_backdropFades.find(output);
+     const float currentAlpha = fade != m_backdropFades.end() ? static_cast<float>(fade->second.current()) : 0.0F;
+ 
+@@ -799,6 +800,8 @@ namespace umbriel {
+         wlr_scene_blur_set_size(blur, box.width, box.height);
+         wlr_scene_blur_set_corner_radius(blur, 0);
+         wlr_scene_blur_set_alpha(blur, std::clamp(currentAlpha, 0.0F, 1.0F));
++        // The fade moves alpha alone; strength stays independent of it.
++        wlr_scene_blur_set_strength(blur, blurStrength);
+         wlr_scene_node_set_enabled(&blur->node, true);
+       }
+     }
+diff --git a/tests/harness/checks/scratchpad/backdrop_blur_strength.sh b/tests/harness/checks/scratchpad/backdrop_blur_strength.sh
+new file mode 100755
+index 00000000..e0ec9dba
+--- /dev/null
++++ b/tests/harness/checks/scratchpad/backdrop_blur_strength.sh
+@@ -0,0 +1,93 @@
++#!/usr/bin/env bash
++# The scratchpad backdrop blur honours animation.scratchpad.blur_strength. A bottom-layer square gives one sharp
++# vertical edge at x=200; a strength blur pulls the green/blue boundary inward, and strength 0.0 leaves it clean.
++set -euo pipefail
++source "$UMBRIEL_HARNESS_LIB"
++
++readonly IMAGE="$UMBRIEL_RUNTIME_DIR/backdrop-blur-strength.png"
++readonly LAYER_LOG="$UMBRIEL_RUNTIME_DIR/backdrop-blur-strength-layer.log"
++# Inside the 200 px green square, close enough to its right edge that any blur reaches it.
++readonly STRIP='8x40+186+80'
++# Blue above this in the strip means the background bled across the square's edge.
++readonly BLUE_THRESHOLD=12
++
++cat >> "$UMBRIEL_CONFIG" <<'CONFIG'
++
++[animation]
++enabled = false
++
++[animation.scratchpad]
++dim = 0.0
++blur = true
++blur_strength = 1.0
++
++[appearance]
++border_width = 0
++corner_radius = 0
++
++[appearance.blur]
++enabled = true
++optimized = false
++passes = 2
++radius = 8
++noise = 0.0
++brightness = 1.0
++contrast = 1.0
++saturation = 1.0
++CONFIG
++"$UMBRIEL" msg config-reload > /dev/null
++
++# The background layer fills the output in 0xFF5577AA; the bottom-layer square is 0xFF00FF00 in the top-left corner.
++"$UMBRIEL_LAYER_CLIENT" HEADLESS-1 0 > "$UMBRIEL_RUNTIME_DIR/backdrop-blur-strength-wallpaper.log" 2>&1 &
++await_events "$UMBRIEL_RUNTIME_DIR/backdrop-blur-strength-wallpaper.log" ready 1 "the wallpaper"
++"$UMBRIEL_LAYER_CLIENT" HEADLESS-1 0 bottom-layer > "$LAYER_LOG" 2>&1 &
++await_events "$LAYER_LOG" ready 1 "the square"
++
++# Reprint the backdrop from the current config, then report the strip's blue level.
++strip_blue() {
++  "$UMBRIEL" msg config-reload > /dev/null
++  # The backdrop values are read on each retarget, so hide and show the pad to pick them up.
++  "$UMBRIEL" msg scratchpad-toggle > /dev/null
++  "$UMBRIEL" msg scratchpad-toggle > /dev/null
++  "$UMBRIEL" settle
++  grim "$IMAGE"
++  local r _ b
++  read -r r _ b < <("$UMBRIEL_PIXEL_PROBE" "$IMAGE" mean "$STRIP")
++  printf '%s\n' "$b"
++}
++
++assert_blurred() {
++  local blue
++  blue=$(strip_blue)
++  if ! awk -v b="$blue" -v t="$BLUE_THRESHOLD" 'BEGIN { exit !(b > t) }'; then
++    echo "$1: edge was sharp (blue $blue <= $BLUE_THRESHOLD)"
++    return 1
++  fi
++  echo "$1: blue $blue"
++}
++
++assert_sharp() {
++  local blue
++  blue=$(strip_blue)
++  if ! awk -v b="$blue" -v t="$BLUE_THRESHOLD" 'BEGIN { exit !(b < t) }'; then
++    echo "$1: edge was blurred (blue $blue >= $BLUE_THRESHOLD)"
++    return 1
++  fi
++  echo "$1: blue $blue"
++}
++
++# Even an empty scratchpad shows its backdrop, which is all this check needs.
++"$UMBRIEL" msg scratchpad-toggle > /dev/null
++
++assert_blurred "blur_strength 1.0"
++
++sed -i 's/^blur_strength = 1.0$/blur_strength = 0.0/' "$UMBRIEL_CONFIG"
++assert_sharp "blur_strength 0.0"
++
++# Only the appearance gate may sharpen the edge here: strength goes back to 1.0, so a check that inherited 0.0 would
++# pass vacuously.
++sed -i 's/^blur_strength = 0.0$/blur_strength = 1.0/' "$UMBRIEL_CONFIG"
++sed -i '/^\[appearance\.blur\]$/,/^saturation = /s/^enabled = true$/enabled = false/' "$UMBRIEL_CONFIG"
++assert_sharp "appearance blur disabled at strength 1.0"
++
++echo "scratchpad backdrop blur scales with blur_strength and stays inert without appearance blur"
+diff --git a/tests/unit/config_load.cpp b/tests/unit/config_load.cpp
+index 7072c482..617c675f 100644
+--- a/tests/unit/config_load.cpp
++++ b/tests/unit/config_load.cpp
+@@ -1361,6 +1361,26 @@ action = "window-restore-from-scratchpad missing"
+   CHECK(containsDiagnostic(store, "ignoring hot_corners.bottom_left.action (unknown scratchpad 'missing')"));
+ }
+ 
++UMBRIEL_TEST(scratchpadBlurStrengthDefaultsAndClamps) {
++  const TempConfig file;
++  ConfigStore& store = umbriel::configStore();
++  store.setRootPath(file.path(), true);
++
++  file.write("[animation.scratchpad]\nblur = true\n");
++  CHECK(store.reload().success);
++  CHECK_EQ(store.config().animation.scratchpad.blurStrength, 1.0);
++
++  file.write("[animation.scratchpad]\nblur = true\nblur_strength = 2.0\n");
++  CHECK(store.reload().success);
++  CHECK_EQ(store.config().animation.scratchpad.blurStrength, 1.0);
++  CHECK(containsDiagnostic(store, "animation.scratchpad.blur_strength = 2 out of range, clamped to 1"));
++
++  file.write("[animation.scratchpad]\nblur = true\nblur_strength = -1.0\n");
++  CHECK(store.reload().success);
++  CHECK_EQ(store.config().animation.scratchpad.blurStrength, 0.0);
++  CHECK(containsDiagnostic(store, "animation.scratchpad.blur_strength = -1 out of range, clamped to 0"));
++}
++
+ UMBRIEL_TEST(overviewBackgroundBlurLoads) {
+   const TempConfig file;
+   ConfigStore& store = umbriel::configStore();
+@@ -3985,6 +4005,7 @@ curve = "custom"
+ [animation.scratchpad]
+ dim = 0.4
+ blur = true
++blur_strength = 0.35
+ )");
+ 
+   ConfigStore& store = umbriel::configStore();
+@@ -4013,6 +4034,7 @@ blur = true
+   CHECK_EQ(animation.windowsMove.durationMs, 320);
+   CHECK_EQ(animation.scratchpad.dim, 0.4);
+   CHECK(animation.scratchpad.blur);
++  CHECK_EQ(animation.scratchpad.blurStrength, 0.35);
+ 
+   file.write(R"(
+ [appearance.animations]
