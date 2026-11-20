@@ -1,7 +1,7 @@
 pkgbase = noctalia-git
 	pkgdesc = A sleek, customizable desktop shell crafted for Wayland
-	pkgver = 5.4.1.r6310.g2f3e3c4f6
-	pkgrel = 2
+	pkgver = 5.5.0.r6411.g230768446
+	pkgrel = 1
 	url = https://github.com/noctalia-dev/noctalia
 	arch = x86_64
 	arch = aarch64
@@ -44,14 +44,12 @@ pkgbase = noctalia-git
 	depends = sdbus-cpp
 	depends = tomlplusplus
 	depends = wayland
-	provides = noctalia=5.4.1.r6310.g2f3e3c4f6
+	provides = noctalia=5.5.0.r6411.g230768446
 	conflicts = noctalia
 	conflicts = noctalia-bin
 	options = !debug
 	options = lto
-	source = noctalia::git+https://github.com/noctalia-dev/noctalia.git#commit=2f3e3c4f60f03a14f79f47b99af8bff7e6863b8b
-	source = 0001-smart-autohide-scratchpad.patch
-	sha256sums = 80738ff24130c655bc8abe0bd0d0da9ca71b653227de4b43145d4610f38695b3
-	sha256sums = 304a87918876122bbf2a6547de41d38580b0c255194ce4366f8c4335b2e0634e
+	source = noctalia::git+https://github.com/noctalia-dev/noctalia.git
+	sha256sums = SKIP
 
 pkgname = noctalia-git
