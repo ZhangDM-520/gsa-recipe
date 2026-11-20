@@ -3,7 +3,7 @@
 
 pkgname=openimageio
 pkgver=3.2.1.2
-pkgrel=2.1
+pkgrel=3.2
 pkgdesc="A library for reading and writing images, including classes, utilities, and applications"
 arch=('x86_64')
 url="http://www.openimageio.org/"
@@ -11,7 +11,8 @@ license=('Apache-2.0')
 depends=('openexr' 'openjph' 'giflib' 'openjpeg2' 'libtiff' 'libjpeg-turbo'
          'opencolorio' 'libpng' 'libraw' 'libwebp' 'pugixml'
          'libheif' 'freetype2' 'libstdc++' 'glibc' 'zlib' 'libgcc'
-         'ffmpeg' 'libjxl' 'libultrahdr' 'onetbb' 'qt6-base' 'ptex' 'openvdb') # TODO: Consider adding this dep: 'opencv'
+         'ffmpeg' 'libjxl' 'libultrahdr' 'onetbb' 'qt6-base' 'ptex' 'openvdb'
+         'opencv')
 makedepends=('cmake' 'qt5-base' 'python' 'boost' 'mesa' 'fontconfig' 'libxrender' 'ninja' 'robin-map' 'fmt' 'pybind11')
 optdepends=('python: bindings support')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/OpenImageIO/oiio/archive/refs/tags/v$pkgver.tar.gz")
