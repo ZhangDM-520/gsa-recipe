@@ -62,10 +62,8 @@ conflicts=('umbriel')
 # The fork's integration branch: every fork PR that is ahead of upstream, merged
 # onto upstream/main and rebuilt on demand. Packaging it directly retires the
 # per-PR patch stack, which had to be re-cut whenever main moved.
-source=("${_pkgname}::git+${_origin}.git#branch=nightly"
-        '0030-drag-horner.patch')
-sha256sums=('SKIP'
-            '9dc195bef9437c6cb091d1bc17f28c795e2f7bdb356b0bb5ea00772338e6c2a8')
+source=("${_pkgname}::git+${_origin}.git#branch=nightly")
+sha256sums=('SKIP')
 
 pkgver() {
   cd "${_pkgname}"
@@ -84,16 +82,7 @@ prepare() {
   cd "${_pkgname}"
 
   # `nightly` already contains every fork PR merged onto upstream/main, so the
-  # patch stack is gone: nothing here has to be re-cut when main moves. The one
-  # exception is 0030, whose PR (#824) is not in the integration branch.
-  #
-  # [view] evaluate drag deformation surface with Horner's method: converts the
-  # normalized 4x4 Bernstein control net to power coefficients once per uniform
-  # update in `DragPhysics::normalizedPolynomial()` and reuses them per fragment
-  # in `kDeformation`. Upstream PR noctalia-dev/umbriel#824 (`eedfe31c`, 5 files,
-  # sha256 9dc195be...); pin is `polynomialUniformsPreserveThePhysicalSheet`.
-  # (Retire on merge: 0030 -> noctalia-dev/umbriel#824.)
-  git apply -3 ../0030-drag-horner.patch
+  # patch stack is gone: nothing here has to be re-cut when main moves.
 }
 
 build() {

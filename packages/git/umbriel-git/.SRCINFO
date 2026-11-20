@@ -34,13 +34,11 @@ pkgbase = umbriel-git
 	depends = xorg-xwayland
 	depends = xdg-desktop-portal-umbriel
 	depends = wlroots0.20
-	provides = umbriel=0.1.0.r1612.1bf3bce
+	provides = umbriel=0.1.0.r1669.9254f95
 	conflicts = umbriel
 	options = !debug
 	options = lto
 	source = umbriel::git+https://github.com/ZhangDM-520/umbriel.git#branch=nightly
-	source = 0030-drag-horner.patch
 	sha256sums = SKIP
-	sha256sums = 9dc195bef9437c6cb091d1bc17f28c795e2f7bdb356b0bb5ea00772338e6c2a8
 
 pkgname = umbriel-git
