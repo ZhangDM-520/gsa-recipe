@@ -1,0 +1,17 @@
+diff --git a/modules/imgproc/CMakeLists.txt b/modules/imgproc/CMakeLists.txt
+index 8b6ae8f29c..a1b4593d0e 100644
+--- a/modules/imgproc/CMakeLists.txt
++++ b/modules/imgproc/CMakeLists.txt
+@@ -74,6 +74,12 @@ if(HAVE_HARFBUZZ)
+ 
+   ocv_module_include_directories(opencv_imgproc ${HARFBUZZ_INCLUDE_DIR})
+   ocv_target_link_libraries(${the_module} LINK_PRIVATE ${HARFBUZZ_LIBRARIES})
++  # hb-raster ships as its own library here (harfbuzz-raster.pc) and is not
++  # part of HARFBUZZ_LIBRARIES, so the hb_raster_* entry points used by
++  # drawing_text.cpp stay undefined at link time. Link the raster module.
++  if(NOT HARFBUZZ_IS_BUNDLED AND HARFBUZZ_RASTER_LIBRARIES)
++    ocv_target_link_libraries(${the_module} LINK_PRIVATE ${HARFBUZZ_RASTER_LIBRARIES})
++  endif()
+   if(HARFBUZZ_IS_BUNDLED)
+     ocv_install_3rdparty_licenses(harfbuzz "${OpenCV_SOURCE_DIR}/3rdparty/harfbuzz/COPYING")
+   endif()

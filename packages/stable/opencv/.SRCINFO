@@ -124,10 +124,12 @@ pkgbase = opencv
 	source = git+https://github.com/opencv/opencv_contrib#tag=5.1.0
 	source = vtk9.patch
 	source = fix-cuda-flags.patch
+	source = fix-harfbuzz-raster-link.patch
 	sha256sums = 510e5199cd9ce4a80a08b5d5a9684f9fd64352fe43264e81ab22a2b67366c482
 	sha256sums = a6663f5ca0ee9afad984380e5dba94e4d31dd974803f17f286655c5ec13b6335
 	sha256sums = f35a2d4ea0d6212c7798659e59eda2cb0b5bc858360f7ce9c696c77d3029668e
 	sha256sums = 95472ecfc2693c606f0dd50be2f012b4d683b7b0a313f51484da4537ab8b2bfe
+	sha256sums = cf88dd71b763b9169ae28e1906b4871d835618b8f4c5574eacbab3473987ae25
 
 pkgname = opencv
 
