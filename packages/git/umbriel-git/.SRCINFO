@@ -38,7 +38,7 @@ pkgbase = umbriel-git
 	conflicts = umbriel
 	options = !debug
 	options = lto
-	source = umbriel::git+https://github.com/ZhangDM-520/umbriel.git#branch=nightly
+	source = umbriel::git+https://github.com/ZhangDM-520/umbriel-nightly.git#branch=nightly
 	sha256sums = SKIP
 
 pkgname = umbriel-git

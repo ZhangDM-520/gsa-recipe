@@ -10,8 +10,8 @@ pkgname=umbriel-git
 _pkgname=umbriel
 # The fork that carries the integration branch. Never upstream: `nightly`
 # includes rejected PRs and is not an upstream candidate.
-_origin='https://github.com/ZhangDM-520/umbriel'
-pkgver=0.1.0.r1669.9254f95
+_origin='https://github.com/ZhangDM-520/umbriel-nightly'
+pkgver=0.1.0.r1842.fc677eb
 pkgrel=1
 epoch=1
 pkgdesc='A Wayland compositor built on wlroots'
