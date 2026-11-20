@@ -30,14 +30,14 @@ provides=(libopencv_alphamat.so libopencv_bgsegm.so libopencv_bioinspired.so
           libopencv_videostab.so libopencv_viz.so libopencv_wechat_qrcode.so
           libopencv_xfeatures2d.so libopencv_ximgproc.so libopencv_xobjdetect.so
           libopencv_xphoto.so libopencv_xstereo.so)
-pkgver=5.0.0
+pkgver=5.1.0
 # 13.3: libopencv_sfm.so joins provides — the sfm module ships its soname
 # (measured 2026-10-22 by tools/provides-audit.sh: "soname 'libopencv_sfm.so.500'
 # is not declared in provides") and the bare stem is the house provides shape.
 # 13.2: the python-opencv split output returns — 13.1 is the broken
 # CachyOS string already installed on the host, and the same-version skip
 # would silently leave it in place (pandoc-cli precedent)
-pkgrel=13.3
+pkgrel=4.1
 pkgdesc='Open Source Computer Vision Library'
 arch=(x86_64)
 license=(Apache-2.0)
@@ -112,17 +112,11 @@ optdepends=('glew: for the viz module'
 source=(git+https://github.com/opencv/opencv#tag=$pkgver
         git+https://github.com/opencv/opencv_contrib#tag=$pkgver
         vtk9.patch
-        fix-cuda-flags.patch
-        fix-std.patch
-        fix-dnn-umat-dimensions.patch
-        ffmpeg-9.patch)
-sha256sums=('e123822b57aa5b1cec7802cb53b302ab181a32f91a61060079a65a2fc4de1efe'
-            'b5ee0c286208a092199afe457093c601c73f9efc41c88e8fa0ee821985300c33'
+        fix-cuda-flags.patch)
+sha256sums=('510e5199cd9ce4a80a08b5d5a9684f9fd64352fe43264e81ab22a2b67366c482'
+            'a6663f5ca0ee9afad984380e5dba94e4d31dd974803f17f286655c5ec13b6335'
             'f35a2d4ea0d6212c7798659e59eda2cb0b5bc858360f7ce9c696c77d3029668e'
-            '95472ecfc2693c606f0dd50be2f012b4d683b7b0a313f51484da4537ab8b2bfe'
-            'c05fe7572ee5193cf3de7f02a500f446f3457ec20c315590a326bf1bfb5552cc'
-            'cffe99e96f3b1e7fe15601d6eb02d2ea50b461134a0bfcce2e763327ea45157b'
-            '6246d08c2e272bc30bfcd8bc576e04504f238404823927f98f4def7d212eed74')
+            '95472ecfc2693c606f0dd50be2f012b4d683b7b0a313f51484da4537ab8b2bfe')
 
 prepare() {
   pushd opencv
@@ -133,15 +127,9 @@ prepare() {
   # OpenCV passes all CXXFLAGS to nvcc through -Xcompiler, which does not work for '-Wp,something' flags
   # We remove the -Xcompiler and pass our CXXFLAGS through cmake's CUDAFLAGS
   patch -p1 < ../fix-cuda-flags.patch
-  git cherry-pick -n a18356853d99a67e432e818cf0328b4690d68833 # https://github.com/opencv/opencv/issues/29292
-#  git cherry-pick -n 142801f769ed4946a161f62738bac5a5fe56a60f # https://github.com/opencv/opencv/issues/29291
-#  git cherry-pick -n 883f8d83ae1463a5f486ace784762e8c42e7ea7d # https://github.com/opencv/opencv/issues/29471
-  patch -p1 < ../fix-dnn-umat-dimensions.patch # Fix face recognition in digikam
-  patch -p1 < ../ffmpeg-9.patch # Fix build with FFmpeg 9
+  # 5.1.0 carries the former cherry-pick a1835685 (issues/29292) and the dnn
+  # UMat, FFmpeg 9 and std::cout fixes: those patches are retired here.
   popd
-
-  pushd opencv_contrib
-  patch -p1 < ../fix-std.patch
 }
 
 build() {
