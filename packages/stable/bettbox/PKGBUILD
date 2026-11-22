@@ -33,7 +33,7 @@ prepare() {
 	# exact release — the old 3.44.8 pin bundles Dart 3.12.2, which cannot
 	# satisfy the tag's freezed ^4.0.2 (needs Dart >=3.13) and pub get died
 	# in version solving. Bump together with upstream's pin.
-	fvm use 3.47.7
+	fvm use stable --pin
 	fvm flutter --disable-analytics
 	fvm flutter --no-version-check pub get
 }
