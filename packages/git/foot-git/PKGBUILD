@@ -1,0 +1,79 @@
+# Maintainer: ZhangDM-520
+# Arch packaging contributors: Caleb Maclennan and Daniel Eklöf
+
+pkgname=foot-git
+pkgver=1.28.0.r23.g6b3f557da
+pkgrel=1
+pkgdesc='Fast, lightweight Wayland terminal emulator (development version)'
+arch=(x86_64)
+url='https://codeberg.org/dnkl/foot'
+license=(MIT)
+depends=(fcft fontconfig glibc libfcft.so libutf8proc libxkbcommon ncurses pixman wayland)
+makedepends=(git meson ninja python scdoc wayland-protocols tllist)
+optdepends=('foot-terminfo: extra non-standard terminfo features'
+            'libnotify: desktop notifications'
+            'libutempter: utmp logging'
+            'xdg-utils: URI launching')
+provides=("foot=${pkgver%%.r*}")
+conflicts=(foot)
+backup=(etc/xdg/foot/foot.ini)
+# Meson enables LTO for the final link after the instrumented build.
+options=(!lto)
+source=("foot::git+$url.git")
+sha256sums=('SKIP')
+
+source "$startdir/../../../lib/pgo.sh"
+
+pkgver() {
+  cd foot
+  local version
+  version=$(git describe --long --tags --match '[0-9]*.[0-9]*.[0-9]*' --abbrev=9) || return 1
+    sed -E 's/^([0-9][0-9.]*)-([0-9]+)-g([[:xdigit:]]+)$/\1.r\2.g\3/' <<< "$version"
+}
+
+build() {
+  cd "$srcdir/foot"
+
+  local jobs="${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
+  # The headless workload must cover more than the version-only executables.
+  local pgo_min_gcda=20
+  local gcda_count pgo_mode=off
+
+  rm -rf build
+  # ncurses supplies the standard foot and foot-direct terminfo entries.
+  # Meson emits -fprofile-generate in this phase. GSA scans for that flag
+  # to apply its archive-level PGO check as well as the recipe gate.
+  arch-meson . build --buildtype=plain -Db_ndebug=true \
+    -Ddocs=enabled -Dgrapheme-clustering=enabled -Dterminfo=disabled \
+    -Dsystemd-units-dir=/usr/lib/systemd/user \
+    -Dtests=false -Db_pgo=generate -Db_lto=false
+  meson compile -C build -j "$jobs"
+
+  if (ulimit -c 0; timeout -k 5 120 sh pgo/partial.sh . build); then
+    gcda_count=$(find build -name '*.gcda' -type f -size +0c | wc -l)
+    if ((gcda_count >= pgo_min_gcda)); then
+      msg 'PGO profile: %d gcda files' "$gcda_count"
+      pgo_mode=use
+    fi
+  fi
+  if [[ $pgo_mode == off ]]; then
+    warning 'Foot PGO training failed or produced a thin profile; building with LTO only'
+  fi
+
+  # Some objects are outside the headless workload, including test-only code.
+  meson setup --reconfigure build -Dc_args="$CFLAGS -Wno-error=missing-profile" \
+    -Dtests=true -Db_pgo="$pgo_mode" -Db_lto=true
+  meson compile -C build -j "$jobs"
+}
+
+check() {
+  cd "$srcdir/foot"
+  meson test -C build --no-rebuild --print-errorlogs
+}
+
+package() {
+  cd "$srcdir/foot"
+  meson install -C build --no-rebuild --destdir "$pkgdir"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  verify_no_profile_instrumentation "$pkgdir"
+}

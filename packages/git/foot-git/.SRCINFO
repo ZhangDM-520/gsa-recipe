@@ -1,0 +1,35 @@
+pkgbase = foot-git
+	pkgdesc = Fast, lightweight Wayland terminal emulator (development version)
+	pkgver = 1.28.0.r23.g6b3f557da
+	pkgrel = 1
+	url = https://codeberg.org/dnkl/foot
+	arch = x86_64
+	license = MIT
+	makedepends = git
+	makedepends = meson
+	makedepends = ninja
+	makedepends = python
+	makedepends = scdoc
+	makedepends = wayland-protocols
+	makedepends = tllist
+	depends = fcft
+	depends = fontconfig
+	depends = glibc
+	depends = libfcft.so
+	depends = libutf8proc
+	depends = libxkbcommon
+	depends = ncurses
+	depends = pixman
+	depends = wayland
+	optdepends = foot-terminfo: extra non-standard terminfo features
+	optdepends = libnotify: desktop notifications
+	optdepends = libutempter: utmp logging
+	optdepends = xdg-utils: URI launching
+	provides = foot=1.28.0
+	conflicts = foot
+	options = !lto
+	backup = etc/xdg/foot/foot.ini
+	source = foot::git+https://codeberg.org/dnkl/foot.git
+	sha256sums = SKIP
+
+pkgname = foot-git
