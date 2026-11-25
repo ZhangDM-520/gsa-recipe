@@ -22,7 +22,7 @@ _git_revert=(49414a72f607ccd15f8b71b81edc9aff040d581e) # v3.1 arch
 
 pkgname=blender-git
 pkgver=5.4.r167598.gcb5c0780c7aa
-pkgrel=1
+pkgrel=2
 pkgdesc="A fully integrated 3D graphics creation suite (development)"
 arch=('i686' 'x86_64')
 url="https://blender.org/"
@@ -31,7 +31,7 @@ depends+=('alembic' 'ceres-solver' 'eigen' 'embree' 'libgl' 'python' 'python-num
           'ffmpeg' 'fftw' 'openal' 'freetype2' 'libxi' 'manifold' 'openimageio' 'opencolorio'
           'openvdb' 'opensubdiv' 'openshadinglanguage' 'libtiff' 'libpng'
           'python' 'python-zstandard' 'ccache')
-depends+=('libdecor' 'libepoxy')
+depends+=('libdecor' 'libepoxy' 'opentimelineio')
 optdepends=('cuda: CUDA support in Cycles'
             'optix8: OptiX support in Cycles >=8.0.0 <9.0.0'
             'usd: USD export Scene'
@@ -189,6 +189,12 @@ build() {
     # same no-op when OTIO 0.19 lands.
     sed -i 's/, Color::white));/, "WHITE"));/' \
       "$srcdir/blender/source/blender/io/otio/exporter/otio_export.cc"
+    # OTIO 0.18 cannot represent a disabled Transition. Omit the mute
+    # conversion on both sides while retaining timeline import and export.
+    sed -i '/^[[:space:]]*otio_transition->set_enabled(!(transition.flag & SEQ_MUTE));$/d' \
+      "$srcdir/blender/source/blender/io/otio/exporter/otio_export.cc"
+    sed -i '/^[[:space:]]*SET_FLAG_FROM_TEST(strip->flag, !transition.enabled(), SEQ_MUTE);$/d' \
+      "$srcdir/blender/source/blender/io/otio/importer/otio_import.cc"
   fi
 
   #default cmake flags
