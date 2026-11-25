@@ -1,7 +1,7 @@
 pkgbase = blender-git
 	pkgdesc = A fully integrated 3D graphics creation suite (development)
 	pkgver = 5.4.r167598.gcb5c0780c7aa
-	pkgrel = 1
+	pkgrel = 2
 	url = https://blender.org/
 	arch = i686
 	arch = x86_64
@@ -48,6 +48,7 @@ pkgbase = blender-git
 	depends = ccache
 	depends = libdecor
 	depends = libepoxy
+	depends = opentimelineio
 	optdepends = cuda: CUDA support in Cycles
 	optdepends = optix8: OptiX support in Cycles >=8.0.0 <9.0.0
 	optdepends = usd: USD export Scene
