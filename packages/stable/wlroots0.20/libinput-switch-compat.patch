@@ -1,0 +1,10 @@
+--- a/backend/libinput/switch.c
++++ b/backend/libinput/switch.c
+@@ -39,4 +39,5 @@ static bool switch_type_from_libinput(enum libinput_switch type, enum wlr_switch_
+ #endif
+-	}
+-	return false;
++	default:
++		return false;
++	}
+ }

@@ -1,0 +1,45 @@
+# Maintainer: ZhangDM-520
+# Based on the Arch Linux recipe maintained by Robin Candau.
+
+pkgname=wlroots0.20
+pkgver=0.20.2
+pkgrel=2
+pkgdesc='Modular Wayland compositor library'
+arch=(x86_64)
+url='https://gitlab.freedesktop.org/wlroots/wlroots'
+license=(MIT)
+depends=(glibc libdisplay-info.so libdrm libglvnd libinput liblcms2.so
+         libliftoff.so libpixman-1.so libseat.so libudev.so libvulkan.so
+         libwayland-client.so libwayland-server.so libxcb libxkbcommon.so
+         wayland-protocols opengl-driver xcb-util-errors xcb-util-renderutil xcb-util-wm)
+makedepends=(git glslang meson ninja systemd vulkan-headers xorg-xwayland)
+optdepends=('xorg-xwayland: Xwayland support'
+            'vulkan-validation-layers: Vulkan renderer validation')
+provides=('libwlroots-0.20.so')
+# Let Meson manage LTO with the GSA compiler and linker defaults.
+options=(!lto)
+source=("wlroots::git+$url.git#tag=$pkgver?signed" libinput-switch-compat.patch)
+sha256sums=('6c8595da579a8df74bc307294c2485e90f5379b84390381f500da33ff3f276d2'
+            'bd748bce274c9acc39c8e250acdfeeb3d1a90a3a98cc87062f02d8bfc7b431be')
+validpgpkeys=('34FF9526CFEF0E97A340E2E40FDE7BE0E88F5E48') # Simon Ser, emersion.fr/about
+
+prepare() {
+  cd "$srcdir/wlroots"
+  # Preserve the release's handling of switch types added by newer libinput.
+  patch -Np1 -i "$srcdir/libinput-switch-compat.patch"
+}
+
+build() {
+  cd "$srcdir"
+  rm -rf build
+  # Keep the release backends and renderers. Headless examples do not
+  # exercise the DRM and GPU hot paths well enough to train PGO.
+  arch-meson wlroots build -Db_lto=true -Dexamples=false \
+    -Dbackends=drm,libinput,x11 -Drenderers=gles2,vulkan -Dallocators=gbm,udmabuf
+  meson compile -C build -j "${GSA_BUILD_JOBS:-$(getconf _NPROCESSORS_ONLN)}"
+}
+
+package() {
+  meson install -C "$srcdir/build" --no-rebuild --destdir "$pkgdir"
+  install -Dm644 "$srcdir/wlroots/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
